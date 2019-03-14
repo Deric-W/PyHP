@@ -24,13 +24,13 @@ class pyhp(object):
 		code_at_begin = True
 	else:
 		code_at_begin = False
-
-pyhp = pyhp()
 		
-pyhp.file_content = re.split("\<\?pyhp[\n ]",pyhp.file_content)
-pyhp.first_section = True
-if pyhp.file_content[0] == "": #Bug in re?
-	pyhp.file_content = pyhp.file_content[1:]
+	file_content = re.split("\<\?pyhp[\n ]",file_content)
+	first_section = True
+	if file_content[0] == "": #Bug in re?
+		file_content = file_content[1:]
+		
+pyhp = pyhp()
 
 for pyhp.section in pyhp.file_content:
 	pyhp.section = re.split("[\n 	]\?\>",pyhp.section)
