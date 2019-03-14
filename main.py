@@ -15,8 +15,6 @@ class pyhp(object):
 		file = open(sys.argv[1],"r") #read file
 		file_content = strip_all_stn(file.read())
 		file.close()
-	except IOError: 
-		print("file not found") #Log
 	except IndexError: #file not given, read from stdin
 		file_content = input()
 
