@@ -1,6 +1,6 @@
 ﻿import sys,re,cgi
 class pyhp(object):
-	def strip_all_stn(Text): #zum entfernen von \n,\t und " " am Anfang und Ende
+	def strip_all_stn(Text): #removes all \n,\t and " " from start and end
 		chars = ["\n"," ","\t"]
 		while Text[0] in chars or Text[-1] in chars:
 			if Text[0] == "\t" or Text[-1] == "\t":
@@ -12,40 +12,40 @@ class pyhp(object):
 		return Text
 
 	try:
-		Datei = open(sys.argv[1],"r") #Datei lesen
-		Datei_inhalt = strip_all_stn(Datei.read())
-		Datei.close()
+		file = open(sys.argv[1],"r") #read file
+		file_content = strip_all_stn(file.read())
+		file.close()
 	except IOError: 
-		print("Datei nicht gefunden") #kommt später ins Log
-	except IndexError: #kein Parameter, lesen von stdin
-		Datei_inhalt = input()
+		print("file not found") #Log
+	except IndexError: #file not given, read from stdin
+		file_content = input()
 
-	if Datei_inhalt[0:6] == "<?pyhp" and (Datei_inhalt[6] == "\n" or Datei_inhalt[6] == " "): #Code beginnt am Anfang?
+	if file_content[0:6] == "<?pyhp" and (file_content[6] == "\n" or file_content[6] == " "): #if file starts with python code
 		code_at_begin = True
 	else:
 		code_at_begin = False
 
 pyhp = pyhp()
 		
-pyhp.Datei_inhalt = re.split("\<\?pyhp[\n ]",pyhp.Datei_inhalt)
-pyhp.erster_Abschnitt = True
-if pyhp.Datei_inhalt[0] == "": #Bug in re?
-	pyhp.Datei_inhalt = pyhp.Datei_inhalt[1:]
+pyhp.file_content = re.split("\<\?pyhp[\n ]",pyhp.file_content)
+pyhp.first_section = True
+if pyhp.file_content[0] == "": #Bug in re?
+	pyhp.file_content = pyhp.file_content[1:]
 
-for pyhp.Abschnitt in pyhp.Datei_inhalt:
-	pyhp.Abschnitt = re.split("[\n 	]\?\>",pyhp.Abschnitt)
-	if pyhp.code_at_begin and pyhp.erster_Abschnitt:
+for pyhp.section in pyhp.file_content:
+	pyhp.section = re.split("[\n 	]\?\>",pyhp.section)
+	if pyhp.code_at_begin and pyhp.first_section:
 		pyhp.code_at_begin = False
-		pyhp.erster_Abschnitt = False
-		exec(pyhp.Abschnitt[0])
-		print(pyhp.Abschnitt[1],end="")
+		pyhp.first_section = False
+		exec(pyhp.section[0])
+		print(pyhp.section[1],end="")
 	else:	
-		if pyhp.erster_Abschnitt:
-			pyhp.erster_Abschnitt = False
-			print(pyhp.Abschnitt[0],end="")
+		if pyhp.first_section:
+			pyhp.first_section = False
+			print(pyhp.section[0],end="")
 		else:
-			exec(pyhp.Abschnitt[0])
-			print(pyhp.Abschnitt[1],end="")
+			exec(pyhp.section[0])
+			print(pyhp.section[1],end="")
 		
 
 
