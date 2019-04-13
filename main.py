@@ -1,6 +1,8 @@
-﻿import sys
+#!/usr/bin/python3
+import sys
 import re
 import cgi
+from collections import defaultdict
 
 class pyhp:
 	def __init__(self):
@@ -21,16 +23,21 @@ class pyhp:
 		self.header_sent = False
 
 		data = cgi.FieldStorage()
-		self.REQUEST = {}
+		self.REQUEST = defaultdict(lambda: "")
 		for key in data:					#build $_REQUEST array from PHP
 			self.REQUEST[key] = data.getvalue(key)
 
 		try:
-			file = open(sys.argv[1],"r") #read file
-			self.file_content = self.strip_all_stn(file.read())
+			file = open(sys.argv[1],"r",encoding='utf-8') #read file
+			self.file_content = file.read().split("\n")
 			file.close()
 		except IndexError: #file not given, read from stdin
-			self.file_content = input()
+			self.file_content = input().split("\n")
+
+		if self.file_content[0][:2] == "#!":				#shebang
+			self.file_content = self.strip_all_stn("\n".join(self.file_content[1:]))
+		else:
+			self.file_content = self.strip_all_stn("\n".join(self.file_content))
 
 		if self.file_content[:6] == "<?pyhp" and self.file_content[6] in ["\n"," ","\t"]: #if file starts with python code
 			self.code_at_begin = True

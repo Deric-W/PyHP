@@ -11,3 +11,6 @@ Features that are ready for testing:
   
  Features that are currently being worked on:
   - Guide for installation
+  - Documentation
+  - PHP like htmlspecialchars function
+  - PHP like SERVER array (Dictionary)
