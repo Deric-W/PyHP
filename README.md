@@ -8,5 +8,6 @@ Features that are ready for testing:
   - Encapsulation of the variables and functions of the interpreter in a separate class (to prevent accidental overwriting)
   - PHP like header function
   - PHP like REQUEST array (Dictionary)
+  
  Features that are currently being worked on:
   - Guide for installation
