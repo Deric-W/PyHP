@@ -13,5 +13,5 @@ Features that are ready for testing:
  Features that are currently being worked on:
   - Guide for installation
   - Documentation
-  - PHP like htmlspecialchars function
   - improved parser and caching
+  - PHP like htmlspecialchars function
