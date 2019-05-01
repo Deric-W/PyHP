@@ -121,8 +121,8 @@ class pyhp:
 		string = ""
 		for char in line:
 			if char in [" ","\t"]:
-				index = index + 1
-				string = string + char
+				index += 1
+				string += char
 			else:
 				break
 		return [index,string]
@@ -145,14 +145,14 @@ class pyhp:
 		linecount = 0
 		first_line = True
 		for line in code.split("\n"):
-			linecount = linecount + 1
+			linecount += 1
 			if line.replace(" ","").replace("\n","") != "":											#not empthy
 				if not self.is_comment(line):
 					if first_line:
 						indent = self.get_indent(line)
 						first_line = False
 					if len(line) > indent[0] and line[:indent[0]] == indent[1]:						#line is big enough for indent and indent is the same as first line
-						fixed_code = fixed_code + line[indent[0]:] + "\n"
+						fixed_code += line[indent[0]:] + "\n"
 					else:
 						raise IndentationError("File: " + self.file_path + " line: " + str(linecount) + " section: " + str(section))
 		return fixed_code
