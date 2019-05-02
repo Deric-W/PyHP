@@ -3,6 +3,7 @@ import time
 REQUEST_TIME = time.time()
 import sys
 import os
+import marshal
 import re
 import cgi
 from collections import defaultdict
@@ -16,9 +17,12 @@ class pyhp:
 					self.file_path = sys.argv[2]
 				except IndexError:
 					self.file_path = ""
+					self.caching = False														#cache only for files
 			else:
+				self.caching = False
 				self.file_path = sys.argv[1]
 		else:
+			self.caching = False
 			self.file_path = ""
 
 
@@ -81,33 +85,74 @@ class pyhp:
 		self.response_code = [200,"OK"]
 		self.headers = []
 		self.header_sent = False
-
+		self.first_section = True
+		self.section_count = -1
+		
 		data = cgi.FieldStorage()																	#build $_REQUEST array from PHP
 		self.REQUEST = defaultdict(lambda: "")
 		for key in data:
 			self.REQUEST[key] = data.getvalue(key)													#to contain lists instead of multiple FieldStorages if key has multiple values
-
-		if self.file_path != "":
-			file = open(self.file_path,"r",encoding='utf-8') 										#read file
-			self.file_content = file.read().split("\n")
+		
+		if self.caching and self.SERVER["PyHP_SELF"] != "":
+			cache_path = "/etc/pyhp/" + self.SERVER["PyHP_SELF"] + ".cache"
+			if not os.path.isfile(cache_path) or os.path.getmtime(cache_path) < os.path.getmtime(self.file_path):	#renew cache if outdated or not exist
+				self.file_content = self.prepare_file(self.file_path)
+				with open(cache_path,"wb") as cache:
+					self.file_content = self.split_code(self.file_content)
+					code_at_begin = self.code_at_begin															#to reset later
+					for self.section in self.file_content:														#compile python parts without print html parts
+						self.section_count += 1
+						if self.code_at_begin and self.first_section:
+							self.code_at_begin = False
+							self.first_section = False
+							self.file_content[self.section_count][0] = compile(self.fix_indent(self.section[0],self.section_count),"<string>","exec")
+						else:	
+							if self.first_section:
+								self.first_section = False
+							else:
+								self.file_content[self.section_count][0] = compile(self.fix_indent(self.section[0],self.section_count),"<string>","exec")
+					self.code_at_begin = code_at_begin															#restore old data
+					self.first_section = True
+					self.section_count = -1
+					marshal.dump({"code_at_begin":code_at_begin,"code":self.file_content},cache)
+					self.cached = True
+			else:																						#load cache
+				with open(cache_path,"rb") as cache:
+					self.file_content = marshal.load(cache)
+					self.code_at_begin = self.file_content["code_at_begin"]
+					self.file_content = self.file_content["code"]
+					self.cached = True
+		else:																							#no caching
+			self.file_content = self.prepare_file(self.file_path)
+			self.file_content = self.split_code(self.file_content)
+			self.cached = False
+	
+	def prepare_file(self,file_path):																#read file and handle shebang
+		if file_path != "":
+			file = open(file_path,"r",encoding='utf-8') 											#read file
+			file_content = file.read().split("\n")
 			file.close()
 		else: 																						#file not given, read from stdin
-			self.file_content = input().split("\n")
-
-		if self.file_content[0][:2] == "#!":														#shebang support
-			self.file_content = self.mstrip("\n".join(self.file_content[1:]),["\n"," ","\t"])		#strip invisible chars from start and end
+			file_content = input().split("\n")
+			
+		if file_content[0][:2] == "#!":																#shebang support
+			file_content = "\n".join(file_content[1:])
 		else:
-			self.file_content = self.mstrip("\n".join(self.file_content),["\n"," ","\t"])			#strip invisible chars from start and end
-
-		if self.file_content[:6] == "<?pyhp" and self.file_content[6] in ["\n"," ","\t"]: 			#if file starts with python code
+			file_content = "\n".join(file_content)		
+		return file_content
+	
+	def split_code(self,code):
+		code = re.split("\<\?pyhp[\n \t]",code)
+		if code[0] == "":
 			self.code_at_begin = True
+			code = code[1:]
 		else:
 			self.code_at_begin = False
-		
-		self.file_content = re.split("\<\?pyhp[\n \t]",self.file_content)
-		self.first_section = True
-		if self.file_content[0] == "": 																#if match at begin
-			self.file_content = self.file_content[1:]	
+		index = 0
+		for section in code:
+			code[index] = re.split("[\n \t]\?\>",section)
+			index += 1
+		return code
 
 	def mstrip(self,text,chars): 																	#removes all chars in chars from start and end of text
 		while len(text) > 0 and text[0] in chars:
@@ -146,7 +191,7 @@ class pyhp:
 		first_line = True
 		for line in code.split("\n"):
 			linecount += 1
-			if line.replace(" ","").replace("\n","") != "":											#not empthy
+			if line.replace(" ","").replace("\t","") != "":											#not empthy
 				if not self.is_comment(line):
 					if first_line:
 						indent = self.get_indent(line)
@@ -217,16 +262,28 @@ def print(*args,**kwargs):																			#wrap print to auto sent headers
 	pyhp.print(*args,**kwargs)
 
 for pyhp.section in pyhp.file_content:
-	pyhp.section = re.split("[\n \t]\?\>",pyhp.section)
+	pyhp.section_count += 1
 	if pyhp.code_at_begin and pyhp.first_section:
 		pyhp.code_at_begin = False
 		pyhp.first_section = False
-		exec(pyhp.section[0])
-		print(pyhp.section[1],end="")
+		if pyhp.cached:
+			exec(pyhp.section[0])
+		else:
+			exec(pyhp.fix_indent(pyhp.section[0],pyhp.section_count))
+		try:
+			print(pyhp.section[1],end="")
+		except IndexError as err:
+			raise SyntaxError("File: " + pyhp.file_path + "Section: " + str(pyhp.section_count)) from err
 	else:	
 		if pyhp.first_section:
 			pyhp.first_section = False
 			print(pyhp.section[0],end="")
 		else:
-			exec(pyhp.section[0])
-			print(pyhp.section[1],end="")	
+			if pyhp.cached:
+				exec(pyhp.section[0])
+			else:
+				exec(pyhp.fix_indent(pyhp.section[0],pyhp.section_count))
+			try:
+				print(pyhp.section[1],end="")
+			except IndexError as err:
+				raise SyntaxError("File: " + pyhp.file_path + "Section: " + str(pyhp.section_count)) from err
