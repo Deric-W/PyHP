@@ -25,7 +25,6 @@ class pyhp:
 			self.caching = False
 			self.file_path = ""
 
-
 		self.response_messages = {																#incomplete
 			"200":"OK",
 			"300":"Multiple Choices",
@@ -96,6 +95,8 @@ class pyhp:
 		if self.caching and self.SERVER["PyHP_SELF"] != "":
 			cache_path = "/etc/pyhp/" + self.SERVER["PyHP_SELF"] + ".cache"
 			if not os.path.isfile(cache_path) or os.path.getmtime(cache_path) < os.path.getmtime(self.file_path):	#renew cache if outdated or not exist
+				if not os.path.isdir(os.path.dirname(cache_path)):													#auto create directories
+					os.makedirs(os.path.dirname(cache_path))
 				self.file_content = self.prepare_file(self.file_path)
 				with open(cache_path,"wb") as cache:
 					self.file_content = self.split_code(self.file_content)
