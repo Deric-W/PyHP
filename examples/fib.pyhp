@@ -1,0 +1,42 @@
+#!/usr/bin/pyhp
+<html>
+	<head>
+		<title>Fibonacci-Zahlen Test</title>
+	</head>
+	<body>
+	<?pyhp
+	def fib(zahl):
+		stelle_1 = 0
+		stelle_2 = 1
+		print(stelle_1)
+		print("<br />")
+		if zahl > 1:
+			print(stelle_2)
+			print("<br />")
+		zahl = zahl - 3
+		i = 0
+		while i <= zahl:
+			i = i + 1
+			if stelle_1 < stelle_2:
+				stelle_1 = stelle_1 + stelle_2
+				print(stelle_1)
+			else:
+				stelle_2 = stelle_2 + stelle_1
+				print(stelle_2)
+			print("<br />")
+	#pyhp.REQUEST = {"fib":"x"}
+	if "fib" in pyhp.REQUEST:
+		print("Dies die Fibonaccizahlen von der 0ten bis " + str(pyhp.REQUEST["fib"]) + "ten Stelle:<br />")
+		try:
+			fib(int(pyhp.REQUEST["fib"]))
+		except:
+			print("Fehler während der Berechnung!<br />")
+	else:
+		print("<p>Bitte geben Sie eine Zahl ein!</p>")
+	?>
+	<form action="fib.pyhp">
+	<input name="fib" type="number" min="1" step="1" value="1"></input>
+	<input type="submit" value="Eingabe" />
+	</form>
+	</body>
+</html>
