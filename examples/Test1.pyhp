@@ -1,0 +1,29 @@
+		
+				
+				  
+				<?pyhp print("Anfang") ?><html>
+	<head>
+		<title>Test1</title>
+	</head>
+	<body>
+		<p>Erster Test:</p>
+		<?pyhp print("Hello World!")
+		
+		
+		
+		
+		
+		
+print("Dies ist ein Test!")
+
+					?>
+		<br />
+		<?pyhp	 
+		
+		
+print("Hallo Welt!")
+		?>
+		<p>Ende</p>
+		</body>
+</html>
+<?pyhp print("Ende") ?>
