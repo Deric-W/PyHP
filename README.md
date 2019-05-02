@@ -20,6 +20,9 @@ Features that are ready for testing:
  - Python code is contained within the <?pyhp and ?> tags (like PHP)
  - the Script is called like a interpreter, with the filepath as cli parameter
  - if no filepath is given, the script is reading from stdin
+ - if "-c" is given, the file will be processed an cached in /etc/pyhp/relative/to/document root/filename.cache
+   (the file is also loaded or renewed with this option)
+ - python code can be away from the left site of the file for better optics --> Test4.pyhp
  - the following PHP features are available:
   - `$_REQUEST` as pyhp.REQUEST
   - `$_SERVER` as pyhp.SERVER
