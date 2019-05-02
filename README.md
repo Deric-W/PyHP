@@ -9,11 +9,11 @@ Features that are ready for testing:
   - PHP like header function
   - PHP like REQUEST array (Dictionary)
   - PHP like SERVER array (Dictionary)
-  
+  - improved parser and caching
+ 
  Features that are currently being worked on:
   - Guide for installation
   - Documentation
-  - improved parser and caching
   - PHP like htmlspecialchars function
   
 ## How it works:
