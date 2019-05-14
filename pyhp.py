@@ -105,6 +105,33 @@ class pyhp:
 			if not key in self.GET:																	#REQUEST - GET = POST
 				self.POST[key] = self.REQUEST[key]
 
+		data = os.getenv("HTTP_COOKIE",default="")
+		self.COOKIE = defaultdict(lambda: "")
+		for cookie in data.split(";"):																			#build $_COOKIE
+			cookie = cookie.split("=")
+			if len(cookie) > 2:																					#multiple = in cookie
+				cookie[1] = "=".join(cookie[1:])
+			if len(cookie) == 1:																				#blank cookie
+				cookie.append("")
+			cookie[0] = cookie[0].strip(" ")
+			try:																								#to handle blank values
+				if cookie[1][0] == " ":																			#remove only potential space after =
+					cookie[1] = cookie[1][1:]
+			except IndexError:
+				pass
+			cookie[0] = urllib.parse.unquote_plus(cookie[0])
+			cookie[1] = urllib.parse.unquote_plus(cookie[1])
+			if cookie[0] in self.COOKIE:
+				if type(self.COOKIE[cookie[0]]) == str:
+					self.COOKIE[cookie[0]] = [self.COOKIE[cookie[0]],cookie[1]]									#make new list
+				else:
+					self.COOKIE[cookie[0]].append(cookie[1])													#append to existing list
+			else:
+				self.COOKIE[cookie[0]] = cookie[1]																#make new string
+		
+		for cookie in self.COOKIE:																				#merge COOKIE with REQUEST, prefer COOKIE
+			self.REQUEST[cookie] = self.COOKIE[cookie]
+
 		if self.caching and self.SERVER["PyHP_SELF"] != "":
 			cache_path = "/etc/pyhp/" + self.SERVER["PyHP_SELF"] + ".cache"
 			if not os.path.isfile(cache_path) or os.path.getmtime(cache_path) < os.path.getmtime(self.file_path):	#renew cache if outdated or not exist
@@ -267,7 +294,7 @@ class pyhp:
 			self.print("Content-Type: text/html")													#sent fallback Content-Type header
 		self.print()																				#end of headers
 		self.header_sent = True
-	
+
 pyhp = pyhp()
 
 def print(*args,**kwargs):																			#wrap print to auto sent headers
