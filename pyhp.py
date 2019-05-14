@@ -6,6 +6,7 @@ import os
 import marshal
 import re
 import cgi
+import urllib.parse
 from collections import defaultdict
 
 class pyhp:
@@ -92,6 +93,18 @@ class pyhp:
 		for key in data:
 			self.REQUEST[key] = data.getvalue(key)													#to contain lists instead of multiple FieldStorages if key has multiple values
 		
+		data = urllib.parse.parse_qsl(self.SERVER["QUERY_STRING"],keep_blank_values=True)
+		self.GET = defaultdict(lambda: "")
+		for pair in data:																			#build $_GET
+			if not pair[1] in self.REQUEST:															#if value is blank
+				self.REQUEST[pair[1]] = pair[2]
+			self.GET[pair[1]] = self.REQUEST[pair[1]]												#copy value from REQUEST
+		
+		self.POST = defaultdict(lambda: "")
+		for key in self.REQUEST:																	#build $_POST
+			if not key in self.GET:																	#REQUEST - GET = POST
+				self.POST[key] = self.REQUEST[key]
+
 		if self.caching and self.SERVER["PyHP_SELF"] != "":
 			cache_path = "/etc/pyhp/" + self.SERVER["PyHP_SELF"] + ".cache"
 			if not os.path.isfile(cache_path) or os.path.getmtime(cache_path) < os.path.getmtime(self.file_path):	#renew cache if outdated or not exist
