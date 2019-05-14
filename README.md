@@ -19,7 +19,7 @@ Features that are ready for testing:
   - PHP like htmlspecialchars function
   
 ## How it works:
- - Python code is contained within the `<?pyhp and ?>"` tags (like PHP)
+ - Python code is contained within the `<?pyhp` and `?>` tags (like PHP)
  - the Script is called like a interpreter, with the filepath as cli parameter
  - if no filepath is given, the script is reading from stdin
  - if "-c" is given, the file will be processed an cached in /etc/pyhp/relative/to/document root/filename.cache
