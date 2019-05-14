@@ -10,9 +10,9 @@ Features that are ready for testing:
   - PHP like REQUEST array (Dictionary)
   - PHP like SERVER array (Dictionary)
   - improved parser and caching
+  - PHP like GET,POST and COOKIE array (Dict)
  
  Features that are currently being worked on:
-  - PHP like GET,POST and COOKIE array (Dict)
   - PHP like setrawcookie and setcookie functions
   - Guide for installation
   - Documentation
@@ -27,6 +27,9 @@ Features that are ready for testing:
  - python code can be away from the left site of the file for better optics --> Test4.pyhp
  - the following PHP features are available:
   - `$_REQUEST` as pyhp.REQUEST
+  - `$_GET`as pyhp.GET
+  - `$_POST`as pyhp.POST
+  - `$_COOKIE`as pyhp.COOKIE
   - `$_SERVER` as pyhp.SERVER
   - http_response_code as pyhp.http_response_code
   - headers_list as pyhp.headers_list
