@@ -96,9 +96,9 @@ class pyhp:
 		data = urllib.parse.parse_qsl(self.SERVER["QUERY_STRING"],keep_blank_values=True)
 		self.GET = defaultdict(lambda: "")
 		for pair in data:																			#build $_GET
-			if not pair[1] in self.REQUEST:															#if value is blank
-				self.REQUEST[pair[1]] = pair[2]
-			self.GET[pair[1]] = self.REQUEST[pair[1]]												#copy value from REQUEST
+			if not pair[0] in self.REQUEST:															#if value is blank
+				self.REQUEST[pair[0]] = pair[1]
+			self.GET[pair[0]] = self.REQUEST[pair[0]]												#copy value from REQUEST
 		
 		self.POST = defaultdict(lambda: "")
 		for key in self.REQUEST:																	#build $_POST
