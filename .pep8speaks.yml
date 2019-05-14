@@ -1,0 +1,5 @@
+scanner:
+    diff_only: False
+pycodestyle:
+    ignore:
+        - W191
