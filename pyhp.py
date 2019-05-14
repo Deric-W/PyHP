@@ -11,7 +11,7 @@ from collections import defaultdict
 
 
 class pyhp:
-	def __init__(self):		
+	def __init__(self):
 		if len(sys.argv) > 1:																	# file or parameter exist
 			if sys.argv[1] == "-c":																# chache enabled
 				self.caching = True
@@ -40,46 +40,46 @@ class pyhp:
 		}
 
 		self.SERVER = {																			# incomplete too (AUTH)
-			"PyHP_SELF": os.getenv("SCRIPT_NAME", default = ""),
-			"argv": os.getenv("QUERY_STRING", default = sys.argv[2:]),
+			"PyHP_SELF": os.getenv("SCRIPT_NAME", default=""),
+			"argv": os.getenv("QUERY_STRING", default=sys.argv[2:]),
 			"argc": len(sys.argv) - 2,
-			"GATEWAY_INTERFACE": os.getenv("GATEWAY_INTERFACE", default = ""),
-			"SERVER_ADDR": os.getenv("SERVER_ADDR", default = ""),
-			"SERVER_NAME": os.getenv("SERVER_NAME", default = ""),
-			"SERVER_SOFTWARE": os.getenv("SERVER_SOFTWARE", default = ""),
-			"SERVER_PROTOCOL": os.getenv("SERVER_PROTOCOL", default = ""),
-			"REQUEST_METHOD": os.getenv("REQUEST_METHOD", default = ""),
+			"GATEWAY_INTERFACE": os.getenv("GATEWAY_INTERFACE", default=""),
+			"SERVER_ADDR": os.getenv("SERVER_ADDR", default=""),
+			"SERVER_NAME": os.getenv("SERVER_NAME", default=""),
+			"SERVER_SOFTWARE": os.getenv("SERVER_SOFTWARE", default=""),
+			"SERVER_PROTOCOL": os.getenv("SERVER_PROTOCOL", default=""),
+			"REQUEST_METHOD": os.getenv("REQUEST_METHOD", default=""),
 			"REQUEST_TIME": int(REQUEST_TIME),
 			"REQUEST_TIME_FLOAT": REQUEST_TIME,
-			"QUERY_STRING": os.getenv("QUERY_STRING", default = ""),
-			"DOCUMENT_ROOT": os.getenv("DOCUMENT_ROOT", default = ""),
-			"HTTP_ACCEPT": os.getenv("HTTP_ACCEPT", default = ""),
-			"HTTP_ACCEPT_CHARSET": os.getenv("HTTP_ACCEPT_CHARSET", default = ""),
-			"HTTP_ACCEPT_ENCODING": os.getenv("HTTP_ACCEPT_ENCODING", default = ""),
-			"HTTP_ACCEPT_LANGUAGE": os.getenv("HTTP_ACCEPT_LANGUAGE", default = ""),
-			"HTTP_CONNECTION": os.getenv("HTTP_CONNECTION", default = ""),
-			"HTTP_HOST": os.getenv("HTTP_HOST", default = ""),
-			"HTTP_REFERER": os.getenv("HTTP_REFERER", default = ""),
-			"HTTP_USER_AGENT": os.getenv("HTTP_USER_AGENT", default = ""),
+			"QUERY_STRING": os.getenv("QUERY_STRING", default=""),
+			"DOCUMENT_ROOT": os.getenv("DOCUMENT_ROOT", default=""),
+			"HTTP_ACCEPT": os.getenv("HTTP_ACCEPT", default=""),
+			"HTTP_ACCEPT_CHARSET": os.getenv("HTTP_ACCEPT_CHARSET", default=""),
+			"HTTP_ACCEPT_ENCODING": os.getenv("HTTP_ACCEPT_ENCODING", default=""),
+			"HTTP_ACCEPT_LANGUAGE": os.getenv("HTTP_ACCEPT_LANGUAGE", default=""),
+			"HTTP_CONNECTION": os.getenv("HTTP_CONNECTION", default=""),
+			"HTTP_HOST": os.getenv("HTTP_HOST", default=""),
+			"HTTP_REFERER": os.getenv("HTTP_REFERER", default=""),
+			"HTTP_USER_AGENT": os.getenv("HTTP_USER_AGENT", default=""),
 			"HTTPS": os.getenv("HTTPS", default = ""),
-			"REMOTE_ADDR": os.getenv("REMOTE_ADDR", default = ""),
-			"REMOTE_HOST": os.getenv("REMOTE_HOST", default = ""),
-			"REMOTE_PORT": os.getenv("REMOTE_PORT", default = ""),
-			"REMOTE_USER": os.getenv("REMOTE_USER", default = ""),
-			"REDIRECT_REMOTE_USER": os.getenv("REDIRECT_REMOTE_USER", default = ""),
+			"REMOTE_ADDR": os.getenv("REMOTE_ADDR", default=""),
+			"REMOTE_HOST": os.getenv("REMOTE_HOST", default=""),
+			"REMOTE_PORT": os.getenv("REMOTE_PORT", default=""),
+			"REMOTE_USER": os.getenv("REMOTE_USER", default=""),
+			"REDIRECT_REMOTE_USER": os.getenv("REDIRECT_REMOTE_USER", default=""),
 			"SCRIPT_FILENAME": self.file_path,
-			"SERVER_ADMIN": os.getenv("SERVER_ADMIN", default = ""),
-			"SERVER_PORT": os.getenv("SERVER_PORT", default = ""),
-			"SERVER_SIGNATURE": os.getenv("SERVER_SIGNATURE", default = ""),
-			"PATH_TRANSLATED": os.getenv("PATH_TRANSLATED", default = self.file_path),
-			"SCRIPT_NAME": os.getenv("SCRIPT_NAME", default = os.path.basename(self.file_path)),
-			"REQUEST_URI": os.getenv("REQUEST_URI", default = ""),
+			"SERVER_ADMIN": os.getenv("SERVER_ADMIN", default=""),
+			"SERVER_PORT": os.getenv("SERVER_PORT", default=""),
+			"SERVER_SIGNATURE": os.getenv("SERVER_SIGNATURE", default=""),
+			"PATH_TRANSLATED": os.getenv("PATH_TRANSLATED", default=self.file_path),
+			"SCRIPT_NAME": os.getenv("SCRIPT_NAME", default=os.path.basename(self.file_path)),
+			"REQUEST_URI": os.getenv("REQUEST_URI", default=""),
 			"PyHP_AUTH_DIGEST": "",
 			"PyHP_AUTH_USER": "",
 			"PyHP_AUTH_PW": "",
 			"AUTH_TYPE": "",
-			"PATH_INFO": os.getenv("PATH_INFO", default = ""),
-			"ORIG_PATH_INFO": os.getenv("PATH_INFO", default = "")
+			"PATH_INFO": os.getenv("PATH_INFO", default=""),
+			"ORIG_PATH_INFO": os.getenv("PATH_INFO", default="")
 		}
 
 		self.print = print																			# backup for sending headers
@@ -103,7 +103,7 @@ class pyhp:
 
 		self.POST = defaultdict(lambda: "")
 		for key in self.REQUEST:																	# build $_POST
-			if not key in self.GET:																	# REQUEST - GET = POST
+			if key not in self.GET:																	# REQUEST - GET = POST
 				self.POST[key] = self.REQUEST[key]
 
 		data = os.getenv("HTTP_COOKIE", default="")
@@ -135,11 +135,11 @@ class pyhp:
 
 		if self.caching and self.SERVER["PyHP_SELF"] != "":
 			cache_path = "/etc/pyhp/" + self.SERVER["PyHP_SELF"] + ".cache"
-			if not os.path.isfile(cache_path) or os.path.getmtime(cache_path) < os.path.getmtime(self.file_path):	# renew cache if outdated or not exist
+			if not os.path.isfile(cache_path) or os.path.getmtime(cache_path) < os.path.getmtime(self.file_path):		# renew cache if outdated or not exist
 				if not os.path.isdir(os.path.dirname(cache_path)):									# auto create directories
 					os.makedirs(os.path.dirname(cache_path), exist_ok=True)
 				self.file_content = self.prepare_file(self.file_path)
-				with open(cache_path,"wb") as cache:
+				with open(cache_path, "wb") as cache:
 					self.file_content = self.split_code(self.file_content)
 					code_at_begin = self.code_at_begin												# to restore it later
 					for self.section in self.file_content:											# compile python parts without print html parts
@@ -148,11 +148,11 @@ class pyhp:
 							self.code_at_begin = False
 							self.first_section = False
 							self.file_content[self.section_count][0] = compile(self.fix_indent(self.section[0], self.section_count), "<string>", "exec")
-						else:	
+						else:
 							if self.first_section:
 								self.first_section = False
 							else:
-								self.file_content[self.section_count][0] = compile(self.fix_indent(self.section[0] ,self.section_count), "<string>", "exec")
+								self.file_content[self.section_count][0] = compile(self.fix_indent(self.section[0], self.section_count), "<string>", "exec")
 					self.code_at_begin = code_at_begin												# restore old data
 					self.first_section = True
 					self.section_count = -1
@@ -180,7 +180,7 @@ class pyhp:
 		if file_content[0][:2] == "#!":																# shebang support
 			file_content = "\n".join(file_content[1:])
 		else:
-			file_content = "\n".join(file_content)		
+			file_content = "\n".join(file_content)
 		return file_content
 
 	def split_code(self, code):
@@ -196,7 +196,7 @@ class pyhp:
 			index += 1
 		return code
 
-	def mstrip(self,text, chars): 																	# removes all chars in chars from start and end of text
+	def mstrip(self, text, chars): 																	# removes all chars in chars from start and end of text
 		while len(text) > 0 and text[0] in chars:
 			text = text[1:]
 		while len(text) > 0 and text[-1] in chars:
@@ -261,7 +261,7 @@ class pyhp:
 			self.http_response_code(response_code)													# update response code if given
 		header = header.split("\n")[0]																# to prevent Header-Injection
 		header = header.split(":")
-		header = [header[0].strip(" "),header[1].strip(" ")]
+		header = [header[0].strip(" "), header[1].strip(" ")]
 		if replace:
 			new_header = []
 			for stored_header in self.headers:
@@ -296,6 +296,7 @@ class pyhp:
 		self.print()																				# end of headers
 		self.header_sent = True
 
+
 pyhp = pyhp()
 
 def print(*args, **kwargs):																			# wrap print to auto sent headers
@@ -316,7 +317,7 @@ for pyhp.section in pyhp.file_content:
 			print(pyhp.section[1], end="")
 		except IndexError as err:
 			raise SyntaxError("File: " + pyhp.file_path + "Section: " + str(pyhp.section_count)) from err
-	else:	
+	else:
 		if pyhp.first_section:
 			pyhp.first_section = False
 			print(pyhp.section[0], end="")
