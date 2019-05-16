@@ -61,7 +61,7 @@ class pyhp:
 			"HTTP_HOST": os.getenv("HTTP_HOST", default=""),
 			"HTTP_REFERER": os.getenv("HTTP_REFERER", default=""),
 			"HTTP_USER_AGENT": os.getenv("HTTP_USER_AGENT", default=""),
-			"HTTPS": os.getenv("HTTPS", default = ""),
+			"HTTPS": os.getenv("HTTPS", default=""),
 			"REMOTE_ADDR": os.getenv("REMOTE_ADDR", default=""),
 			"REMOTE_HOST": os.getenv("REMOTE_HOST", default=""),
 			"REMOTE_PORT": os.getenv("REMOTE_PORT", default=""),
@@ -192,7 +192,7 @@ class pyhp:
 			self.code_at_begin = False
 		index = 0
 		for section in code:
-			code[index] = re.split("[\n \t]\?\>", section)
+			code[index] = re.split("[\n \t]\?\>", section, maxsplit=1)
 			index += 1
 		return code
 
