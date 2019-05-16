@@ -61,7 +61,7 @@ class pyhp:
 			"HTTP_HOST": os.getenv("HTTP_HOST", default=""),
 			"HTTP_REFERER": os.getenv("HTTP_REFERER", default=""),
 			"HTTP_USER_AGENT": os.getenv("HTTP_USER_AGENT", default=""),
-			"HTTPS": os.getenv("HTTPS", default = ""),
+			"HTTPS": os.getenv("HTTPS", default=""),
 			"REMOTE_ADDR": os.getenv("REMOTE_ADDR", default=""),
 			"REMOTE_HOST": os.getenv("REMOTE_HOST", default=""),
 			"REMOTE_PORT": os.getenv("REMOTE_PORT", default=""),
@@ -108,28 +108,27 @@ class pyhp:
 
 		data = os.getenv("HTTP_COOKIE", default="")
 		self.COOKIE = defaultdict(lambda: "")
-		if data != "":																				# to avoid non existent blank cookies
-			for cookie in data.split(";"):															# build $_COOKIE
-				cookie = cookie.split("=")
-				if len(cookie) > 2:																	# multiple = in cookie
-					cookie[1] = "=".join(cookie[1:])
-				if len(cookie) == 1:																# blank cookie
-					cookie.append("")
-				cookie[0] = cookie[0].strip(" ")
-				try:																				# to handle blank values
-					if cookie[1][0] == " ":															# remove only potential space after =
-						cookie[1] = cookie[1][1:]
-				except IndexError:
-					pass
-				cookie[0] = urllib.parse.unquote_plus(cookie[0])
-				cookie[1] = urllib.parse.unquote_plus(cookie[1])
-				if cookie[0] in self.COOKIE:
-					if type(self.COOKIE[cookie[0]]) == str:
-						self.COOKIE[cookie[0]] = [self.COOKIE[cookie[0]], cookie[1]]				# make new list
-					else:
-						self.COOKIE[cookie[0]].append(cookie[1])									# append to existing list
+		for cookie in data.split(";"):																# build $_COOKIE
+			cookie = cookie.split("=")
+			if len(cookie) > 2:																		# multiple = in cookie
+				cookie[1] = "=".join(cookie[1:])
+			if len(cookie) == 1:																	# blank cookie
+				cookie.append("")
+			cookie[0] = cookie[0].strip(" ")
+			try:																					# to handle blank values
+				if cookie[1][0] == " ":																# remove only potential space after =
+					cookie[1] = cookie[1][1:]
+			except IndexError:
+				pass
+			cookie[0] = urllib.parse.unquote_plus(cookie[0])
+			cookie[1] = urllib.parse.unquote_plus(cookie[1])
+			if cookie[0] in self.COOKIE:
+				if type(self.COOKIE[cookie[0]]) == str:
+					self.COOKIE[cookie[0]] = [self.COOKIE[cookie[0]], cookie[1]]						# make new list
 				else:
-					self.COOKIE[cookie[0]] = cookie[1]												# make new string
+					self.COOKIE[cookie[0]].append(cookie[1])										# append to existing list
+			else:
+				self.COOKIE[cookie[0]] = cookie[1]													# make new string
 
 		for cookie in self.COOKIE:																	# merge COOKIE with REQUEST, prefer COOKIE
 			self.REQUEST[cookie] = self.COOKIE[cookie]
@@ -234,7 +233,7 @@ class pyhp:
 		first_line = True
 		for line in code.split("\n"):
 			linecount += 1
-			if line.replace(" ","").replace("\t", "") != "":										# not empthy
+			if line.replace(" ","").replace("\t", "") != "":											# not empthy
 				if not self.is_comment(line):
 					if first_line:
 						indent = self.get_indent(line)
@@ -273,7 +272,7 @@ class pyhp:
 		else:
 			self.headers.append(header)
 
-	def header_remove(self, header):																# remove header
+	def header_remove(self, header):																	# remove header
 		header = header.split(":")
 		header = [header[0].strip(" "), header[1].strip(" ")]
 		new_header = []
