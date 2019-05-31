@@ -11,9 +11,9 @@ Features that are ready for testing:
   - PHP like SERVER array (Dictionary)
   - improved parser and caching
   - PHP like GET,POST and COOKIE array (Dict)
+  - PHP like setrawcookie and setcookie functions
  
  Features that are currently being worked on:
-  - PHP like setrawcookie and setcookie functions
   - Guide for installation
   - Documentation
   - PHP like htmlspecialchars function

@@ -261,7 +261,7 @@ class pyhp:
 		if response_code != None:
 			self.http_response_code(response_code)													# update response code if given
 		header = header.split("\n")[0]																# to prevent Header-Injection
-		header = header.split(":")
+		header = header.split(":", maxsplit=1)														# to allow cookies
 		header = [header[0].strip(" "), header[1].strip(" ")]
 		if replace:
 			new_header = []
@@ -296,6 +296,40 @@ class pyhp:
 			self.print("Content-Type: text/html")													# sent fallback Content-Type header
 		self.print()																				# end of headers
 		self.header_sent = True
+
+	def setcookie(self, name, value="", expires=0, path="", domain="", secure=False, httponly=False):
+		name = urllib.parse.quote_plus(name)
+		value = urllib.parse.quote_plus(value)
+		return self.setrawcookie(name, value, expires, path, domain, secure, httponly)
+
+	def setrawcookie(self, name, value="", expires=0, path="", domain="", secure=False, httponly=False):
+		if self.header_sent:
+			return False
+		else:
+			if type(expires) == dict:																	# options array
+				path = expires.get("path", "")
+				domain = expires.get("domain", "")
+				secure = expires.get("secure", False)
+				httponly = expires.get("httponly", False)
+				samesite = expires.get("samesite", "")
+				expires = expires.get("expires", 0)
+			else:
+				samesite = ""
+			cookie = "Set-Cookie:"
+			cookie += name + "=" + value
+			cookie += "; " + "Expires=" + time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime(time.time() + expires))
+			if path != "":
+				cookie += "; " + "Path=" + path
+			if domain != "":
+				cookie += "; " + "Domain=" + domain
+			if secure:
+				cookie += "; " + "Secure"
+			if httponly:
+				cookie += "; " + "HttpOnly"
+			if samesite != "":
+				cookie += "; " + "SameSite=" + samesite
+			self.header(cookie, False)
+			return True
 
 
 pyhp = pyhp()
