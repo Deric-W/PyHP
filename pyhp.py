@@ -306,13 +306,13 @@ class pyhp:
 		if self.header_sent:
 			return False
 		else:
-			if type(value) == dict:																	# options array
-				expires = value["expires"]
-				path = value["path"]
-				domain = value["domain"]
-				secure = value[" secure"]
-				httponly = value["httponly"]
-				samesite = value["samesite"]
+			if type(expires) == dict:																	# options array
+				path = expires.get("path", "")
+				domain = expires.get("domain", "")
+				secure = expires.get("secure", False)
+				httponly = expires.get("httponly", False)
+				samesite = expires.get("samesite", "")
+				expires = expires.get("expires", 0)
 			else:
 				samesite = ""
 			cookie = "Set-Cookie:"
@@ -327,7 +327,7 @@ class pyhp:
 			if httponly:
 				cookie += "; " + "HttpOnly"
 			if samesite != "":
-				cookie += "; " + samesite
+				cookie += "; " + "SameSite=" + samesite
 			self.header(cookie, False)
 			return True
 
