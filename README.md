@@ -36,4 +36,6 @@ Features that are ready for testing:
   - `header`
   - `header_remove`
   - `headers_sent`
+  - `setrawcookie`
+  - `setcookie`
   - automatic sending of headers with fallback: `Content-Type: text/html`
