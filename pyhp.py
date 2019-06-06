@@ -27,7 +27,7 @@ class pyhp:
 			self.caching = False
 			self.file_path = ""
 
-		self.response_messages = {																# incomplete
+		self.response_messages = {
 			100: "Continue",
 			101: "Switching Protocols",
 			200: "OK",
@@ -218,7 +218,7 @@ class pyhp:
 			file_content = "\n".join(file_content)
 		return file_content
 
-	def split_code(self, code, compile=False):
+	def split_code(self, code):
 		code = re.split("\<\?pyhp[\n \t]", code)
 		if code[0] == "":
 			self.code_at_begin = True
@@ -351,7 +351,8 @@ class pyhp:
 				samesite = ""
 			cookie = "Set-Cookie:"
 			cookie += name + "=" + value
-			cookie += "; " + "Expires=" + time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime(time.time() + expires))
+			if expires != 0:
+				cookie += "; " + "Expires=" + time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime(time.time() + expires))
 			if path != "":
 				cookie += "; " + "Path=" + path
 			if domain != "":

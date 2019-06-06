@@ -25,15 +25,17 @@ Features that are ready for testing:
  - if "-c" is given, the file will be processed an cached in /etc/pyhp/relative/to/document root/filename.cache
    (the file is also loaded or renewed with this option)
  - python code can be away from the left site of the file for better optics --> Test4.pyhp
- - the following PHP features are available:
-  - `$_REQUEST` as pyhp.REQUEST
-  - `$_GET`as pyhp.GET
-  - `$_POST`as pyhp.POST
-  - `$_COOKIE`as pyhp.COOKIE
-  - `$_SERVER` as pyhp.SERVER
-  - http_response_code as pyhp.http_response_code
-  - headers_list as pyhp.headers_list
-  - header as pyhp.header
-  - header_remove as pyhp.header_remove
-  - headers_sent as pyhp.headers_sent
-  - automatic sending of headers with fallback: "Content-Type: text/html"
+ - the following PHP features are available as part of the `pyhp` class:
+  - `$_REQUEST` as REQUEST
+  - `$_GET`as GET
+  - `$_POST`as POST
+  - `$_COOKIE`as COOKIE
+  - `$_SERVER` as SERVER
+  - `http_response_code`
+  - `headers_list`
+  - `header`
+  - `header_remove`
+  - `headers_sent`
+  - `setrawcookie`
+  - `setcookie`
+  - automatic sending of headers with fallback: `Content-Type: text/html`
