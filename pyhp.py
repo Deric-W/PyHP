@@ -227,7 +227,10 @@ class pyhp:
 			self.code_at_begin = False
 		index = 0
 		for section in code:
-			code[index] = re.split("[\n \t]\?\>", section, maxsplit=1)
+			if index == 0 and not self.code_at_begin:
+				code[index] = [section]
+			else:
+				code[index] = re.split("[\n \t]\?\>", section, maxsplit=1)
 			index += 1
 		return code
 
