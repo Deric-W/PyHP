@@ -1,6 +1,6 @@
 # PyHP-Interpreter
 
-This repository includes a script that allows you to embed Python code like PHP code into HTML.
+The PyHP Interpreter is a script that allows you to embed Python code like PHP code into HTML.
 The script is called either by the configuration of the web server or a shebang and communicates with the web server via CGI.
 
 ## Features:
