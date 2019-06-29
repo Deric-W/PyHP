@@ -3,20 +3,14 @@
 This repository includes a script that allows you to embed Python code like PHP code into HTML.
 The script is called either by the configuration of the web server or a shebang and communicates with the web server via CGI.
 
-Features that are ready for testing:
+## Features:
   - Parser for embedding python Code in HTML
   - Encapsulation of the variables and functions of the interpreter in a separate class (to prevent accidental overwriting)
-  - PHP like header function
-  - PHP like REQUEST array (Dictionary)
+  - caching
+  - PHP like header functions
   - PHP like SERVER array (Dictionary)
-  - improved parser and caching
-  - PHP like GET,POST and COOKIE array (Dict)
+  - PHP like REQUEST,GET,POST and COOKIE array (Dictionary)
   - PHP like setrawcookie and setcookie functions
- 
- Features that are currently being worked on:
-  - Guide for installation
-  - Documentation
-  - PHP like htmlspecialchars function
   
 ## How it works:
  - Python code is contained within the `<?pyhp` and `?>` tags (like PHP)
@@ -39,3 +33,9 @@ Features that are ready for testing:
   - `setrawcookie`
   - `setcookie`
   - automatic sending of headers with fallback: `Content-Type: text/html`
+  
+  ## Installation
+  1. enable CGI for your web server
+  2. drop pyhp.py somewhere and mark it as executable (make sure Python 3.4+ is installed)
+  3. to enable the support for caching, create the directory `/etc/pyhp` and give the Webserver permission to read/write
+  Done! you can now use `.pyhp` files by adding a Shebang
