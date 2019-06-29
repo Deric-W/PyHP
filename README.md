@@ -38,4 +38,4 @@ The script is called either by the configuration of the web server or a shebang 
   1. enable CGI for your web server
   2. drop pyhp.py somewhere and mark it as executable (make sure Python 3.4+ is installed)
   3. to enable the support for caching, create the directory `/etc/pyhp` and give the Webserver permission to read/write
-  Done! you can now use `.pyhp` files by adding a Shebang
+  4. Done! you can now use `.pyhp` files by adding a Shebang
