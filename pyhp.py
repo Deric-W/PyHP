@@ -271,7 +271,7 @@ class pyhp:
 		first_line = True
 		for line in code.split("\n"):
 			linecount += 1
-			if line.replace(" ","").replace("\t", "") != "":										# not empthy
+			if line.replace(" ", "").replace("\t", "") != "":										# not empthy
 				if not self.is_comment(line):
 					if first_line:
 						indent = self.get_indent(line)
@@ -376,6 +376,7 @@ def print(*args, **kwargs):																			# wrap print to auto sent headers
 	if not pyhp.header_sent:
 		pyhp.sent_header()
 	pyhp.print(*args, **kwargs)
+
 
 for pyhp.section in pyhp.file_content:
 	pyhp.section_count += 1
