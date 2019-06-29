@@ -38,5 +38,5 @@ Features:
   ## Installation
   1. enable CGI for your web server
   2. drop pyhp.py somewhere and mark it as executable (make sure Python 3.4+ is installed)
-  optional: to enable the support for caching, create the directory `/etc/pyhp` and give the Webserver permission to read/write
+  3. to enable the support for caching, create the directory `/etc/pyhp` and give the Webserver permission to read/write
   Done! you can now use `.pyhp` files by adding a Shebang
