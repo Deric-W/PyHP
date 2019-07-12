@@ -1,7 +1,6 @@
 configuration
 use of argparse
 rework of prepare_file
-allow Tabs and Spaces in Indentation to switch places
 
 header_register_callback
 
