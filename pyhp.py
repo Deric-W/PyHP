@@ -1,6 +1,7 @@
 #!/usr/bin/python3
 import time
 REQUEST_TIME = time.time()
+import argparse
 import sys
 import os
 import marshal
@@ -12,20 +13,15 @@ from collections import defaultdict
 
 class pyhp:
 	def __init__(self):
-		if len(sys.argv) > 1:																	# file or parameter exist
-			if sys.argv[1] == "-c":																# chache enabled
-				self.caching = True
-				try:
-					self.file_path = sys.argv[2]
-				except IndexError:
-					self.file_path = ""
-					self.caching = False														# cache only for files
-			else:
-				self.caching = False
-				self.file_path = sys.argv[1]
+		parser = argparse.ArgumentParser(description="Interpreter for .pyhp Scripts (https://github.com/Deric-W/PyHP-Interpreter)")
+		parser.add_argument("-c", "--caching", help="enable caching", action="store_true")
+		parser.add_argument("file", type=str, help="file to be interpreted", nargs="?", default="")
+		args = parser.parse_args()
+		self.file_path = args.file
+		if args.file != "":																	# enable caching flag if file is not stdin
+			self.caching = args.caching
 		else:
 			self.caching = False
-			self.file_path = ""
 
 		self.response_messages = {
 			100: "Continue",
@@ -73,7 +69,7 @@ class pyhp:
 			505: "HTTP Version Not Supported"
 		}
 
-		self.SERVER = {																			# incomplete too (AUTH)
+		self.SERVER = {																			# incomplete (AUTH)
 			"PyHP_SELF": os.getenv("SCRIPT_NAME", default=""),
 			"argv": os.getenv("QUERY_STRING", default=sys.argv[2:]),
 			"argc": len(sys.argv) - 2,
@@ -204,11 +200,11 @@ class pyhp:
 			self.file_content = self.split_code(self.file_content)
 			self.cached = False
 
+
 	def prepare_file(self, file_path):																# read file and handle shebang
 		if file_path != "":
-			file = open(file_path, "r", encoding='utf-8') 											# read file
-			file_content = file.read().split("\n")
-			file.close()
+			with open(file_path, "r", encoding='utf-8') as file:
+				file_content = file.read().split("\n")
 		else: 																						# file not given, read from stdin
 			file_content = input().split("\n")
 
@@ -217,6 +213,7 @@ class pyhp:
 		else:
 			file_content = "\n".join(file_content)
 		return file_content
+
 
 	def split_code(self, code):
 		code = re.split("\<\?pyhp[\n \t]", code)
@@ -234,12 +231,14 @@ class pyhp:
 			index += 1
 		return code
 
+
 	def mstrip(self, text, chars): 																	# removes all chars in chars from start and end of text
 		while len(text) > 0 and text[0] in chars:
 			text = text[1:]
 		while len(text) > 0 and text[-1] in chars:
 			text = text[:-1]
 		return text
+
 
 	def get_indent(self, line):																		# return string and index of indent
 		index = 0
@@ -251,6 +250,7 @@ class pyhp:
 			else:
 				break
 		return [index, string]
+
 
 	def is_comment(self, line):																		# return True if line is comment (first char == #)
 		comment = False
@@ -264,6 +264,7 @@ class pyhp:
 				comment = False
 				break
 		return comment
+
 
 	def fix_indent(self, code, section):
 		fixed_code = ""
@@ -282,17 +283,20 @@ class pyhp:
 						raise IndentationError("File: " + self.file_path + " line: " + str(linecount) + " section: " + str(section))
 		return fixed_code
 
+
 	def http_response_code(self, response_code=None): 												# set response code
 		old_response_code = self.response_code[0]
 		if response_code != None:
 			self.response_code = [int(response_code), self.response_messages[response_code]]
 		return old_response_code
 
+
 	def headers_list(self):																			# list current header
 		headers = []
 		for header in self.headers:
 			headers.append(str(header[0]) + ": " + str(header[1]))
 		return headers
+
 
 	def header(self, header, replace=True, response_code=None):										# add headers and set response code
 		if response_code != None:
@@ -310,6 +314,7 @@ class pyhp:
 		else:
 			self.headers.append(header)
 
+
 	def header_remove(self, header):																# remove header
 		header = header.split(":")
 		header = [header[0].strip(" "), header[1].strip(" ")]
@@ -319,8 +324,10 @@ class pyhp:
 				new_header.append(stored_header) 													# same headers not in list
 		self.headers = new_header
 
+
 	def headers_sent(self):																			# true if headers already sent
 		return self.header_sent
+
 
 	def sent_header(self):
 		self.print("Status: " + str(self.response_code[0]) + " " + self.response_code[1]) 			# print status code
@@ -334,16 +341,18 @@ class pyhp:
 		self.print()																				# end of headers
 		self.header_sent = True
 
+
 	def setcookie(self, name, value="", expires=0, path="", domain="", secure=False, httponly=False):
 		name = urllib.parse.quote_plus(name)
 		value = urllib.parse.quote_plus(value)
 		return self.setrawcookie(name, value, expires, path, domain, secure, httponly)
 
+
 	def setrawcookie(self, name, value="", expires=0, path="", domain="", secure=False, httponly=False):
 		if self.header_sent:
 			return False
 		else:
-			if type(expires) == dict:																	# options array
+			if type(expires) == dict:																# options array
 				path = expires.get("path", "")
 				domain = expires.get("domain", "")
 				secure = expires.get("secure", False)
@@ -371,6 +380,7 @@ class pyhp:
 
 
 pyhp = pyhp()
+
 
 def print(*args, **kwargs):																			# wrap print to auto sent headers
 	if not pyhp.header_sent:
