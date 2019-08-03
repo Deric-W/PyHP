@@ -58,9 +58,12 @@ class pyhp:
 			raise ValueError("failed to read config file")
 
 		self.print = print																		# backup for sending headers
+		self.exit = exit																		# backup for exit after shutdown_functions
 		self.response_code = [200, "OK"]
 		self.headers = []
 		self.header_sent = False
+		self.header_callback = None
+		self.shutdown_functions = []
 
 		self.response_messages = {
 			100: "Continue",
@@ -355,6 +358,10 @@ class pyhp:
 
 
 	def sent_header(self):
+		if self.header_callback != None:
+			header_callback = self.header_callback
+			self.header_callback = None																# to prevent recursion if output occurs 
+			header_callback()																		# execute callback if set
 		self.print("Status: " + str(self.response_code[0]) + " " + self.response_code[1]) 			# print status code
 		mistake = True																				# no content-type header
 		for header in self.headers:
@@ -366,6 +373,12 @@ class pyhp:
 		self.print()																				# end of headers
 		self.header_sent = True
 
+	def header_register_callback(self, callback):
+		if self.header_sent:
+			return False																			# headers already send
+		else:
+			self.header_callback = callback
+			return True
 
 	def setcookie(self, name, value="", expires=0, path="", domain="", secure=False, httponly=False):
 		name = urllib.parse.quote_plus(name)
@@ -403,6 +416,9 @@ class pyhp:
 			self.header(cookie, False)
 			return True
 
+	def register_shutdown_function(self, callback, *args, **kwargs):
+		self.shutdown_functions.append([callback, args, kwargs])
+
 
 pyhp = pyhp()
 
@@ -411,6 +427,14 @@ def print(*args, **kwargs):																			# wrap print to auto sent headers
 	if not pyhp.header_sent:
 		pyhp.sent_header()
 	pyhp.print(*args, **kwargs)
+
+def exit(*args, **kwargs):																			# wrapper to exit shutdown functions
+	shutdown_functions = pyhp.shutdown_functions
+	pyhp.shutdown_functions = []																	# to prevent recursion if exit is called
+	for func in shutdown_functions:
+		func[0](*func[1], **func[2])
+	pyhp.exit(*args, **kwargs)
+
 
 pyhp.section_count = -1
 for pyhp.section in pyhp.file_content:
@@ -436,3 +460,5 @@ for pyhp.section in pyhp.file_content:
 			print(pyhp.section[1], end="")
 		except IndexError as err:
 			raise SyntaxError("File: " + pyhp.file_path + " Section: " + str(pyhp.section_count) + " Cause: missing closing Tag") from err
+
+exit(0)
