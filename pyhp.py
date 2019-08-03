@@ -1,31 +1,69 @@
 #!/usr/bin/python3
+
+"""Interpreter for .pyhp Scripts (https://github.com/Deric-W/PyHP-Interpreter)"""
+
+# MIT License
+#
+# Copyright (c) 2019 Eric W.
+#
+# Permission is hereby granted, free of charge, to any person obtaining a copy
+# of this software and associated documentation files (the "Software"), to deal
+# in the Software without restriction, including without limitation the rights
+# to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the Software is
+# furnished to do so, subject to the following conditions:
+#
+# The above copyright notice and this permission notice shall be included in all
+# copies or substantial portions of the Software.
+#
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
+# IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
+# FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
+# AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
+# LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
+# OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
+# SOFTWARE.
+
 import time
 REQUEST_TIME = time.time()
+import argparse
+import configparser
 import sys
 import os
 import marshal
 import re
 import cgi
 import urllib.parse
+import importlib
 from collections import defaultdict
+
+
+config = "/etc/pyhp.conf"
 
 
 class pyhp:
 	def __init__(self):
-		if len(sys.argv) > 1:																	# file or parameter exist
-			if sys.argv[1] == "-c":																# chache enabled
-				self.caching = True
-				try:
-					self.file_path = sys.argv[2]
-				except IndexError:
-					self.file_path = ""
-					self.caching = False														# cache only for files
-			else:
-				self.caching = False
-				self.file_path = sys.argv[1]
+		parser = argparse.ArgumentParser(description="Interpreter for .pyhp Scripts (https://github.com/Deric-W/PyHP-Interpreter)")
+		parser.add_argument("-c", "--caching", help="enable caching (requires file)", action="store_true")
+		parser.add_argument("file", type=str, help="file to be interpreted (omit for reading from stdin)", nargs="?", default="")
+		args = parser.parse_args()
+		self.file_path = args.file
+		if args.file != "":																		# enable caching flag if file is not stdin
+			self.caching = args.caching
 		else:
 			self.caching = False
-			self.file_path = ""
+
+		self.config = configparser.ConfigParser(inline_comment_prefixes="#")
+		if config not in self.config.read(config):												# failed to read file
+			raise ValueError("failed to read config file")
+
+		self.print = print																		# backup for sending headers
+		self.exit = exit																		# backup for exit after shutdown_functions
+		self.response_code = [200, "OK"]
+		self.headers = []
+		self.header_sent = False
+		self.header_callback = None
+		self.shutdown_functions = []
 
 		self.response_messages = {
 			100: "Continue",
@@ -73,7 +111,7 @@ class pyhp:
 			505: "HTTP Version Not Supported"
 		}
 
-		self.SERVER = {																			# incomplete too (AUTH)
+		self.SERVER = {																			# incomplete (AUTH)
 			"PyHP_SELF": os.getenv("SCRIPT_NAME", default=""),
 			"argv": os.getenv("QUERY_STRING", default=sys.argv[2:]),
 			"argc": len(sys.argv) - 2,
@@ -115,13 +153,6 @@ class pyhp:
 			"PATH_INFO": os.getenv("PATH_INFO", default=""),
 			"ORIG_PATH_INFO": os.getenv("PATH_INFO", default="")
 		}
-
-		self.print = print																			# backup for sending headers
-		self.response_code = [200, "OK"]
-		self.headers = []
-		self.header_sent = False
-		self.first_section = True
-		self.section_count = -1
 
 		data = cgi.FieldStorage()																	# build $_REQUEST array from PHP
 		self.REQUEST = defaultdict(lambda: "")
@@ -168,47 +199,38 @@ class pyhp:
 		for cookie in self.COOKIE:																	# merge COOKIE with REQUEST, prefer COOKIE
 			self.REQUEST[cookie] = self.COOKIE[cookie]
 
-		if self.caching and self.SERVER["PyHP_SELF"] != "":
-			cache_path = "/etc/pyhp/" + self.SERVER["PyHP_SELF"] + ".cache"
-			if not os.path.isfile(cache_path) or os.path.getmtime(cache_path) < os.path.getmtime(self.file_path):		# renew cache if outdated or not exist
-				if not os.path.isdir(os.path.dirname(cache_path)):									# auto create directories
-					os.makedirs(os.path.dirname(cache_path), exist_ok=True)
+		if self.config.getboolean("caching", "allow_caching") and (self.caching or self.config.getboolean("caching", "auto_caching")):
+			handler_path = self.config.get("caching", "handler_path")
+			cache_path = self.config.get("caching", "cache_path")
+			sys.path.insert(0, handler_path)
+			handler = importlib.import_module(self.config.get("caching", "handler")).handler(cache_path, os.path.abspath(self.file_path))
+			del sys.path[0]																			# cleanup for normal import behavior
+			if handler.is_outdated():
 				self.file_content = self.prepare_file(self.file_path)
-				with open(cache_path, "wb") as cache:
-					self.file_content = self.split_code(self.file_content)
-					code_at_begin = self.code_at_begin												# to restore it later
-					for self.section in self.file_content:											# compile python parts without print html parts
-						self.section_count += 1
-						if self.code_at_begin and self.first_section:
-							self.code_at_begin = False
-							self.first_section = False
+				self.file_content, self.code_at_begin = self.split_code(self.file_content)
+				self.section_count = -1
+				for self.section in self.file_content:
+					self.section_count += 1
+					if self.section_count == 0:
+						if self.code_at_begin:														# first section is code, exec
 							self.file_content[self.section_count][0] = compile(self.fix_indent(self.section[0], self.section_count), "<string>", "exec")
-						else:
-							if self.first_section:
-								self.first_section = False
-							else:
-								self.file_content[self.section_count][0] = compile(self.fix_indent(self.section[0], self.section_count), "<string>", "exec")
-					self.code_at_begin = code_at_begin												# restore old data
-					self.first_section = True
-					self.section_count = -1
-					marshal.dump({"code_at_begin": code_at_begin, "code": self.file_content}, cache)
-					self.cached = True
-			else:																					# load cache
-				with open(cache_path, "rb") as cache:
-					self.file_content = marshal.load(cache)
-					self.code_at_begin = self.file_content["code_at_begin"]
-					self.file_content = self.file_content["code"]
-					self.cached = True
+					else:																			# all sections after the first one are like [code, html until next code or eof]
+						self.file_content[self.section_count][0] = compile(self.fix_indent(self.section[0], self.section_count), "<string>", "exec")
+				handler.save(self.file_content, self.code_at_begin)
+				self.cached = True
+			else:
+				self.file_content, self.code_at_begin = handler.load()
+				self.cached = True
+			handler.close()																			# to allow cleanup, like closing connections, etc
 		else:																						# no caching
 			self.file_content = self.prepare_file(self.file_path)
-			self.file_content = self.split_code(self.file_content)
+			self.file_content, self.code_at_begin = self.split_code(self.file_content)
 			self.cached = False
 
 	def prepare_file(self, file_path):																# read file and handle shebang
 		if file_path != "":
-			file = open(file_path, "r", encoding='utf-8') 											# read file
-			file_content = file.read().split("\n")
-			file.close()
+			with open(file_path, "r", encoding='utf-8') as file:
+				file_content = file.read().split("\n")
 		else: 																						# file not given, read from stdin
 			file_content = input().split("\n")
 
@@ -218,21 +240,23 @@ class pyhp:
 			file_content = "\n".join(file_content)
 		return file_content
 
-	def split_code(self, code):
-		code = re.split("\<\?pyhp[\n \t]", code)
+	def split_code(self, code):																		# split file_content in sections like [code, html until next code or eof] with first section containing the html from the beginning if existing
+		opening_tag = self.config.get("parser", "opening_tag").encode("utf8").decode("unicode_escape")	# process escape sequences like \n and \t
+		closing_tag = self.config.get("parser", "closing_tag").encode("utf8").decode("unicode_escape")
+		code = re.split(opening_tag, code)
 		if code[0] == "":
-			self.code_at_begin = True
+			code_at_begin = True
 			code = code[1:]
 		else:
-			self.code_at_begin = False
+			code_at_begin = False
 		index = 0
 		for section in code:
-			if index == 0 and not self.code_at_begin:
+			if index == 0 and not code_at_begin:
 				code[index] = [section]
 			else:
-				code[index] = re.split("[\n \t]\?\>", section, maxsplit=1)
+				code[index] = re.split(closing_tag, section, maxsplit=1)
 			index += 1
-		return code
+		return code, code_at_begin
 
 	def mstrip(self, text, chars): 																	# removes all chars in chars from start and end of text
 		while len(text) > 0 and text[0] in chars:
@@ -323,6 +347,10 @@ class pyhp:
 		return self.header_sent
 
 	def sent_header(self):
+		if self.header_callback != None:
+			header_callback = self.header_callback
+			self.header_callback = None																# to prevent recursion if output occurs
+			header_callback()																		# execute callback if set
 		self.print("Status: " + str(self.response_code[0]) + " " + self.response_code[1]) 			# print status code
 		mistake = True																				# no content-type header
 		for header in self.headers:
@@ -334,6 +362,13 @@ class pyhp:
 		self.print()																				# end of headers
 		self.header_sent = True
 
+	def header_register_callback(self, callback):
+		if self.header_sent:
+			return False																			# headers already send
+		else:
+			self.header_callback = callback
+			return True
+
 	def setcookie(self, name, value="", expires=0, path="", domain="", secure=False, httponly=False):
 		name = urllib.parse.quote_plus(name)
 		value = urllib.parse.quote_plus(value)
@@ -343,7 +378,7 @@ class pyhp:
 		if self.header_sent:
 			return False
 		else:
-			if type(expires) == dict:																	# options array
+			if type(expires) == dict:																# options array
 				path = expires.get("path", "")
 				domain = expires.get("domain", "")
 				secure = expires.get("secure", False)
@@ -369,20 +404,42 @@ class pyhp:
 			self.header(cookie, False)
 			return True
 
+	def register_shutdown_function(self, callback, *args, **kwargs):
+		self.shutdown_functions.append([callback, args, kwargs])
+
 
 pyhp = pyhp()
+
 
 def print(*args, **kwargs):																			# wrap print to auto sent headers
 	if not pyhp.header_sent:
 		pyhp.sent_header()
 	pyhp.print(*args, **kwargs)
 
+def exit(*args, **kwargs):																			# wrapper to exit shutdown functions
+	shutdown_functions = pyhp.shutdown_functions
+	pyhp.shutdown_functions = []																	# to prevent recursion if exit is called
+	for func in shutdown_functions:
+		func[0](*func[1], **func[2])
+	pyhp.exit(*args, **kwargs)
 
+
+pyhp.section_count = -1
 for pyhp.section in pyhp.file_content:
 	pyhp.section_count += 1
-	if pyhp.code_at_begin and pyhp.first_section:
-		pyhp.code_at_begin = False
-		pyhp.first_section = False
+	if pyhp.section_count == 0:
+		if pyhp.code_at_begin:																		# first section is code, exec
+			if pyhp.cached:
+				exec(pyhp.section[0])
+			else:
+				exec(pyhp.fix_indent(pyhp.section[0], pyhp.section_count))
+			try:
+				print(pyhp.section[1], end="")
+			except IndexError as err:																# missing closing tag
+				raise SyntaxError("File: " + pyhp.file_path + " Section: " + str(pyhp.section_count) + " Cause: missing closing Tag") from err
+		else:																						# first section is just html, print
+			print(pyhp.section[0], end="")
+	else:																							# all sections after the first one are like [code, html until next code or eof]
 		if pyhp.cached:
 			exec(pyhp.section[0])
 		else:
@@ -390,17 +447,6 @@ for pyhp.section in pyhp.file_content:
 		try:
 			print(pyhp.section[1], end="")
 		except IndexError as err:
-			raise SyntaxError("File: " + pyhp.file_path + "Section: " + str(pyhp.section_count)) from err
-	else:
-		if pyhp.first_section:
-			pyhp.first_section = False
-			print(pyhp.section[0], end="")
-		else:
-			if pyhp.cached:
-				exec(pyhp.section[0])
-			else:
-				exec(pyhp.fix_indent(pyhp.section[0], pyhp.section_count))
-			try:
-				print(pyhp.section[1], end="")
-			except IndexError as err:
-				raise SyntaxError("File: " + pyhp.file_path + "Section: " + str(pyhp.section_count)) from err
+			raise SyntaxError("File: " + pyhp.file_path + " Section: " + str(pyhp.section_count) + " Cause: missing closing Tag") from err
+
+exit(0)
