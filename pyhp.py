@@ -312,7 +312,6 @@ class pyhp:
 			self.response_code = [int(response_code), self.response_messages[response_code]]
 		return old_response_code
 
-
 	def headers_list(self):																			# list current header
 		headers = []
 		for header in self.headers:
@@ -350,7 +349,7 @@ class pyhp:
 	def sent_header(self):
 		if self.header_callback != None:
 			header_callback = self.header_callback
-			self.header_callback = None																# to prevent recursion if output occurs 
+			self.header_callback = None																# to prevent recursion if output occurs
 			header_callback()																		# execute callback if set
 		self.print("Status: " + str(self.response_code[0]) + " " + self.response_code[1]) 			# print status code
 		mistake = True																				# no content-type header
