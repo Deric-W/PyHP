@@ -258,14 +258,12 @@ class pyhp:
 			index += 1
 		return code, code_at_begin
 
-
 	def mstrip(self, text, chars): 																	# removes all chars in chars from start and end of text
 		while len(text) > 0 and text[0] in chars:
 			text = text[1:]
 		while len(text) > 0 and text[-1] in chars:
 			text = text[:-1]
 		return text
-
 
 	def get_indent(self, line):																		# return string and index of indent
 		index = 0
@@ -277,7 +275,6 @@ class pyhp:
 			else:
 				break
 		return [index, string]
-
 
 	def is_comment(self, line):																		# return True if line is comment (first char == #)
 		comment = False
@@ -291,7 +288,6 @@ class pyhp:
 				comment = False
 				break
 		return comment
-
 
 	def fix_indent(self, code, section):
 		fixed_code = ""
@@ -310,7 +306,6 @@ class pyhp:
 						raise IndentationError("File: " + self.file_path + " line: " + str(linecount) + " section: " + str(section))
 		return fixed_code
 
-
 	def http_response_code(self, response_code=None): 												# set response code
 		old_response_code = self.response_code[0]
 		if response_code != None:
@@ -323,7 +318,6 @@ class pyhp:
 		for header in self.headers:
 			headers.append(str(header[0]) + ": " + str(header[1]))
 		return headers
-
 
 	def header(self, header, replace=True, response_code=None):										# add headers and set response code
 		if response_code != None:
@@ -341,7 +335,6 @@ class pyhp:
 		else:
 			self.headers.append(header)
 
-
 	def header_remove(self, header):																# remove header
 		header = header.split(":")
 		header = [header[0].strip(" "), header[1].strip(" ")]
@@ -351,10 +344,8 @@ class pyhp:
 				new_header.append(stored_header) 													# same headers not in list
 		self.headers = new_header
 
-
 	def headers_sent(self):																			# true if headers already sent
 		return self.header_sent
-
 
 	def sent_header(self):
 		if self.header_callback != None:
