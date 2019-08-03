@@ -1,6 +1,3 @@
-header_register_callback
-register_shutdown_function
-
 session_start
 session_abort
 session_write_close(session_commit)
