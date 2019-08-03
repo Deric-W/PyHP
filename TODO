@@ -1,9 +1,5 @@
-configuration
-use of argparse
-rework of prepare_file
-rework of caching
-
 header_register_callback
+register_shutdown_function
 
 session_start
 session_abort
