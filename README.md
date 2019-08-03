@@ -30,8 +30,10 @@ The script is called either by the configuration of the web server or a shebang 
   - `header`
   - `header_remove`
   - `headers_sent`
+  - `header_register_callback`
   - `setrawcookie`
   - `setcookie`
+  - `register_shutdown_function`
  - automatic sending of headers with fallback: `Content-Type: text/html`
   
   ## Cache Handlers
