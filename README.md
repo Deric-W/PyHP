@@ -32,16 +32,16 @@ The script is called either by the configuration of the web server or a shebang 
   - `headers_sent`
   - `setrawcookie`
   - `setcookie`
-  - automatic sending of headers with fallback: `Content-Type: text/html`
+ - automatic sending of headers with fallback: `Content-Type: text/html`
   
   ## Cache Handlers
    - are responsible for saveing/loading/renewing caches
    - are python scripts with the following contents:
-    - the `handler` class, wich takes the cache path and absolute file path as initialization parameters
-    - the method `is_outdated`, wich returns True or False
-    - the method `save`, wich returns nothing and saves the boolean code_at_begin and preprocessed code
-    - the method `load`, wich returns a tuble with the boolean code_at_begin and the code saved by `save`
-    - the method `close`, wich does cleanup tasks
+   - the `handler` class, wich takes the cache path and absolute file path as initialization parameters
+   - the method `is_outdated`, wich returns True or False
+   - the method `save`, wich returns nothing and saves the boolean code_at_begin and preprocessed code
+   - the method `load`, wich returns a tuble with the boolean code_at_begin and the code saved by `save`
+   - the method `close`, wich does cleanup tasks
   
   ## Installation
   1. enable CGI for your web server
