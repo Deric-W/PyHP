@@ -54,7 +54,7 @@ class pyhp:
 			self.caching = False
 
 		self.config = configparser.ConfigParser(inline_comment_prefixes="#")
-		if not config in self.config.read(config):												# failed to read file
+		if config not in self.config.read(config):												# failed to read file
 			raise ValueError("failed to read config file")
 
 		self.print = print																		# backup for sending headers
@@ -240,7 +240,6 @@ class pyhp:
 			file_content = "\n".join(file_content)
 		return file_content
 
-
 	def split_code(self, code):																		# split file_content in sections like [code, html until next code or eof] with first section containing the html from the beginning if existing
 		opening_tag = self.config.get("parser", "opening_tag").encode("utf8").decode("unicode_escape")	# process escape sequences like \n and \t
 		closing_tag = self.config.get("parser", "closing_tag").encode("utf8").decode("unicode_escape")
@@ -384,7 +383,6 @@ class pyhp:
 		name = urllib.parse.quote_plus(name)
 		value = urllib.parse.quote_plus(value)
 		return self.setrawcookie(name, value, expires, path, domain, secure, httponly)
-
 
 	def setrawcookie(self, name, value="", expires=0, path="", domain="", secure=False, httponly=False):
 		if self.header_sent:
