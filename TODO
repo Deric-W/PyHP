@@ -1,3 +1,5 @@
+script for building .deb file
+
 session_start
 session_abort
 session_write_close(session_commit)
