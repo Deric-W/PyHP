@@ -1,4 +1,4 @@
-pyhp (1.2-0) unstable; urgency=low
+pyhp (1.2-1) unstable; urgency=low
 
   * third release
   * add support for ~ as home directory in cache_path
