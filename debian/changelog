@@ -1,6 +1,27 @@
-pyhp (1.2-1) unstable; urgency=low
+pyhp (1.2-1) stable; urgency=low
 
   * third release
   * add support for ~ as home directory in cache_path
   
  -- Eric Wolf <robo-eric@gmx.de>  Tue, 13 Aug 2019 18:07:00 +0100
+
+pyhp (1.1-1) stable; urgency=low
+
+  * second release
+  * add register_shutdown_function
+  * add header_register_callback
+  * add config
+  * reworked caching to use handlers (old code as files_mtime handler)
+  * reworked caching to use handlers (old code as files_mtime handler)
+  * reworked prepare file
+  * now using argparse
+  * changed directory structure (see pyhp.conf)
+  
+ -- Eric Wolf <robo-eric@gmx.de>  Sat, 3 Aug 2019 15:30:00 +0100
+ 
+ pyhp (1.0-1) stable; urgency=low
+
+  * first release
+  * add basic functionality
+  
+ -- Eric Wolf <robo-eric@gmx.de>  Sat, 29 Jun 2019 19:00:00 +0100
