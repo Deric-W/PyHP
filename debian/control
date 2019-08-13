@@ -1,0 +1,13 @@
+Package: pyhp
+Version: 1.1-0
+Architecture: all
+Maintainer: Eric Wolf <robo-eric@gmx.de>
+Installed-Size: 21
+Depends: python3:any (>= 3.5)
+Suggests: apache2
+Section: web
+Priority: optional
+Homepage: https://github.com/Deric-W/PyHP-Interpreter
+Description: Interprets and executes pyhp files.
+ PyHP is a script for interpreting and executing pyhp files, with several PHP functions available.
+ pyhp files are (mostly) HTML files that have embedded Python source code and can be used for creating dynamic web pages.
