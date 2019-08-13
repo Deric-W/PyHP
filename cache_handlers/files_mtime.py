@@ -8,7 +8,7 @@ from os import makedirs
 
 class handler:
     def __init__(self, cache_path, file_path):
-        self.cache_path = os.path.join(cache_path, file_path.strip(os.path.sep) + ".cache")         # use full path to allow indentical named files in different directories with cache_path as root
+        self.cache_path = os.path.join(os.path.expanduser(cache_path), file_path.strip(os.path.sep) + ".cache")  # use full path to allow indentical named files in different directories with cache_path as root
         self.file_path = file_path
 
     def is_outdated(self):                                                                          # return True if cache is not created or needs refresh
