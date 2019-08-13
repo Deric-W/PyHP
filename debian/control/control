@@ -4,8 +4,7 @@ Architecture: all
 Maintainer: Eric Wolf <robo-eric@gmx.de>
 Installed-Size: 21
 Depends: python3:any (>= 3.5)
-Recommends: apache2
-Suggests: 
+Suggests: apache2
 Section: web
 Priority: optional
 Homepage: https://github.com/Deric-W/PyHP-Interpreter
