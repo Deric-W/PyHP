@@ -17,7 +17,7 @@ pyhp (1.1-1) stable; urgency=low
   * now using argparse
   * changed directory structure (see pyhp.conf)
   
- -- Eric Wolf <robo-eric@gmx.de>  Sat, 3 Aug 2019 15:30:00 +0100
+ -- Eric Wolf <robo-eric@gmx.de>  Sat, 03 Aug 2019 15:30:00 +0100
  
 pyhp (1.0-1) stable; urgency=low
 
