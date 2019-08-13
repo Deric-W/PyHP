@@ -6,7 +6,7 @@ Installed-Size: 21
 Depends: python3:any (>= 3.5)
 Recommends: apache2
 Suggests: 
-Section: Internet
+Section: interpreters web
 Priority: optional
 Homepage: https://github.com/Deric-W/PyHP-Interpreter
 Description: Interprets and executes pyhp files.
