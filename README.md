@@ -37,7 +37,7 @@ The script is called either by the configuration of the web server or a shebang 
  - automatic sending of headers with fallback: `Content-Type: text/html`
   
   ## Cache Handlers
-   - are responsible for saveing/loading/renewing caches
+   - are responsible for saving/loading/renewing caches
    - are python scripts with the following contents:
    - the `handler` class, wich takes the cache path and absolute file path as initialization parameters
    - the method `is_outdated`, wich returns True or False
@@ -46,9 +46,12 @@ The script is called either by the configuration of the web server or a shebang 
    - the method `close`, wich does cleanup tasks
   
   ## Installation
+  ### Debian
+  Use the Debian package
+  ### Other
   1. enable CGI for your web server
-  2. drop pyhp.py somewhere and mark it as executable (make sure Python 3.4+ is installed)
-  3. create /etc/pyhp.conf
-  4. create the directories listed in pyhp.conf and drop the choosen cache handler (and maybe others) in the cache handler directory
+  2. drop pyhp.py somewhere and mark it as executable (make sure Python 3.5+ is installed)
+  3. download pyhp.conf and move it to `/etc`
+  4. create `/lib/pyhp/cache_handlers` and drop the choosen cache handler (and maybe others) in the cache handler directory
   
   Done! you can now use `.pyhp` files by adding a Shebang
