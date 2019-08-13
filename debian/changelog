@@ -2,6 +2,7 @@ pyhp (1.2-1) stable; urgency=low
 
   * third release
   * add support for ~ as home directory in cache_path
+  * add debian package
   
  -- Eric Wolf <robo-eric@gmx.de>  Tue, 13 Aug 2019 18:07:00 +0100
 
@@ -18,10 +19,10 @@ pyhp (1.1-1) stable; urgency=low
   * changed directory structure (see pyhp.conf)
   
  -- Eric Wolf <robo-eric@gmx.de>  Sat, 03 Aug 2019 15:30:00 +0100
- 
+
 pyhp (1.0-1) stable; urgency=low
 
   * first release
   * add basic functionality
-  
+
  -- Eric Wolf <robo-eric@gmx.de>  Sat, 29 Jun 2019 19:00:00 +0100
