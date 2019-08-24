@@ -13,8 +13,6 @@ session_set_cookie_params
 session_set_save_handler
 session_status
 session_gc
-session_encode
-session_decode
 $_SESSION
 
 add handler for memcached (if not already submitted)
