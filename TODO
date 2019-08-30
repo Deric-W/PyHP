@@ -1,3 +1,6 @@
+make caching more customizable
+make request handling more customizable
+
 session_start
 session_abort
 session_write_close(session_commit)
