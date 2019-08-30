@@ -203,7 +203,8 @@ class pyhp:
 			handler_path = self.config.get("caching", "handler_path")
 			cache_path = self.config.get("caching", "cache_path")
 			sys.path.insert(0, handler_path)
-			handler = importlib.import_module(self.config.get("caching", "handler")).handler(cache_path, os.path.abspath(self.file_path))
+			handler = importlib.import_module(self.config.get("caching", "handler"))
+			handler = handler.handler(cache_path, os.path.abspath(self.file_path), self.config["caching"])
 			del sys.path[0]																			# cleanup for normal import behavior
 			if handler.is_outdated():
 				self.file_content = self.prepare_file(self.file_path)
