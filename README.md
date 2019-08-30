@@ -39,7 +39,7 @@ The script is called either by the configuration of the web server or a shebang 
   ## Cache Handlers
    - are responsible for saving/loading/renewing caches
    - are python scripts with the following contents:
-   - the `handler` class, wich takes the cache path and absolute file path as initialization parameters
+   - the `handler` class, wich takes the cache path, absolute file path and the 'caching' config as initialization parameters
    - the method `is_outdated`, wich returns True or False
    - the method `save`, wich returns nothing and saves the boolean code_at_begin and preprocessed code
    - the method `load`, wich returns a tuble with the boolean code_at_begin and the code saved by `save`
