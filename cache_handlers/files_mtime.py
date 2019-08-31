@@ -25,6 +25,12 @@ class handler:
                     size += os.path.getsize(filepath)
         return size/(1024**2)                                                                       # bytes --> Mbytes
 
+    def is_available(self):                                                                         # if cache directory has free space or the cached file is already existing or max_size < 0
+        if self.get_cachedir_size() < self.max_size or os.path.isfile(self.cache_path) or self.max_size < 0:
+            return True
+        else:
+            return False
+
     def is_outdated(self):                                                                          # return True if cache is not created or needs refresh or exceeds ttl
         if os.path.isfile(self.cache_path):                                                         # to prevent Exception if cache not existing
             cache_mtime = os.path.getmtime(self.cache_path)
@@ -46,11 +52,10 @@ class handler:
             return cache_content[0], cache_content[1]                                               # file_content, code_at_begin
 
     def save(self, file_content, code_at_begin):
-        if self.get_cachedir_size() < self.max_size or os.path.isfile(self.cache_path) or self.max_size < 0:    # if cache directory has free space or the cached file is already existing or max_size < 0
-            if not os.path.isdir(os.path.dirname(self.cache_path)):                                 # directories not already created
-                os.makedirs(os.path.dirname(self.cache_path), exist_ok=True)
-            with open(self.cache_path, "wb") as cache:
-                marshal.dump([file_content, code_at_begin], cache)
+        if not os.path.isdir(os.path.dirname(self.cache_path)):                                 # directories not already created
+            os.makedirs(os.path.dirname(self.cache_path), exist_ok=True)
+        with open(self.cache_path, "wb") as cache:
+            marshal.dump([file_content, code_at_begin], cache)
 
     def close(self):
         pass
