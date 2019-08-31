@@ -199,30 +199,35 @@ class pyhp:
 		for cookie in self.COOKIE:																	# merge COOKIE with REQUEST, prefer COOKIE
 			self.REQUEST[cookie] = self.COOKIE[cookie]
 
-		if self.config.getboolean("caching", "allow_caching") and (self.caching or self.config.getboolean("caching", "auto_caching")):
+		if self.config.getboolean("caching", "enable") and (self.caching or self.config.getboolean("caching", "auto_caching")):
 			handler_path = self.config.get("caching", "handler_path")
 			cache_path = self.config.get("caching", "cache_path")
 			sys.path.insert(0, handler_path)
-			handler = importlib.import_module(self.config.get("caching", "handler"))
+			handler = importlib.import_module(self.config.get("caching", "handler"))				# import handler
 			handler = handler.handler(cache_path, os.path.abspath(self.file_path), self.config["caching"])
 			del sys.path[0]																			# cleanup for normal import behavior
-			if handler.is_outdated():
+			if handler.is_available():																# check if caching is possible
+				if handler.is_outdated():
+					self.file_content = self.prepare_file(self.file_path)
+					self.file_content, self.code_at_begin = self.split_code(self.file_content)
+					self.section_count = -1
+					for self.section in self.file_content:
+						self.section_count += 1
+						if self.section_count == 0:
+							if self.code_at_begin:														# first section is code, exec
+								self.file_content[self.section_count][0] = compile(self.fix_indent(self.section[0], self.section_count), "<string>", "exec")
+						else:																			# all sections after the first one are like [code, html until next code or eof]
+							self.file_content[self.section_count][0] = compile(self.fix_indent(self.section[0], self.section_count), "<string>", "exec")
+					handler.save(self.file_content, self.code_at_begin)
+					self.cached = True
+				else:
+					self.file_content, self.code_at_begin = handler.load()
+					self.cached = True
+				handler.close()																		# to allow cleanup, like closing connections, etc
+			else:																					# behave like no caching
 				self.file_content = self.prepare_file(self.file_path)
 				self.file_content, self.code_at_begin = self.split_code(self.file_content)
-				self.section_count = -1
-				for self.section in self.file_content:
-					self.section_count += 1
-					if self.section_count == 0:
-						if self.code_at_begin:														# first section is code, exec
-							self.file_content[self.section_count][0] = compile(self.fix_indent(self.section[0], self.section_count), "<string>", "exec")
-					else:																			# all sections after the first one are like [code, html until next code or eof]
-						self.file_content[self.section_count][0] = compile(self.fix_indent(self.section[0], self.section_count), "<string>", "exec")
-				handler.save(self.file_content, self.code_at_begin)
-				self.cached = True
-			else:
-				self.file_content, self.code_at_begin = handler.load()
-				self.cached = True
-			handler.close()																			# to allow cleanup, like closing connections, etc
+				self.cached = False
 		else:																						# no caching
 			self.file_content = self.prepare_file(self.file_path)
 			self.file_content, self.code_at_begin = self.split_code(self.file_content)
@@ -335,19 +340,22 @@ class pyhp:
 		else:
 			self.headers.append(header)
 
-	def header_remove(self, header):																# remove header
-		header = header.split(":")
-		header = [header[0].strip(" "), header[1].strip(" ")]
-		new_header = []
-		for stored_header in self.headers:
-			if stored_header[0].lower() != header[0].lower() or stored_header[1].lower() != header[1].lower():
-				new_header.append(stored_header) 													# same headers not in list
-		self.headers = new_header
+	def header_remove(self, header=""):																# remove header
+		if header != "":																			# remove  specific header
+			header = header.lower()																	# for case-insensitivity
+			new_header = []
+			for stored_header in self.headers:
+				if stored_header[0].lower() != header:
+					new_header.append(stored_header) 												# same headers not in list
+			self.headers = new_header
+		else:																						# remove all headers
+			self.headers = []
 
 	def headers_sent(self):																			# true if headers already sent
 		return self.header_sent
 
 	def sent_header(self):
+		self.header_sent = True
 		if self.header_callback != None:
 			header_callback = self.header_callback
 			self.header_callback = None																# to prevent recursion if output occurs
@@ -359,9 +367,8 @@ class pyhp:
 				mistake = False
 			self.print(str(header[0]) + ": " + str(header[1])) 										# sent header
 		if mistake:
-			self.print("Content-Type: text/html")													# sent fallback Content-Type header
+			self.print("Content-Type: " + self.config.get("request", "default_mimetype"))			# sent fallback Content-Type header
 		self.print()																				# end of headers
-		self.header_sent = True
 
 	def header_register_callback(self, callback):
 		if self.header_sent:
