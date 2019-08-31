@@ -40,7 +40,8 @@ The script is called either by the configuration of the web server or a shebang 
    - are responsible for saving/loading/renewing caches
    - are python scripts with the following contents:
    - the `handler` class, wich takes the cache path, absolute file path and the 'caching' config as initialization parameters
-   - the method `is_outdated`, wich returns True or False
+   - the method `is_available`, wich returns True or False depending on the ability of the handler to cache
+   - the method `is_outdated`, wich returns True or False depending on the the timeliness of the cache entry
    - the method `save`, wich returns nothing and saves the boolean code_at_begin and preprocessed code
    - the method `load`, wich returns a tuble with the boolean code_at_begin and the code saved by `save`
    - the method `close`, wich does cleanup tasks
