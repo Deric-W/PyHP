@@ -154,50 +154,7 @@ class pyhp:
 			"ORIG_PATH_INFO": os.getenv("PATH_INFO", default="")
 		}
 
-		data = cgi.FieldStorage()																	# build $_REQUEST array from PHP
-		self.REQUEST = defaultdict(lambda: "")
-		for key in data:
-			self.REQUEST[key] = data.getvalue(key)													# to contain lists instead of multiple FieldStorages if key has multiple values
 
-		data = urllib.parse.parse_qsl(self.SERVER["QUERY_STRING"], keep_blank_values=True)
-		self.GET = defaultdict(lambda: "")
-		for pair in data:																			# build $_GET
-			if not pair[0] in self.REQUEST:															# if value is blank
-				self.REQUEST[pair[0]] = pair[1]
-			self.GET[pair[0]] = self.REQUEST[pair[0]]												# copy value from REQUEST
-
-		self.POST = defaultdict(lambda: "")
-		for key in self.REQUEST:																	# build $_POST
-			if key not in self.GET:																	# REQUEST - GET = POST
-				self.POST[key] = self.REQUEST[key]
-
-		data = os.getenv("HTTP_COOKIE", default="")
-		self.COOKIE = defaultdict(lambda: "")
-		if data != "":																				# to avoid non existent blank cookies
-			for cookie in data.split(";"):															# build $_COOKIE
-				cookie = cookie.split("=")
-				if len(cookie) > 2:																	# multiple = in cookie
-					cookie[1] = "=".join(cookie[1:])
-				if len(cookie) == 1:																# blank cookie
-					cookie.append("")
-				cookie[0] = cookie[0].strip(" ")
-				try:																				# to handle blank values
-					if cookie[1][0] == " ":															# remove only potential space after =
-						cookie[1] = cookie[1][1:]
-				except IndexError:
-					pass
-				cookie[0] = urllib.parse.unquote_plus(cookie[0])
-				cookie[1] = urllib.parse.unquote_plus(cookie[1])
-				if cookie[0] in self.COOKIE:
-					if type(self.COOKIE[cookie[0]]) == str:
-						self.COOKIE[cookie[0]] = [self.COOKIE[cookie[0]], cookie[1]]				# make new list
-					else:
-						self.COOKIE[cookie[0]].append(cookie[1])									# append to existing list
-				else:
-					self.COOKIE[cookie[0]] = cookie[1]												# make new string
-
-		for cookie in self.COOKIE:																	# merge COOKIE with REQUEST, prefer COOKIE
-			self.REQUEST[cookie] = self.COOKIE[cookie]
 
 		if self.config.getboolean("caching", "enable") and (self.caching or self.config.getboolean("caching", "auto_caching")):
 			handler_path = self.config.get("caching", "handler_path")
@@ -223,11 +180,11 @@ class pyhp:
 				else:
 					self.file_content, self.code_at_begin = handler.load()
 					self.cached = True
-				handler.close()																		# to allow cleanup, like closing connections, etc
 			else:																					# behave like no caching
 				self.file_content = self.prepare_file(self.file_path)
 				self.file_content, self.code_at_begin = self.split_code(self.file_content)
 				self.cached = False
+			handler.close()																			# perform cleanup tasks
 		else:																						# no caching
 			self.file_content = self.prepare_file(self.file_path)
 			self.file_content, self.code_at_begin = self.split_code(self.file_content)
@@ -376,6 +333,25 @@ class pyhp:
 		else:
 			self.header_callback = callback
 			return True
+
+	def parse_post(self):																			# parse POST without GET
+		pass
+
+	def parse_cookie(self, cookie_string, keep_blank_values=True):
+		cookie_list = []
+		for cookie in cookie_string.split("; "):
+			cookie = cookie.split("=", maxsplit=1)													# to allow multiple "=" in value
+			if len(cookie) == 1:																	# blank cookie
+				if keep_blank_values:
+					cookie.append("")
+				else:
+					continue																		# skip cookie
+			if cookie[1] == "" and not keep_blank_values:											# skip cookie
+				continue
+			cookie[0] = urllib.parse.unquote_plus(cookie[0])										# unquote name and value
+			cookie[1] = urllib.parse.unquote_plus(cookie[1])
+			cookie_list.append((cookie[0], cookie[1]))
+		return cookie_list
 
 	def setcookie(self, name, value="", expires=0, path="", domain="", secure=False, httponly=False):
 		name = urllib.parse.quote_plus(name)
