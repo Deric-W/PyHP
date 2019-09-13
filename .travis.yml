@@ -4,4 +4,4 @@ python:
   - "3.6"
   - "3.7"
 script:
-  - examples/run_tests.py
+  - pyhp.py examples/fib.pyhp
