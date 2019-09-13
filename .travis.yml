@@ -5,7 +5,7 @@ python:
   - "3.7"
 script:
   - mv pyhp.conf /etc/pyhp.conf
-  - mkdir /lib/pyhp/cache_handlers
+  - mkdir -p /lib/pyhp/cache_handlers
   - mv cache_handlers/* /lib/pyhp/cache_handlers
   - /usr/bin/python3 pyhp.py examples/Test1.pyhp
   - /usr/bin/python3 pyhp.py examples/Test2.pyhp
