@@ -3,10 +3,12 @@ python:
   - "3.5"
   - "3.6"
   - "3.7"
+sudo: required
+install:
+  - sudo mv pyhp.conf /etc/pyhp.conf
+  - sudo mkdir -p /lib/pyhp/cache_handlers
+  - sudo mv cache_handlers/* /lib/pyhp/cache_handlers
 script:
-  - mv pyhp.conf /etc/pyhp.conf
-  - mkdir -p /lib/pyhp/cache_handlers
-  - mv cache_handlers/* /lib/pyhp/cache_handlers
   - /usr/bin/python3 pyhp.py examples/Test1.pyhp
   - /usr/bin/python3 pyhp.py examples/Test2.pyhp
   - /usr/bin/python3 pyhp.py examples/Test3.pyhp
