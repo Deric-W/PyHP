@@ -4,4 +4,8 @@ python:
   - "3.6"
   - "3.7"
 script:
-  - pyhp.py examples/fib.pyhp
+  - /usr/bin/python3 pyhp.py examples/Test1.pyhp
+  - /usr/bin/python3 pyhp.py examples/Test2.pyhp
+  - /usr/bin/python3 pyhp.py examples/Test3.pyhp
+  - /usr/bin/python3 pyhp.py examples/Test4.pyhp
+  - /usr/bin/python3 pyhp.py examples/fib.pyhp
