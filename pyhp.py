@@ -56,11 +56,11 @@ class pyhp:
             raise ValueError("failed to read config file")
 
         self.print = print                                                                        # backup for sending headers
-        self.response_code = [200, "OK"]
-        self.headers = []
-        self.header_sent = False
-        self.header_callback = None
-        self.shutdown_functions = []
+        self.__response_code = [200, "OK"]
+        self.__headers = []
+        self.__header_sent = False
+        self.__header_callback = None
+        self.__shutdown_functions = []
         atexit.register(self.__exec_shutdown_functions)                                           # run shutdown functions at exit PHP style
 
         self.response_messages = {
@@ -159,12 +159,12 @@ class pyhp:
         else:
             base_dict = {}
 
-        self.GET = self.__dict2dict(self.parse_get(keep_blank_values), fallback=fallback)            # create GET, POST, COOKIE
-        self.COOKIE = self.__dict2dict(self.parse_cookie(keep_blank_values), fallback=fallback)
+        self.GET = self.__dict2dict(self.__parse_get(keep_blank_values), fallback=fallback)          # create GET, POST, COOKIE
+        self.COOKIE = self.__dict2dict(self.__parse_cookie(keep_blank_values), fallback=fallback)
         if self.config.getboolean("request", "enable_post_data_reading"):                            # dont consume stdin
             self.POST = base_dict
         else:
-            self.POST = self.__dict2dict(self.parse_post(keep_blank_values), fallback=fallback)
+            self.POST = self.__dict2dict(self.__parse_post(keep_blank_values), fallback=fallback)
 
         request_order = self.config.get("request", "request_order").split(" ")
         self.REQUEST = base_dict
@@ -265,8 +265,36 @@ class pyhp:
                 output[key] = ""
         return output
 
+    def __parse_post(self, keep_blank_values=True):                                                    # parse POST without GET
+        environ = os.environ.copy()                                                                  # to not unset env vars
+        environ["QUERY_STRING"] = ""                                                                 # to prevent parsing GET
+        return cgi.parse(environ=environ, keep_blank_values=keep_blank_values)
+
+    def __parse_get(self, keep_blank_values=True):
+        return urllib.parse.parse_qs(self.SERVER["QUERY_STRING"], keep_blank_values=keep_blank_values)
+
+    def __parse_cookie(self, keep_blank_values=True):
+        cookie_string = os.getenv("HTTP_COOKIE", default="")
+        cookie_dict = {}
+        for cookie in cookie_string.split("; "):
+            cookie = cookie.split("=", maxsplit=1)                                                   # to allow multiple "=" in value
+            if len(cookie) == 1:                                                                     # blank cookie
+                if keep_blank_values:
+                    cookie.append("")
+                else:
+                    continue                                                                         # skip cookie
+            if cookie[1] == "" and not keep_blank_values:                                            # skip cookie
+                continue
+            cookie[0] = urllib.parse.unquote_plus(cookie[0])                                         # unquote name and value
+            cookie[1] = urllib.parse.unquote_plus(cookie[1])
+            if cookie[0] in cookie_dict:
+                cookie_dict[cookie[0]].append(cookie[1])                                             # key already existing
+            else:
+                cookie_dict[cookie[0]] = [cookie[1]]                                                 # make new key
+        return cookie_dict
+
     def __exec_shutdown_functions(self):
-        for func in self.shutdown_functions:                                                         # first in first executed
+        for func in self.__shutdown_functions:                                                       # first in first executed
             func, args, kwargs = func[0], func[1], func[2]
             func(*args, **kwargs)
 
@@ -312,14 +340,14 @@ class pyhp:
         return fixed_code
 
     def http_response_code(self, response_code=None):                                                # set response code
-        old_response_code = self.response_code[0]
+        old_response_code = self.__response_code[0]
         if response_code != None:
-            self.response_code = [int(response_code), self.response_messages[response_code]]
+            self.__response_code = [int(response_code), self.response_messages[response_code]]
         return old_response_code
 
     def headers_list(self):                                                                          # list current header
         headers = []
-        for header in self.headers:
+        for header in self.__headers:
             headers.append(str(header[0]) + ": " + str(header[1]))
         return headers
 
@@ -331,37 +359,37 @@ class pyhp:
         header = [header[0].strip(" "), header[1].strip(" ")]
         if replace:
             new_header = []
-            for stored_header in self.headers:
+            for stored_header in self.__headers:
                 if stored_header[0].lower() != header[0].lower():
                     new_header.append(stored_header)                                                 # same header not in list
             new_header.append(header)
-            self.headers = new_header
+            self.__headers = new_header
         else:
-            self.headers.append(header)
+            self.__headers.append(header)
 
     def header_remove(self, header=""):                                                              # remove header
         if header != "":                                                                             # remove  specific header
             header = header.lower()                                                                  # for case-insensitivity
             new_header = []
-            for stored_header in self.headers:
+            for stored_header in self.__headers:
                 if stored_header[0].lower() != header:
                     new_header.append(stored_header)                                                 # same headers not in list
-            self.headers = new_header
+            self.__headers = new_header
         else:                                                                                        # remove all headers
-            self.headers = []
+            self.__headers = []
 
     def headers_sent(self):                                                                          # true if headers already sent
-        return self.header_sent
+        return self.__header_sent
 
     def sent_header(self):
-        self.header_sent = True
-        if self.header_callback != None:
-            header_callback = self.header_callback
-            self.header_callback = None                                                              # to prevent recursion if output occurs
+        self.__header_sent = True
+        if self.__header_callback != None:
+            header_callback = self.__header_callback
+            self.__header_callback = None                                                            # to prevent recursion if output occurs
             header_callback()                                                                        # execute callback if set
-        self.print("Status: " + str(self.response_code[0]) + " " + self.response_code[1])            # print status code
+        self.print("Status: " + str(self.__response_code[0]) + " " + self.__response_code[1])        # print status code
         mistake = True                                                                               # no content-type header
-        for header in self.headers:
+        for header in self.__headers:
             if header[0].lower() == "content-type":                                                  # check for content-type
                 mistake = False
             self.print(str(header[0]) + ": " + str(header[1]))                                       # sent header
@@ -370,39 +398,11 @@ class pyhp:
         self.print()                                                                                 # end of headers
 
     def header_register_callback(self, callback):
-        if self.header_sent:
+        if self.__header_sent:
             return False                                                                             # headers already send
         else:
-            self.header_callback = callback
+            self.__header_callback = callback
             return True
-
-    def parse_post(self, keep_blank_values=True):                                                    # parse POST without GET
-        environ = os.environ.copy()                                                                  # to not unset env vars
-        environ["QUERY_STRING"] = ""                                                                 # to prevent parsing GET
-        return cgi.parse(environ=environ, keep_blank_values=keep_blank_values)
-
-    def parse_get(self, keep_blank_values=True):
-        return urllib.parse.parse_qs(self.SERVER["QUERY_STRING"], keep_blank_values=keep_blank_values)
-
-    def parse_cookie(self, keep_blank_values=True):
-        cookie_string = os.getenv("HTTP_COOKIE", default="")
-        cookie_dict = {}
-        for cookie in cookie_string.split("; "):
-            cookie = cookie.split("=", maxsplit=1)                                                   # to allow multiple "=" in value
-            if len(cookie) == 1:                                                                     # blank cookie
-                if keep_blank_values:
-                    cookie.append("")
-                else:
-                    continue                                                                         # skip cookie
-            if cookie[1] == "" and not keep_blank_values:                                            # skip cookie
-                continue
-            cookie[0] = urllib.parse.unquote_plus(cookie[0])                                         # unquote name and value
-            cookie[1] = urllib.parse.unquote_plus(cookie[1])
-            if cookie[0] in cookie_dict:
-                cookie_dict[cookie[0]].append(cookie[1])                                             # key already existing
-            else:
-                cookie_dict[cookie[0]] = [cookie[1]]                                                 # make new key
-        return cookie_dict
 
     def setcookie(self, name, value="", expires=0, path="", domain="", secure=False, httponly=False):
         name = urllib.parse.quote_plus(name)
@@ -410,7 +410,7 @@ class pyhp:
         return self.setrawcookie(name, value, expires, path, domain, secure, httponly)
 
     def setrawcookie(self, name, value="", expires=0, path="", domain="", secure=False, httponly=False):
-        if self.header_sent:
+        if self.__header_sent:
             return False
         else:
             if type(expires) == dict:                                                                # options array
@@ -440,14 +440,14 @@ class pyhp:
             return True
 
     def register_shutdown_function(self, callback, *args, **kwargs):
-        self.shutdown_functions.append([callback, args, kwargs])
+        self.__shutdown_functions.append([callback, args, kwargs])
 
 
 pyhp = pyhp()
 
 
 def print(*args, **kwargs):                                                                          # wrap print to auto sent headers
-    if not pyhp.header_sent:
+    if not pyhp.headers_sent():
         pyhp.sent_header()
     pyhp.print(*args, **kwargs)
 
