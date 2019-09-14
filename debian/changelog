@@ -1,3 +1,16 @@
+pyhp (1.3-1) stable; urgency=low
+
+  * fourth release
+  * add max_size and ttl caching options
+  * add config parameter for cache handlers
+  * add .is_available for cache handlers
+  * fix header_remove
+  * fix header_register_callback
+  * add more customizable Request handling
+  * add --config argument
+
+ -- Eric Wolf <robo-eric@gmx.de>  Sat, 14 Sep 2019 19:39:00 +0100
+
 pyhp (1.2-1) stable; urgency=low
 
   * third release
@@ -12,7 +25,6 @@ pyhp (1.1-1) stable; urgency=low
   * add register_shutdown_function
   * add header_register_callback
   * add config
-  * reworked caching to use handlers (old code as files_mtime handler)
   * reworked caching to use handlers (old code as files_mtime handler)
   * reworked prepare file
   * now using argparse
