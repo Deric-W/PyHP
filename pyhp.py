@@ -159,8 +159,8 @@ class pyhp:
 		else:
 			base_dict = {}
 
-		self.GET = self.list2dict(self.parse_get(keep_blank_values), fallback=fallback)				# create GET, POST, COOKIE
-		self.COOKIE = self.list2dict(self.parse_cookie(keep_blank_values), fallback=fallback)
+		self.GET = self.dict2dict(self.parse_get(keep_blank_values), fallback=fallback)				# create GET, POST, COOKIE
+		self.COOKIE = self.dict2dict(self.parse_cookie(keep_blank_values), fallback=fallback)
 		if self.config.getboolean("request", "enable_post_data_reading"):							# dont consume stdin
 			self.POST = base_dict
 		else:
@@ -250,23 +250,7 @@ class pyhp:
 			text = text[:-1]
 		return text
 
-	def list2dict(self, data, fallback=None):														# convert list of params (GET, COOKIE) to dict
-		if fallback == None:																		# no fallback
-			output = {}
-		else:
-			output = defaultdict(lambda: fallback)
-		for pair in data:
-			key, value = pair[0], pair[1]
-			if key in output:																		# value already in output
-				if type(output[key]) != list:														# list not yet created
-					output[key] = [output[key], value]												# make list with old and new value
-				else:																				# list already created
-					output[key].append(value)
-			else:
-				output[key] = value
-		return output
-
-	def dict2dict(self, data, fallback=None):														# convert dict (POST) to dict
+	def dict2dict(self, data, fallback=None):														# convert dict (POST, GET, COOKIE) to dict
 		if fallback == None:
 			output = {}
 		else:
@@ -393,11 +377,11 @@ class pyhp:
 		return cgi.parse(environ=environ, keep_blank_values=keep_blank_values)
 
 	def parse_get(self, keep_blank_values=True):
-		return urllib.parse.parse_qsl(self.SERVER["QUERY_STRING"], keep_blank_values=keep_blank_values)
+		return urllib.parse.parse_qs(self.SERVER["QUERY_STRING"], keep_blank_values=keep_blank_values)
 
 	def parse_cookie(self, keep_blank_values=True):
 		cookie_string = os.getenv("HTTP_COOKIE", default="")
-		cookie_list = []
+		cookie_dict = {}
 		for cookie in cookie_string.split("; "):
 			cookie = cookie.split("=", maxsplit=1)													# to allow multiple "=" in value
 			if len(cookie) == 1:																	# blank cookie
@@ -409,8 +393,11 @@ class pyhp:
 				continue
 			cookie[0] = urllib.parse.unquote_plus(cookie[0])										# unquote name and value
 			cookie[1] = urllib.parse.unquote_plus(cookie[1])
-			cookie_list.append((cookie[0], cookie[1]))
-		return cookie_list
+			if cookie[0] in cookie_dict:
+				cookie_dict[cookie[0]].append(cookie[1])											# key already existing
+			else:
+				cookie_dict[cookie[0]] = [cookie[1]]												# make new key
+		return cookie_dict
 
 	def setcookie(self, name, value="", expires=0, path="", domain="", secure=False, httponly=False):
 		name = urllib.parse.quote_plus(name)
