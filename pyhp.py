@@ -61,7 +61,7 @@ class pyhp:
         self.header_sent = False
         self.header_callback = None
         self.shutdown_functions = []
-        atexit.register(self.exec_shutdown_functions)                                             # run shutdown functions at exit PHP style
+        atexit.register(self.__exec_shutdown_functions)                                           # run shutdown functions at exit PHP style
 
         self.response_messages = {
             100: "Continue",
@@ -159,12 +159,12 @@ class pyhp:
         else:
             base_dict = {}
 
-        self.GET = self.dict2dict(self.parse_get(keep_blank_values), fallback=fallback)              # create GET, POST, COOKIE
-        self.COOKIE = self.dict2dict(self.parse_cookie(keep_blank_values), fallback=fallback)
+        self.GET = self.__dict2dict(self.parse_get(keep_blank_values), fallback=fallback)            # create GET, POST, COOKIE
+        self.COOKIE = self.__dict2dict(self.parse_cookie(keep_blank_values), fallback=fallback)
         if self.config.getboolean("request", "enable_post_data_reading"):                            # dont consume stdin
             self.POST = base_dict
         else:
-            self.POST = self.dict2dict(self.parse_post(keep_blank_values), fallback=fallback)
+            self.POST = self.__dict2dict(self.parse_post(keep_blank_values), fallback=fallback)
 
         request_order = self.config.get("request", "request_order").split(" ")
         self.REQUEST = base_dict
@@ -187,8 +187,8 @@ class pyhp:
             del sys.path[0]                                                                          # cleanup for normal import behavior
             if handler.is_available():                                                               # check if caching is possible
                 if handler.is_outdated():
-                    self.file_content = self.prepare_file(self.file_path)
-                    self.file_content, self.code_at_begin = self.split_code(self.file_content)
+                    self.file_content = self.__prepare_file(self.file_path)
+                    self.file_content, self.code_at_begin = self.__split_code(self.file_content)
                     self.section_count = -1
                     for self.section in self.file_content:
                         self.section_count += 1
@@ -203,16 +203,16 @@ class pyhp:
                     self.file_content, self.code_at_begin = handler.load()
                     self.cached = True
             else:                                                                                    # behave like no caching
-                self.file_content = self.prepare_file(self.file_path)
-                self.file_content, self.code_at_begin = self.split_code(self.file_content)
+                self.file_content = self.__prepare_file(self.file_path)
+                self.file_content, self.__code_at_begin = self.__split_code(self.file_content)
                 self.cached = False
             handler.close()                                                                          # perform cleanup tasks
         else:                                                                                        # no caching
-            self.file_content = self.prepare_file(self.file_path)
-            self.file_content, self.code_at_begin = self.split_code(self.file_content)
+            self.file_content = self.__prepare_file(self.file_path)
+            self.file_content, self.code_at_begin = self.__split_code(self.file_content)
             self.cached = False
 
-    def prepare_file(self, file_path):                                                               # read file and handle shebang
+    def __prepare_file(self, file_path):                                                               # read file and handle shebang
         if file_path != "":
             with open(file_path, "r", encoding='utf-8') as file:
                 file_content = file.read().split("\n")
@@ -225,7 +225,7 @@ class pyhp:
             file_content = "\n".join(file_content)
         return file_content
 
-    def split_code(self, code):                                                                      # split file_content in sections like [code, html until next code or eof] with first section containing the html from the beginning if existing
+    def __split_code(self, code):                                                                      # split file_content in sections like [code, html until next code or eof] with first section containing the html from the beginning if existing
         opening_tag = self.config.get("parser", "opening_tag").encode("utf8").decode("unicode_escape")    # process escape sequences like \n and \t
         closing_tag = self.config.get("parser", "closing_tag").encode("utf8").decode("unicode_escape")
         code = re.split(opening_tag, code)
@@ -243,14 +243,14 @@ class pyhp:
             index += 1
         return code, code_at_begin
 
-    def mstrip(self, text, chars):                                                                   # removes all chars in chars from start and end of text
+    def __mstrip(self, text, chars):                                                                 # removes all chars in chars from start and end of text
         while len(text) > 0 and text[0] in chars:
             text = text[1:]
         while len(text) > 0 and text[-1] in chars:
             text = text[:-1]
         return text
 
-    def dict2dict(self, data, fallback=None):                                                        # convert dict (POST, GET, COOKIE) to dict
+    def __dict2dict(self, data, fallback=None):                                                      # convert dict (POST, GET, COOKIE) to dict
         if fallback == None:
             output = {}
         else:
@@ -265,12 +265,12 @@ class pyhp:
                 output[key] = ""
         return output
 
-    def exec_shutdown_functions(self):
+    def __exec_shutdown_functions(self):
         for func in self.shutdown_functions:                                                         # first in first executed
             func, args, kwargs = func[0], func[1], func[2]
             func(*args, **kwargs)
 
-    def get_indent(self, line):                                                                      # return string and index of indent
+    def __get_indent(self, line):                                                                    # return string and index of indent
         index = 0
         string = ""
         for char in line:
@@ -281,7 +281,7 @@ class pyhp:
                 break
         return [index, string]
 
-    def is_comment(self, line):                                                                      # return True if line is comment (first char == #)
+    def __is_comment(self, line):                                                                    # return True if line is comment (first char == #)
         comment = False
         for char in line:
             if char in [" ", "\t"]:
@@ -294,16 +294,16 @@ class pyhp:
                 break
         return comment
 
-    def fix_indent(self, code, section):
+    def fix_indent(self, code, section):                                                          # to support better optics
         fixed_code = ""
         linecount = 0
         first_line = True
         for line in code.split("\n"):
             linecount += 1
             if line.replace(" ", "").replace("\t", "") != "":                                        # not empthy
-                if not self.is_comment(line):
+                if not self.__is_comment(line):
                     if first_line:
-                        indent = self.get_indent(line)
+                        indent = self.__get_indent(line)
                         first_line = False
                     if len(line) > indent[0] and line[:indent[0]] == indent[1]:                      # line is big enough for indent and indent is the same as first line
                         fixed_code += line[indent[0]:] + "\n"
