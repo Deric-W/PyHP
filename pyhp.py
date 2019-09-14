@@ -38,14 +38,12 @@ import importlib
 from collections import defaultdict
 
 
-config = "/etc/pyhp.conf"
-
-
 class pyhp:
 	def __init__(self):
 		parser = argparse.ArgumentParser(description="Interpreter for .pyhp Scripts (https://github.com/Deric-W/PyHP-Interpreter)")
 		parser.add_argument("-c", "--caching", help="enable caching (requires file)", action="store_true")
 		parser.add_argument("file", type=str, help="file to be interpreted (omit for reading from stdin)", nargs="?", default="")
+		parser.add_argument("--config", type=str, help="path to custom config file", nargs="?", const="/etc/pyhp.conf", default="/etc/pyhp.conf")
 		args = parser.parse_args()
 		self.file_path = args.file
 		if args.file != "":																		# enable caching flag if file is not stdin
@@ -54,7 +52,7 @@ class pyhp:
 			self.caching = False
 
 		self.config = configparser.ConfigParser(inline_comment_prefixes="#")
-		if config not in self.config.read(config):												# failed to read file
+		if args.config not in self.config.read(args.config):											# failed to read file
 			raise ValueError("failed to read config file")
 
 		self.print = print																		# backup for sending headers
