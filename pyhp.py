@@ -154,7 +154,31 @@ class pyhp:
 			"ORIG_PATH_INFO": os.getenv("PATH_INFO", default="")
 		}
 
+		keep_blank_values = self.config.getboolean("request", "keep_blank_values")
+		fallback = self.config.get("request", "fallback_value", fallback=None)
+		if fallback != None:
+			base_dict = defaultdict(lambda: fallback)
+		else:
+			base_dict = {}
 
+		self.GET = self.list2dict(self.parse_get(keep_blank_values), fallback=fallback)				# create GET, POST, COOKIE
+		self.COOKIE = self.list2dict(self.parse_cookie(keep_blank_values), fallback=fallback)
+		if self.config.getboolean("request", "enable_post_data_reading"):							# dont consume stdin
+			self.POST = base_dict
+		else:
+			self.POST = self.dict2dict(self.parse_post(keep_blank_values), fallback=fallback)
+
+		request_order = self.config.get("request", "request_order").split(" ")
+		self.REQUEST = base_dict
+		for request in request_order:																# fill REQUEST
+			if request == "GET":
+				self.REQUEST.update(self.GET)
+			elif request == "POST":
+				self.REQUEST.update(self.POST)
+			elif request == "COOKIE":
+				self.REQUEST.update(self.COOKIE)
+			else:																					# ignore unknown methods
+				pass
 
 		if self.config.getboolean("caching", "enable") and (self.caching or self.config.getboolean("caching", "auto_caching")):
 			handler_path = self.config.get("caching", "handler_path")
@@ -227,6 +251,37 @@ class pyhp:
 		while len(text) > 0 and text[-1] in chars:
 			text = text[:-1]
 		return text
+
+	def list2dict(self, data, fallback=None):														# convert list of params (GET, COOKIE) to dict
+		if fallback == None:																		# no fallback
+			output = {}
+		else:
+			output = defaultdict(lambda: fallback)
+		for pair in data:
+			key, value = pair[0], pair[1]
+			if key in output:																		# value already in output
+				if type(output[key]) != list:														# list not yet created
+					output[key] = [output[key], value]												# make list with old and new value
+				else:																				# list already created
+					output[key].append(value)
+			else:
+				output[key] = value
+		return output
+
+	def dict2dict(self, data, fallback=None):														# convert dict (POST) to dict
+		if fallback == None:
+			output = {}
+		else:
+			output = defaultdict(lambda: fallback)
+		for key in data:
+			value = data[key]
+			if len(value) > 1:																		# cant be single value
+				output[key] = value
+			elif len(value) == 1:																	# is single value
+				output[key] = value[0]
+			else:																					# empthy list
+				output[key] = ""
+		return output
 
 	def get_indent(self, line):																		# return string and index of indent
 		index = 0
@@ -334,10 +389,16 @@ class pyhp:
 			self.header_callback = callback
 			return True
 
-	def parse_post(self):																			# parse POST without GET
-		pass
+	def parse_post(self, keep_blank_values=True):													# parse POST without GET
+		environ = os.environ.copy()																	# to not unset env vars
+		environ["QUERY_STRING"] = ""																# to prevent parsing GET
+		return cgi.parse(environ=environ, keep_blank_values=keep_blank_values)
 
-	def parse_cookie(self, cookie_string, keep_blank_values=True):
+	def parse_get(self, keep_blank_values=True):
+		return urllib.parse.parse_qsl(self.SERVER["QUERY_STRING"], keep_blank_values=keep_blank_values)
+
+	def parse_cookie(self, keep_blank_values=True):
+		cookie_string = os.getenv("HTTP_COOKIE", default="")
 		cookie_list = []
 		for cookie in cookie_string.split("; "):
 			cookie = cookie.split("=", maxsplit=1)													# to allow multiple "=" in value
