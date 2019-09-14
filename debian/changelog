@@ -8,6 +8,7 @@ pyhp (1.3-1) stable; urgency=low
   * fix header_register_callback
   * add more customizable Request handling
   * add --config argument
+  * rework register_shutdown_function to use atexit
 
  -- Eric Wolf <robo-eric@gmx.de>  Sat, 14 Sep 2019 19:39:00 +0100
 
