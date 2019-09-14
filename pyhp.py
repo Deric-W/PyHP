@@ -35,6 +35,7 @@ import re
 import cgi
 import urllib.parse
 import importlib
+import atexit
 from collections import defaultdict
 
 
@@ -52,16 +53,16 @@ class pyhp:
 			self.caching = False
 
 		self.config = configparser.ConfigParser(inline_comment_prefixes="#")
-		if args.config not in self.config.read(args.config):											# failed to read file
+		if args.config not in self.config.read(args.config):									# failed to read file
 			raise ValueError("failed to read config file")
 
 		self.print = print																		# backup for sending headers
-		self.exit = exit																		# backup for exit after shutdown_functions
 		self.response_code = [200, "OK"]
 		self.headers = []
 		self.header_sent = False
 		self.header_callback = None
 		self.shutdown_functions = []
+		atexit.register(self.exec_shutdown_functions)											# run shutdown functions at exit PHP style
 
 		self.response_messages = {
 			100: "Continue",
@@ -265,6 +266,11 @@ class pyhp:
 				output[key] = ""
 		return output
 
+	def exec_shutdown_functions(self):
+		for func in self.shutdown_functions:
+			func, args, kwargs = func[0], func[1], func[2]
+			func(*args, **kwargs)
+
 	def get_indent(self, line):																		# return string and index of indent
 		index = 0
 		string = ""
@@ -445,13 +451,6 @@ def print(*args, **kwargs):																			# wrap print to auto sent headers
 	if not pyhp.header_sent:
 		pyhp.sent_header()
 	pyhp.print(*args, **kwargs)
-
-def exit(*args, **kwargs):																			# wrapper to exit shutdown functions
-	shutdown_functions = pyhp.shutdown_functions
-	pyhp.shutdown_functions = []																	# to prevent recursion if exit is called
-	for func in shutdown_functions:
-		func[0](*func[1], **func[2])
-	pyhp.exit(*args, **kwargs)
 
 
 pyhp.section_count = -1
