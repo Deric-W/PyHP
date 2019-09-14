@@ -53,7 +53,7 @@ class handler:
 
     def save(self, file_content, code_at_begin):
         if not os.path.isdir(os.path.dirname(self.cache_path)):                                 # directories not already created
-            os.makedirs(os.path.dirname(self.cache_path), exist_ok=True)
+            makedirs(os.path.dirname(self.cache_path), exist_ok=True)
         with open(self.cache_path, "wb") as cache:
             marshal.dump([file_content, code_at_begin], cache)
 
