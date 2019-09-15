@@ -8,9 +8,21 @@ install:
   - sudo mv pyhp.conf /etc/pyhp.conf
   - sudo mkdir -p /lib/pyhp/cache_handlers
   - sudo mv cache_handlers/* /lib/pyhp/cache_handlers
+  - chmod +x pyhp.py
+  - sudo mv pyhp.py /usr/bin/pyhp
 script:
-  - /usr/bin/python3 pyhp.py examples/Test1.pyhp
-  - /usr/bin/python3 pyhp.py examples/Test2.pyhp
-  - /usr/bin/python3 pyhp.py examples/Test3.pyhp
-  - /usr/bin/python3 pyhp.py examples/Test4.pyhp
-  - /usr/bin/python3 pyhp.py examples/fib.pyhp
+  - pyhp parser_test0.pyhp | tee output.txt
+  - diff -q output.txt parser_test0.target
+  - pyhp parser_test1.pyhp | tee output.txt
+  - diff -q output.txt parser_test1.target
+  - pyhp http_response_code_test0.pyhp | tee output.txt
+  - diff -q output.txt http_response_code_test0.target
+  - pyhp header_test0.pyhp | tee output.txt
+  - diff -q output.txt header_test0.target
+  - pyhp headers_sent_test0.pyhp | tee output.txt
+  - diff -q output.txt headers_sent_test0.target
+  - pyhp header_remove_test0.pyhp | tee output.txt
+  - diff -q output.txt header_remove_test0.target
+  - pyhp header_register_callback_test0.pyhp | tee output.txt
+  - diff -q output.txt header_register_callback_test0.target
+  - pyhp examples/fib.pyhp
