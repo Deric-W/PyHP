@@ -26,4 +26,4 @@ script:
   - diff -q output.txt header_remove_test0.target
   - pyhp header_register_callback_test0.pyhp | tee output.txt
   - diff -q output.txt header_register_callback_test0.target
-  - pyhp examples/fib.pyhp
+  - pyhp fib.pyhp
