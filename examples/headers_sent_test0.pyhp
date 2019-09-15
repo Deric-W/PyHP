@@ -1,0 +1,4 @@
+#!/usr/bin/pyhp
+<?pyhp print(pyhp.headers_sent()) ?>
+Test
+<?pyhp print(pyhp.headers_sent()) ?>

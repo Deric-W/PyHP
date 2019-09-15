@@ -1,0 +1,9 @@
+<?pyhp print("Start") ?>
+<?pyhp
+# comment at border
+	def indent_test(x):
+		print(x)
+	indent_test("Mid")
+    # comment
+?>
+End

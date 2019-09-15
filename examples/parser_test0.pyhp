@@ -1,0 +1,8 @@
+#!/usr/bin/pyhp
+Before
+<?pyhp print("Code1") ?>
+Mid
+<?pyhp
+print("Code2")
+?>
+End

@@ -1,0 +1,9 @@
+#!/usr/bin/pyhp
+<?pyhp
+	def mod_header():
+		pyhp.header("Test:0")
+	
+	pyhp.header_register_callback(lambda: print("Test8")) 
+	pyhp.header_register_callback(mod_header)
+?>
+Test1

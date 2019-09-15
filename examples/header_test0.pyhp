@@ -1,0 +1,8 @@
+#!/usr/bin/pyhp
+<?pyhp
+	pyhp.header("Test0:1")
+	pyhp.header("Test1:2")
+	pyhp.header("test2:3", response_code=404)
+	pyhp.header("Test1:8", replace=True)
+?>
+Header: Test0:1, Test1:8, Test2:3, Status:404 Not Found

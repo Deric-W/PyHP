@@ -1,0 +1,8 @@
+#!/usr/bin/pyhp
+<?pyhp
+	pyhp.header("Test0:0")
+	pyhp.header("test1:1")
+	pyhp.header_remove("test")
+	pyhp.header_remove("Test1")
+?>
+Header: Test0:0
