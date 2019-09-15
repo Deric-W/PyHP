@@ -10,6 +10,7 @@ install:
   - sudo mv cache_handlers/* /lib/pyhp/cache_handlers
   - chmod +x pyhp.py
   - sudo mv pyhp.py /usr/bin/pyhp
+  - cd examples
 script:
   - pyhp parser_test0.pyhp | tee output.txt
   - diff -q output.txt parser_test0.target
