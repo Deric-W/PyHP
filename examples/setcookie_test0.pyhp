@@ -1,0 +1,11 @@
+#!/usr/bin/pyhp
+<?pyhp
+	import time
+	pyhp.setcookie("Test0")
+	pyhp.setcookie("Test1", "Hello Wörld!")
+	pyhp.setcookie("TestÖ", "Hello World!")
+	pyhp.setcookie("Test2", "test2", 999 - int(time.time()))
+	pyhp.setcookie("Test3", "test3", secure=True, httponly=True)
+	pyhp.setcookie("Test4", "test4", {"secure":True, "httponly":True, "samesite":"Lax"})
+?>
+Test

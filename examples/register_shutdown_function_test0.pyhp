@@ -1,0 +1,17 @@
+#!/usr/bin/pyhp
+<?pyhp
+	import sys
+
+	def exit_now():
+		print("Mid")
+		sys.exit(0)
+	
+	pyhp.register_shutdown_function(print, "Begin", end="\n\n")
+	pyhp.register_shutdown_function(exit_now)
+	pyhp.register_shutdown_function(lambda: print("End"))
+?>
+<?pyhp
+	print("Shutting down...")
+	sys.exit(0)
+?>
+	
