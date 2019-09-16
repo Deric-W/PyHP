@@ -28,4 +28,10 @@ script:
   - diff -q output.txt header_remove_test0.target
   - pyhp header_register_callback_test0.pyhp | tee output.txt
   - diff -q output.txt header_register_callback_test0.target
+  - pyhp setcookie_test0.pyhp | tee output.txt
+  - diff -q output.txt setcookie_test0.target
+  - pyhp setrawcookie_test0.pyhp | tee output.txt
+  - diff -q output.txt setrawcookie_test0.target
+  - pyhp register_shutdown_function_test0.pyhp | tee output.txt
+  - diff -q output.txt register_shutdown_function_test0.target
   - pyhp fib.pyhp
