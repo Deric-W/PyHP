@@ -6,7 +6,7 @@ python:
   - "3.8-dev"
   - "pypy3"
 env:
-  - QUERY_STRING="Test0=Hello&Test1==World!" HTTP_COOKIE="Test0=Hello; Test1 == World!; Test2=Hello=World%21; Test3=; Test4"
+  - QUERY_STRING="Test0=Hello&Test1==World!&Test2=&Test4" HTTP_COOKIE="Test0=Hello; Test1 == World!; Test2=Hello=World%21; Test3=; Test4"
 sudo: required
 install:
   - sudo mv pyhp.conf /etc/pyhp.conf
