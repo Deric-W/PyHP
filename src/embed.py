@@ -2,14 +2,14 @@
 
 # Module for processing strings embedded in text files, preferably Python code.
 # This module is part of the PyHP interpreter (https://github.com/Deric-W/PyHP-Interpreter)
+"""Module for processing strings embedded in text files"""
 
 import re
-import marshal
 import sys
 from io import StringIO
 from contextlib import redirect_stdout
 
-__all__ = []
+__all__ = ["FromString", "FromIter", "python_process", "python_align", "python_get_indentation", "python_is_comment"]
 
 # class for handling strings
 class FromString:
