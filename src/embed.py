@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 # Module for processing strings embedded in text files, preferably Python code.
-# This module is part of the PyHP interpreter (https://github.com/Deric-W/PyHP)
+# This module is part of PyHP (https://github.com/Deric-W/PyHP)
 """Module for processing strings embedded in text files"""
 
 import re
@@ -62,7 +62,6 @@ def python_process(code, local_var={}):
     return output
 
 # function for executing python code
-# ignore file because python code will alway have stdout as stdout
 def python_execute(code, local_var={}):
     exec(python_align(code), globals(), local_var)
 
