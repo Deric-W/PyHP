@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 # Module for processing strings embedded in text files, preferably Python code.
-# This module is part of the PyHP interpreter (https://github.com/Deric-W/PyHP-Interpreter)
+# This module is part of the PyHP interpreter (https://github.com/Deric-W/PyHP)
 """Module for processing strings embedded in text files"""
 
 import re
@@ -9,7 +9,7 @@ import sys
 from io import StringIO
 from contextlib import redirect_stdout
 
-__all__ = ["FromString", "FromIter", "python_process", "python_align", "python_get_indentation", "python_is_comment"]
+__all__ = ["FromString", "FromIter", "python_process", "python_execute", "python_align", "python_get_indentation", "python_is_comment"]
 
 # class for handling strings
 class FromString:
@@ -29,16 +29,16 @@ class FromString:
             self.sections[i] = processor(self.sections[i], self.userdata)
         return code_sections
 
-    # process the string and write the string and replaced code parts to file (default is sys.stdout)
-    # this will not modify self.sections
-    def execute(self, processor, file=sys.stdout):
+    # process the string and write the string and replaced code parts to sys.stdout
+    # this will not modify self.sections an requires an processor to write the data himself
+    def execute(self, processor):
         code_sections = 0
         for i in range(0, len(self.sections)):
             code_sections += 1
             if i % 2 == 1:  # uneven index --> code
-                file.write(processor(self.sections[i], self.userdata))
+                processor(self.sections[i], self.userdata)
             else:           # even index --> not code
-                file.write(self.sections[i])
+                sys.stdout.write(self.sections[i])
         return code_sections
 
     def __str__(self):
@@ -56,10 +56,15 @@ def python_process(code, local_var={}):
     stdout = StringIO()
     with redirect_stdout(stdout):
         # execute in seperatet namespace
-        exec(code, globals(), local_var)
+        exec(python_align(code), globals(), local_var)
     output = stdout.getvalue()
     stdout.close()
     return output
+
+# function for executing python code
+# ignore file because python code will alway have stdout as stdout
+def python_execute(code, local_var={}):
+    exec(python_align(code), globals(), local_var)
 
 # function for aligning python code in case of a startindentation
 def python_align(code, indentation=None):
