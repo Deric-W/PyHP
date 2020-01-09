@@ -30,6 +30,7 @@ class PyHP:
         self.headers = [["Content-Type", default_mimetype]]
         self.header_sent = False
         self.header_callback = lambda: None
+        self.shutdown_functions = []
 
         self.SERVER = {                                                                           # incomplete (AUTH)
             "PyHP_SELF": os.path.relpath(self.__FILE__, os.getenv("DOCUMENT_ROOT", default=os.curdir)),
@@ -206,6 +207,21 @@ class PyHP:
                 cookie += "; " + "SameSite=%s" % samesite
             self.header(cookie, False)
             return True
+
+    # register function to be run at shutdown
+    # multiple functions are run in the order they have been registerd
+    def register_shutdown_function(self, callback, *args, **kwargs):
+        self.shutdown_functions.append((callback, args, kwargs))
+
+    # run the shutdown functions in the order they have been registerd
+    # dont call run_shutdown_functions from a shutdown_function, it will cause infinite recursion
+    def run_shutdown_functions(self):
+        for function, args, kwargs in self.shutdown_functions:
+            function(*args, **kwargs)
+
+    # destructor used to run shutdown functions
+    def __del__(self):
+        self.run_shutdown_functions()
 
 
 def parse_get(keep_blank_values=True):
