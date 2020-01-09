@@ -160,12 +160,53 @@ class PyHP:
             pass
 
     # make wrapper for target function to call send_headers if wrapped function is used, like print
-    def make_header_wrapper(self, target=sys.stdout):
-        def wrapper(*args, **kwargs):
+    # use like print = PyHP.make_header_wrapper(print)
+    def make_header_wrapper(self, target=print):
+        def wrapper(*args, **kwargs):   # wrapper forwards all args and kwargs to target function
             if not self.header_sent:
                 self.send_headers()
             target(*args, **kwargs)     # call target with arguments
         return wrapper
+
+    # set Set-Cookie header, but quote special characters in name and value
+    # same with expires as setrawcookie
+    def setcookie(self, name, value="", expires=0, path="", domain="", secure=False, httponly=False):
+        name = urllib.parse.quote_plus(name)
+        value = urllib.parse.quote_plus(value)
+        return self.setrawcookie(name, value, expires, path, domain, secure, httponly)
+
+    # set Set-Cookie header
+    # if expires is a dict the arguments are read from it
+    def setrawcookie(self, name, value="", expires=0, path="", domain="", secure=False, httponly=False):
+        if self.header_sent:
+            return False
+        else:
+            if type(expires) == dict:   # options array
+                path = expires.get("path", "")
+                domain = expires.get("domain", "")
+                secure = expires.get("secure", False)
+                httponly = expires.get("httponly", False)
+                samesite = expires.get("samesite", "")
+                expires = expires.get("expires", 0)     # has to happen at the end because it overrides expires
+            else:
+                samesite = ""       # somehow not as keyword argument in PHP
+            cookie = "Set-Cookie: %s=%s" % (name, value)
+            if expires != 0:
+                cookie += "; " + "Expires=%s" % time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime(time.time() + expires))    # add Expires and Max-Age just in case
+                cookie += "; " + "Max-Age=%d" % expires 
+            if path != "":
+                cookie += "; " + "Path=%s" % path
+            if domain != "":
+                cookie += "; " + "Domain=%s" % domain
+            if secure:
+                cookie += "; " + "Secure"
+            if httponly:
+                cookie += "; " + "HttpOnly"
+            if samesite != "":
+                cookie += "; " + "SameSite=%s" % samesite
+            self.header(cookie, False)
+            return True
+
 
 def parse_get(keep_blank_values=True):
     return urllib.parse.parse_qs(os.getenv("QUERY_STRING", default=""), keep_blank_values=keep_blank_values)
@@ -210,7 +251,6 @@ def dict2defaultdict(_dict, fallback=None):
         else:   # empthy list, use fallback if provided
             pass
     return output
-
 
 
 # Class containing a fallback cache handler (with no function)
