@@ -60,7 +60,7 @@ def python_execute(code, userdata):
     userdata[1] += 1
     try:
         exec(python_align(code), globals(), userdata[0])
-    except Exception as e:
+    except Exception as e:  # tell the user the section of the Exception
         raise Exception("Exception during execution of section %d" % userdata[1]) from e
 
 # compile python code sections
@@ -69,7 +69,7 @@ def python_compile(code, userdata):
     userdata += 1
     try:
         return compile(python_align(code), "<string>", "exec") 
-    except Exception as e:
+    except Exception as e:  # tell the user the section of the Exception
         raise Exception("Exception during executing of section %d" % userdata) from e
 
 # execute compiled python sections

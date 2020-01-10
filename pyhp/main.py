@@ -28,10 +28,10 @@ def main():
     except Exception as e:  # catch all exceptions
         print_exception(e, e, e.__traceback__)  # print traceback and exception
         if hasattr(e, "errno"):     # if the exception provides a errno
-            return e.errno
+            return getattr(e, "errno")
         else:   # return standard error code
             return 1
-    else:   # no exeption happend
+    else:   # no exeption occured
         return 0
 
 # start the PyHP Interpreter with predefined arguments
