@@ -9,6 +9,8 @@ import argparse
 import configparser
 import importlib
 import atexit
+import errno
+from traceback import print_exception
 from . import embed
 from . import libpyhp
 
@@ -21,14 +23,22 @@ def main():
     parser.add_argument("file", type=str, help="file to be interpreted (omit for reading from stdin)", nargs="?", default="")
     parser.add_argument("--config", type=str, help="path to custom config file", nargs="?", const="/etc/pyhp.conf", default="/etc/pyhp.conf")
     args = parser.parse_args()
-    manual_main(args.file, caching=args.caching, config_file=args.config)
-
+    try:
+        manual_main(args.file, caching=args.caching, config_file=args.config)
+    except Exception as e:  # catch all exceptions
+        print_exception(e, e, e.__traceback__)  # print traceback and exception
+        if hasattr(e, "errno"):     # if the exception provides a errno
+            return e.errno
+        else:   # return standard error code
+            return 1
+    else:   # no exeption happend
+        return 0
 
 # start the PyHP Interpreter with predefined arguments
 def manual_main(file_path, caching=False, config_file="/etc/pyhp.conf"):
     config = configparser.ConfigParser(inline_comment_prefixes="#")     # allow inline comments
     if config_file not in config.read(config_file):   # reading file failed
-        raise ValueError("failed to read config file %s" % config_file)
+        raise FileNotFoundError(errno.ENOENT, "failed to read config file", config_file)
 
     # prepare the PyHP Object
     PyHP = libpyhp.PyHP(file_path=file_path,
@@ -38,7 +48,7 @@ def manual_main(file_path, caching=False, config_file="/etc/pyhp.conf"):
                         enable_post_data_reading=config.getboolean("request", "enable_post_data_reading", fallback=False),
                         default_mimetype=config.get("request", "default_mimetype", fallback="text/html")
                         )
-    sys.stdout.write = PyHP.make_header_wrapper(sys.stdout.write) #wrap stdout
+    sys.stdout.write = PyHP.make_header_wrapper(sys.stdout.write) # wrap stdout
     atexit.register(PyHP.run_shutdown_functions)    # run shutdown functions even if a exception occured
 
     # handle caching
@@ -71,7 +81,7 @@ def manual_main(file_path, caching=False, config_file="/etc/pyhp.conf"):
     else:   # run normal code
         code.execute(embed.python_execute)
 
-    if not PyHP.headers_sent(): # prevent error if no output occured, but not if and exception occured
+    if not PyHP.headers_sent(): # prevent error if no output occured, but not if an exception occured
         PyHP.send_headers()
 
 # prepare path for use
