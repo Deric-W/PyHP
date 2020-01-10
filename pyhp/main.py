@@ -39,7 +39,7 @@ def manual_main(file_path, caching=False, config_file="/etc/pyhp.conf"):
                         default_mimetype=config.get("request", "default_mimetype", fallback="text/html")
                         )
     sys.stdout.write = PyHP.make_header_wrapper(sys.stdout.write) #wrap stdout
-    atexit.register(PyHP.run_shutdown_functions)    # just to be sure
+    atexit.register(PyHP.run_shutdown_functions)    # run shutdown functions even if a exception occured
 
     # handle caching
     regex = config.get("parser", "regex", fallback="\\<\\?pyhp[\\s](.*?)[\\s]\\?\\>").encode("utf8").decode("unicode_escape")  # process escape sequences like \n

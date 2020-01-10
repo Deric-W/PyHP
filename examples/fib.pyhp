@@ -24,11 +24,11 @@
 				stelle_2 = stelle_2 + stelle_1
 				print(stelle_2)
 			print("<br />")
-	#pyhp.REQUEST = {"fib":"x"}
-	if "fib" in pyhp.REQUEST:
-		print("Dies die Fibonaccizahlen von der 0ten bis " + str(pyhp.REQUEST["fib"]) + "ten Stelle:<br />")
+	#PyHP.REQUEST = {"fib":"x"}
+	if "fib" in PyHP.REQUEST:
+		print("Dies die Fibonaccizahlen von der 0ten bis " + str(PyHP.REQUEST["fib"]) + "ten Stelle:<br />")
 		try:
-			fib(int(pyhp.REQUEST["fib"]))
+			fib(int(PyHP.REQUEST["fib"]))
 		except:
 			print("Fehler während der Berechnung!<br />")
 	else:
