@@ -31,6 +31,7 @@ class PyHP:
         self.header_sent = False
         self.header_callback = lambda: None
         self.shutdown_functions = []
+        self.shutdown_functions_run = False
 
         self.SERVER = {                                                                           # incomplete (AUTH)
             "PyHP_SELF": os.path.relpath(self.__FILE__, os.getenv("DOCUMENT_ROOT", default=os.curdir)),
@@ -149,16 +150,14 @@ class PyHP:
             return False
 
     # send headers and execute callback
+    # DO NOT call this function from a header callback to prevent infinite recursion
     def send_headers(self):
-        if not self.header_sent:    # send
-            self.header_sent = True     # prevent recursion if callback prints output or headers set
-            self.header_callback()      # execute callback
-            print("Status:" , self.response_code, http.HTTPStatus(self.response_code).phrase)
-            for header in self.headers:
-                print(": ".join(header))
-            print()                     # end of headers
-        else:   # already sent
-            pass
+        self.header_sent = True     # prevent recursion if callback prints output or headers set
+        self.header_callback()      # execute callback
+        print("Status:" , self.response_code, http.HTTPStatus(self.response_code).phrase)
+        for header in self.headers:
+            print(": ".join(header))
+        print()                     # end of headers
 
     # make wrapper for target function to call send_headers if wrapped function is used, like print
     # use like print = PyHP.make_header_wrapper(print)
@@ -214,24 +213,31 @@ class PyHP:
         self.shutdown_functions.append((callback, args, kwargs))
 
     # run the shutdown functions in the order they have been registerd
-    # dont call run_shutdown_functions from a shutdown_function, it will cause infinite recursion
+    # DO NOT call run_shutdown_functions from a shutdown_function, it will cause infinite recursion
     def run_shutdown_functions(self):
+        self.shutdown_functions_run = True
         for function, args, kwargs in self.shutdown_functions:
             function(*args, **kwargs)
 
-    # destructor used to run shutdown functions
+    # destructor used to run shutdown and header functions if needed
     def __del__(self):
-        self.run_shutdown_functions()
+        if not self.header_sent:
+            self.send_headers()
+        if not self.shutdown_functions_run:
+            self.run_shutdown_functions()
 
 
+# parse get values from query string
 def parse_get(keep_blank_values=True):
     return urllib.parse.parse_qs(os.getenv("QUERY_STRING", default=""), keep_blank_values=keep_blank_values)
 
+# parse only post data
 def parse_post(keep_blank_values=True):
     environ = os.environ.copy()     # dont modify original environ
     environ["QUERY_STRING"] = ""    # prevent th eparsing of GET
     return cgi.parse(environ=environ, keep_blank_values=keep_blank_values)
 
+# parse cookie string
 def parse_cookie(keep_blank_values=True):
     cookie_string = os.getenv("HTTP_COOKIE", default="")
     cookie_dict = {}
