@@ -9,7 +9,7 @@ import sys
 from io import StringIO
 from contextlib import redirect_stdout
 
-__all__ = ["FromString", "FromIter", "python_process", "python_execute", "python_align", "python_get_indentation", "python_is_comment"]
+__all__ = ["FromString", "FromIter", "python_execute", "python_compile", "python_execute_compiled", "python_align", "python_get_indentation", "python_is_comment"]
 
 # class for handling strings
 class FromString:
@@ -38,11 +38,13 @@ class FromString:
             if i % 2 == 1:  # uneven index --> code
                 processor(self.sections[i], self.userdata)
             else:           # even index --> not code
-                sys.stdout.write(self.sections[i])
+                if self.sections[i]:    # ignore empthy sections
+                    sys.stdout.write(self.sections[i])
         return code_sections
 
     def __str__(self):
         return "".join(self.sections)
+
 
 # wrapper class for handling presplit strings
 class FromIter(FromString):
@@ -51,19 +53,33 @@ class FromIter(FromString):
         self.sections = list(iterator) 
         self.userdata = userdata        
 
-# function for processing python code
-def python_process(code, local_var={}):
-    stdout = StringIO()
-    with redirect_stdout(stdout):
-        # execute in seperatet namespace
-        exec(python_align(code), globals(), local_var)
-    output = stdout.getvalue()
-    stdout.close()
-    return output
 
 # function for executing python code
-def python_execute(code, local_var={}):
-    exec(python_align(code), globals(), local_var)
+# userdata = (locals, section_number), init with [{}, 0]
+def python_execute(code, userdata):
+    userdata[1] += 1
+    try:
+        exec(python_align(code), globals(), userdata[0])
+    except Exception as e:
+        raise Exception("Exception during executing of section %d" % userdata[1]) from e
+
+# compile python code sections
+# userdata = section_number, init 0
+def python_compile(code, userdata):
+    userdata += 1
+    try:
+        return compile(python_align(code), "<string>", "exec") 
+    except Exception as e:
+        raise Exception("Exception during executing of section %d" % userdata) from e
+
+# execute compiled python sections
+# userdata is the same as python_execute
+def python_execute_compiled(code, userdata):
+    userdata[1] += 1
+    try:
+        exec(code, globals(), userdata[0])
+    except Exception as e:
+        raise Exception("Exception during executing of section %d" % userdata[1]) from e
 
 # function for aligning python code in case of a startindentation
 def python_align(code, indentation=None):
@@ -77,7 +93,7 @@ def python_align(code, indentation=None):
             if line.startswith(indentation): # if line starts with startindentation
                 code[line_num - 1] = line[len(indentation):]  # remove startindentation
             else:
-                raise IndentationError("File: code processed by python_align Line: %s" % line_num)  # raise Exception on bad indentation
+                raise IndentationError("File: code processed by python_align Line: %d" % line_num)  # raise Exception on bad indentation
     return "\n".join(code)  # join the lines back together
                     
 
