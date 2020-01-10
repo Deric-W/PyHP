@@ -219,13 +219,6 @@ class PyHP:
         for function, args, kwargs in self.shutdown_functions:
             function(*args, **kwargs)
 
-    # destructor used to run shutdown and header functions if needed
-    def __del__(self):
-        if not self.header_sent:
-            self.send_headers()
-        if not self.shutdown_functions_run:
-            self.run_shutdown_functions()
-
 
 # parse get values from query string
 def parse_get(keep_blank_values=True):
