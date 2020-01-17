@@ -270,21 +270,28 @@ def dict2defaultdict(_dict, fallback=None):
 
 # Class containing a fallback cache handler (with no function)
 class dummy_cache_handler:
+    # take the cache path, file path and the chache_handler section as arguments
     def __init__(self, cache_path, file_path, config):
         pass
 
+    # check if caching is possible
     def is_available(self):
         return False    # we are only a fallback
 
+    # check if cache needs to be updated or created
     def is_outdated(self):
         return False
 
+    # save code, given as a iterator
+    # note that the code sections are replaced with code objects
     def save(self, code):
         pass
 
+    # get cached code as iterator
     def load(self):
         return ("WARNING: This is the dummy cache handler of the libpyhp module, iam providing no useful functions and are just a fallback", )     # return warning
 
+    # cleanup
     def close(self):
         pass
 

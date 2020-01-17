@@ -57,16 +57,17 @@ def manual_main(file_path, caching=False, config_file="/etc/pyhp.conf"):
     caching_allowed = config.getboolean("caching", "auto", fallback=False)
     # if file is not stdin and caching is enabled and wanted or auto_caching is enabled
     if check_if_caching(file_path, caching, caching_enabled, caching_allowed):
-        handler_path = os.path.splitext(prepare_path(config.get("caching", "handler_path", fallback="/lib/pyhp/cache_handlers/files-mtime.py"))) # get neccesary data
+        handler_path = os.path.splitext(prepare_path(config.get("caching", "handler_path", fallback="/lib/pyhp/cache_handlers/files-mtime.py")))[0] # get neccesary data
         cache_path = prepare_path(config.get("caching", "path", fallback="~/.pyhp/cache"))
-        handler = import_path(handler_path).Handler(cache_path, file_path, config["caching"])    # init handler
+        handler = import_path(handler_path)
+        handler = handler.Handler(cache_path, os.path.abspath(file_path), config["caching"])    # init handler
         if handler.is_available():  # check if caching is possible
             cached = True
             if handler.is_outdated():   # update cache
                 code = embed.FromString(prepare_file(file_path), regex, userdata=0) # set userdata for python_compile
                 code.process(embed.python_compile)  # compile python sections
                 code.userdata = [{"PyHP": PyHP}, 0] # set userdata for python_execute_compiled
-                handler.save(code)
+                handler.save(code.sections)     # just save the code sections
             else:   # load cache
                 code = embed.FromIter(handler.load(), userdata=[{"PyHP": PyHP}, 0])
         else:   # generate FromString Object
