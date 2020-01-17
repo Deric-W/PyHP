@@ -17,7 +17,6 @@ session_encode
 session_decode
 $_SESSION
 
-add handler for memcached (if not already submitted)
-add handler for redis (if not already submitted)
+add handler for memcached
+add handler for redis
 
-wait for suggestions

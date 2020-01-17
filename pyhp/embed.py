@@ -55,7 +55,7 @@ class FromIter(FromString):
 
 
 # function for executing python code
-# userdata = (locals, section_number), init with [{}, 0]
+# userdata = [locals, section_number], init with [{}, 0]
 def python_execute(code, userdata):
     userdata[1] += 1
     try:
@@ -64,13 +64,13 @@ def python_execute(code, userdata):
         raise Exception("Exception during execution of section %d" % userdata[1]) from e
 
 # compile python code sections
-# userdata = section_number, init 0
+# userdata = [file, section_number], init with [str, 0]
 def python_compile(code, userdata):
-    userdata += 1
+    userdata[1] += 1
     try:
-        return compile(python_align(code), "<string>", "exec") 
+        return compile(python_align(code), userdata[0], "exec") 
     except Exception as e:  # tell the user the section of the Exception
-        raise Exception("Exception during executing of section %d" % userdata) from e
+        raise Exception("Exception during executing of section %d" % userdata[1]) from e
 
 # execute compiled python sections
 # userdata is the same as python_execute
