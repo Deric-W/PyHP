@@ -72,7 +72,8 @@ def manual_main(file_path, caching=False, config_file="/etc/pyhp.conf"):
                 code = embed.FromIter(handler.load(), userdata=[{"PyHP": PyHP}, 0])
         else:   # generate FromString Object
             cached = False
-            code = embed.FromString(prepare_file(file_path), regex, userdata=[{"PyHP": PyHP}, 0])            
+            code = embed.FromString(prepare_file(file_path), regex, userdata=[{"PyHP": PyHP}, 0]) 
+        handler.close()           
     else:   # same as above
         cached = False
         code = embed.FromString(prepare_file(file_path), regex, userdata=[{"PyHP": PyHP}, 0])         
