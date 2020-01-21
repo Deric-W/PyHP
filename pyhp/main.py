@@ -10,7 +10,6 @@ import configparser
 import importlib
 import atexit
 import errno
-from traceback import print_exception
 from . import embed
 from . import libpyhp
 
@@ -23,16 +22,7 @@ def main():
     parser.add_argument("file", type=str, help="file to be interpreted (omit for reading from stdin)", nargs="?", default="")
     parser.add_argument("--config", type=str, help="path to custom config file", nargs="?", const="/etc/pyhp.conf", default="/etc/pyhp.conf")
     args = parser.parse_args()
-    try:
-        manual_main(args.file, caching=args.caching, config_file=args.config)
-    except Exception as e:  # catch all exceptions
-        print_exception(e, e, e.__traceback__)  # print traceback and exception
-        if hasattr(e, "errno"):     # if the exception provides a errno
-            return getattr(e, "errno")
-        else:   # return standard error code
-            return 1
-    else:   # no exeption occured
-        return 0
+    manual_main(args.file, caching=args.caching, config_file=args.config)
 
 # start the PyHP Interpreter with predefined arguments
 def manual_main(file_path, caching=False, config_file="/etc/pyhp.conf"):

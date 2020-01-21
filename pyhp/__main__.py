@@ -2,8 +2,7 @@
 
 # script to support python3 -m pyhp
 
-import sys
 from . import main
 
-# exit with the return code of main
-sys.exit(main.main())
+# execute main
+main.main()

@@ -93,7 +93,7 @@ def python_align(code, indentation=None):
             if line.startswith(indentation): # if line starts with startindentation
                 code[line_num - 1] = line[len(indentation):]  # remove startindentation
             else:
-                raise IndentationError("File: code processed by python_align Line: %d" % line_num)  # raise Exception on bad indentation
+                raise IndentationError("indentation not matching", ("embedded code section", line_num, len(indentation), line))  # raise Exception on bad indentation
     return "\n".join(code)  # join the lines back together
                     
 
