@@ -106,34 +106,34 @@ class PyHP:
 
     # set http header
     # if replace=True replace existing headers of the same type, else simply add
+    # if http_response_code is not None set it as new response code
     def header(self, header, replace=True, http_response_code=None):
-        header = header.split("\n")[0]  # prevent header injection
-        header = header.split(":", maxsplit=1)  # split header into name and value
-        header = [part.strip() for part in header]     # remove whitespace
+        header = header.splitlines()[0]  # prevent header injection
+        header = [part.strip() for part in header.split(":", maxsplit=1)]  # split in name and value and remove whitespace
         if len(header) == 1:     # no value provided
             header.append("")   # add empthy value
         if replace:
-            repleaced = False   # indicate if headers of the same type were found
-            for i in range(0, len(self.headers)):   # need index for changing headers
-                if self.headers[i][0].lower() == header[0].lower():     # found same header
-                    self.headers[i][1] = header[1]     # repleace
-                    repleaced = True
-            if not repleaced:   # header not already set
-                self.headers.append(header)
+            self.header_remove(header[0])   # remove headers with same name before adding header
+        self.headers.append(header)    # add header
+        if http_response_code is not None:  # set response code if given (higher priority than location headers)
+            self.response_code = http_response_code
+        elif header[0].lower() == "location" and not check_redirect(self.response_code): # set matching response code if code is not 201 or 3xx
+            self.response_code = 302
         else:
-            self.headers.append(header)
+            pass
 
     # list set headers            
     def headers_list(self):
-        headers = []
-        for header in self.headers:
-            headers.append(": ".join(header))   # add header like received by the client
-        return headers
+        return [": ".join(header) for header in self.headers]   # add header like received by the client
 
     # remove header with matching name
-    def header_remove(self, name):
-        name = name.lower()
-        self.headers = [header for header in self.headers if header[0].lower() != name] # remove headers with same name
+    # if name not given remove all headers (set-cookie and content-type too!)
+    def header_remove(self, name=None):
+        if name is not None:
+            name = name.lower()  # header names are case-insensitive
+            self.headers = [header for header in self.headers if header[0].lower() != name] # remove headers with same name
+        else:
+            self.headers = []   # remove all headers
 
     # return if header have been sent
     # unlike the PHP function it does not have file and line arguments
@@ -152,7 +152,7 @@ class PyHP:
     # send headers and execute callback
     # DO NOT call this function from a header callback to prevent infinite recursion
     def send_headers(self):
-        self.header_sent = True     # prevent recursion if callback prints output or headers set
+        self.header_sent = True     # prevent recursion if callback prints output
         self.header_callback()      # execute callback
         print("Status:" , self.response_code, http.HTTPStatus(self.response_code).phrase)
         for header in self.headers:
@@ -267,6 +267,9 @@ def dict2defaultdict(_dict, fallback=None):
             pass
     return output
 
+# check if the response code is redirecting (201 or 3xx)
+def check_redirect(code):
+    return code == 201 or code // 100 == 3
 
 # Class containing a fallback cache handler (with no function)
 class dummy_cache_handler:
