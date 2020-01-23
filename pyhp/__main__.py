@@ -2,7 +2,10 @@
 
 # script to support python3 -m pyhp
 
-from . import main
+from .main import main, get_args
 
-# execute main
-main.main()
+# get cli arguments
+args = get_args()
+
+# execute main with file_path as normal argument and the rest as keyword arguments
+main(args.pop("file_path"), **args)

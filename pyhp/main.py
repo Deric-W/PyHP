@@ -13,19 +13,19 @@ import errno
 from . import embed
 from . import libpyhp
 
-__all__ = ["main", "manual_main", "prepare_file", "prepare_path", "import_path", "check_if_caching"]
+__all__ = ["main", "get_args", "prepare_file", "prepare_path", "import_path", "check_if_caching"]
 
-# start the PyHP Interpreter (wrapper for manual_main)
-def main():
+# get cli arguments for main as dict
+def get_args():
     parser = argparse.ArgumentParser(description="Interpreter for .pyhp Scripts (https://github.com/Deric-W/PyHP)")
     parser.add_argument("-c", "--caching", help="enable caching (requires file)", action="store_true")
     parser.add_argument("file", type=str, help="file to be interpreted (omit for reading from stdin)", nargs="?", default="")
     parser.add_argument("--config", type=str, help="path to custom config file", nargs="?", const="/etc/pyhp.conf", default="/etc/pyhp.conf")
     args = parser.parse_args()
-    manual_main(args.file, caching=args.caching, config_file=args.config)
+    return {"file_path": args.file, "caching": args.caching, "config_file": args.config}
 
 # start the PyHP Interpreter with predefined arguments
-def manual_main(file_path, caching=False, config_file="/etc/pyhp.conf"):
+def main(file_path, caching=False, config_file="/etc/pyhp.conf"):
     config = configparser.ConfigParser(inline_comment_prefixes="#")     # allow inline comments
     if config_file not in config.read(config_file):   # reading file failed
         raise FileNotFoundError(errno.ENOENT, "failed to read config file", config_file)
