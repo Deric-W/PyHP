@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-"""Package for running PyHP Scripts"""
+"""Package for embedding and using python code like php"""
 
 # import all submodules
 from . import embed
