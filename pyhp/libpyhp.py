@@ -169,40 +169,40 @@ class PyHP:
         return wrapper
 
     # set Set-Cookie header, but quote special characters in name and value
-    # same with expires as setrawcookie
-    def setcookie(self, name, value="", expires=0, path="", domain="", secure=False, httponly=False):
-        name = urllib.parse.quote_plus(name)
-        value = urllib.parse.quote_plus(value)
-        return self.setrawcookie(name, value, expires, path, domain, secure, httponly)
+    # same behavior with expires as setrawcookie
+    # in contrast to php, the samesite keyword argument exists here
+    def setcookie(self, name, value="", expires=0, path=None, domain=None, secure=False, httponly=False, samesite=None):
+        name = urllib.parse.quote(name)
+        value = urllib.parse.quote(value)
+        return self.setrawcookie(name, value, expires, path, domain, secure, httponly, samesite)
 
     # set Set-Cookie header
     # if expires is a dict the arguments are read from it
-    def setrawcookie(self, name, value="", expires=0, path="", domain="", secure=False, httponly=False):
+    # in contrast to php, the samesite keyword argument exists here
+    def setrawcookie(self, name, value="", expires=0, path=None, domain=None, secure=False, httponly=False, samesite=None):
         if self.header_sent:
             return False
         else:
-            if type(expires) == dict:   # options array
-                path = expires.get("path", "")
-                domain = expires.get("domain", "")
+            if type(expires) == dict:   # options dict
+                path = expires.get("path", None)
+                domain = expires.get("domain", None)
                 secure = expires.get("secure", False)
                 httponly = expires.get("httponly", False)
-                samesite = expires.get("samesite", "")
+                samesite = expires.get("samesite", None)
                 expires = expires.get("expires", 0)     # has to happen at the end because it overrides expires
-            else:
-                samesite = ""       # somehow not as keyword argument in PHP
-            cookie = "Set-Cookie: %s=%s" % (name, value)
+            cookie = "Set-Cookie: %s=%s" % (name, value)    # initial header
             if expires != 0:
                 cookie += "; " + "Expires=%s" % time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime(time.time() + expires))    # add Expires and Max-Age just in case
                 cookie += "; " + "Max-Age=%d" % expires 
-            if path != "":
+            if path is not None:
                 cookie += "; " + "Path=%s" % path
-            if domain != "":
+            if domain is not None:
                 cookie += "; " + "Domain=%s" % domain
             if secure:
                 cookie += "; " + "Secure"
             if httponly:
                 cookie += "; " + "HttpOnly"
-            if samesite != "":
+            if samesite is not None:
                 cookie += "; " + "SameSite=%s" % samesite
             self.header(cookie, False)
             return True
@@ -227,29 +227,30 @@ def parse_get(keep_blank_values=True):
 # parse only post data
 def parse_post(keep_blank_values=True):
     environ = os.environ.copy()     # dont modify original environ
-    environ["QUERY_STRING"] = ""    # prevent th eparsing of GET
+    environ["QUERY_STRING"] = ""    # prevent the parsing of GET
     return cgi.parse(environ=environ, keep_blank_values=keep_blank_values)
 
 # parse cookie string
 def parse_cookie(keep_blank_values=True):
     cookie_string = os.getenv("HTTP_COOKIE", default="")
     cookie_dict = {}
-    for cookie in cookie_string.split("; "):
-        cookie = cookie.split("=", maxsplit=1)  # to allow multiple "=" in value
-        if len(cookie) == 1:                    # blank cookie
+    for cookie in cookie_string.split(";"):
+        cookie = cookie.split("=", maxsplit=1)  # to allow "=" in value
+        if len(cookie) == 1:        # blank cookie (value is missing)
             if keep_blank_values:
-                cookie.append("")
+                cookie.append("")   # add empthy value
             else:
-                continue                        # skip cookie
-        if cookie[1] == "" and not keep_blank_values:   # skip cookie
-            pass
+                continue            # skip cookie
+        elif cookie[1] == "" and not keep_blank_values:   # skip cookie if value is blank (value is "")
+            continue
         else:
-            cookie[0] = urllib.parse.unquote_plus(cookie[0])    # unquote name and value
-            cookie[1] = urllib.parse.unquote_plus(cookie[1])
-            if cookie[0] in cookie_dict:
-                cookie_dict[cookie[0]].append(cookie[1])    # key already existing
-            else:
-                cookie_dict[cookie[0]] = [cookie[1]]        # make new key
+            pass
+        cookie[0] = urllib.parse.unquote(cookie[0].strip())    # unquote name and value and remove whitespace
+        cookie[1] = urllib.parse.unquote(cookie[1].strip())
+        if cookie[0] in cookie_dict:
+            cookie_dict[cookie[0]].append(cookie[1])    # key already existing
+        else:
+            cookie_dict[cookie[0]] = [cookie[1]]        # make new key
     return cookie_dict
 
 # convert the dicts of parse_(get, post, cookie) to defaultdict
