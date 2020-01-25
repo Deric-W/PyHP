@@ -84,7 +84,7 @@ def python_execute_compiled(code, userdata):
 # function for aligning python code in case of a startindentation
 def python_align(code, indentation=None):
     line_num = 0
-    code = code.split("\n")     # split to lines
+    code = code.splitlines()     # split to lines
     for line in code:
         line_num += 1
         if not (not line or line.isspace() or python_is_comment(line)): # ignore non code lines
@@ -109,4 +109,4 @@ def python_get_indentation(line):
 
 # check if complete line is a comment
 def python_is_comment(line):
-    return line.strip(" \t").startswith("#")
+    return line.lstrip().startswith("#")

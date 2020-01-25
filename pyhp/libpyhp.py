@@ -9,8 +9,8 @@ REQUEST_TIME = time.time()   # found no better solution
 import sys
 import os
 import cgi
-import http
 import urllib.parse
+from http import HTTPStatus
 from collections import defaultdict
 
 __all__ = ["PyHP", "dummy_cache_handler", "dummy_session_handler", "parse_get", "parse_post", "parse_cookie", "dict2defaultdict", "check_redirect"]
@@ -154,7 +154,7 @@ class PyHP:
     def send_headers(self):
         self.header_sent = True     # prevent recursion if callback prints output
         self.header_callback()      # execute callback
-        print("Status:" , self.response_code, http.HTTPStatus(self.response_code).phrase)
+        print("Status:" , self.response_code, HTTPStatus(self.response_code).phrase)
         for header in self.headers:
             print(": ".join(header))
         print()                     # end of headers

@@ -2,7 +2,7 @@
 
 """Package for running PyHP Scripts"""
 
-# import all modules
+# import all submodules
 from . import embed
 from . import libpyhp
 from . import main
