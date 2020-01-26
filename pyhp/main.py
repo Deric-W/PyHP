@@ -47,7 +47,7 @@ def main(file_path, caching=False, config_file="/etc/pyhp.conf"):
     caching_allowed = config.getboolean("caching", "auto", fallback=False)
     # if file is not stdin and caching is enabled and wanted or auto_caching is enabled
     if check_if_caching(file_path, caching, caching_enabled, caching_allowed):
-        handler_path = os.path.splitext(prepare_path(config.get("caching", "handler_path", fallback="/lib/pyhp/cache_handlers/files_mtime.py")))[0] # get neccesary data
+        handler_path = prepare_path(config.get("caching", "handler_path", fallback="/lib/pyhp/cache_handlers/files_mtime.py")) # get neccesary data
         cache_path = prepare_path(config.get("caching", "path", fallback="~/.pyhp/cache"))
         handler = import_path(handler_path)
         handler = handler.Handler(cache_path, os.path.abspath(file_path), config["caching"])    # init handler
@@ -82,9 +82,10 @@ def prepare_path(path):
 
 # import file at path
 def import_path(path):
-    sys.path.insert(0, os.path.dirname(path))
-    path = importlib.import_module(os.path.basename(path))
-    del sys.path[0]
+    sys.path.insert(0, os.path.dirname(path))   # modify module search path
+    path = os.path.splitext(os.path.basename(path))[0]  # get filename without .py
+    path = importlib.import_module(path)    # import module
+    del sys.path[0]  # cleanup module search path
     return path
 
 # check we should cache
@@ -101,5 +102,9 @@ def prepare_file(path):
         with open(path, "r") as fd:
             code = fd.read()
     if code.startswith("#!"):   # remove shebang
-        code = code.split("\n", maxsplit=1)[-1] # remove first line
+        code = code.split("\n", maxsplit=1)  # split in first line, remaining lines
+        if len(code) == 1:  # no lines except shebang
+            code = ""
+        else:   # get all lines except the first line
+            code = code[1]
     return code
