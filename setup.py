@@ -12,11 +12,11 @@ setuptools.setup(
     version=pyhp.__version__,
     author=pyhp.__author__,
     author_email=pyhp.__email__,
-    description="application/package for embedding and using python code like php",
+    description="package for embedding and using python code like php",
     long_description=long_description,
     long_description_content_type="text/markdown",
     url=pyhp.__contact__,
-    packages=setuptools.find_packages(),
+    packages=["pyhp"],
     classifiers=[
         "Programming Language :: Python :: 3",
         "License :: OSI Approved :: MIT License",

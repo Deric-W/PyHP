@@ -27,9 +27,9 @@ class PyHP:
                 ):
         self.__FILE__ = os.path.abspath(file_path)    # absolute path of script
         self.response_code = 200
-        self.headers = [["Content-Type", default_mimetype]]
+        self.headers = [["Content-Type", default_mimetype]]     # init with default mimetype header
         self.header_sent = False
-        self.header_callback = lambda: None
+        self.header_callback = lambda: None     # dummy callback
         self.shutdown_functions = []
         self.shutdown_functions_run = False
 
@@ -124,7 +124,7 @@ class PyHP:
 
     # list set headers            
     def headers_list(self):
-        return [": ".join(header) for header in self.headers]   # add header like received by the client
+        return [": ".join(header) for header in self.headers]   # list headers like received by the client
 
     # remove header with matching name
     # if name not given remove all headers (set-cookie and content-type too!)
