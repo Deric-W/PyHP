@@ -1,5 +1,6 @@
 #!/bin/sh -e
 # script for building the pyhp debian package
+# it is recommended to run this script as root or to set the owner and group of the files to root
 # you need to build the pyhp-core wheel first
 
 if [ "$1" = "" ]
@@ -48,6 +49,12 @@ gzip -n --best "$package/usr/share/doc/pyhp/changelog.Debian"
 chdir "$package"
 md5sum $(find . -type d -name "DEBIAN" -prune -o -type f -print) > DEBIAN/md5sums  # ignore metadata files
 chdir ../
+
+# if root set file permissions, else warn
+if [ $(id -u) = 0 ]
+then chown root:root -R "$package"
+else echo "not running as root, permissions in package may be wrong"
+fi
 
 # build debian package
 dpkg-deb --build "$package"

@@ -1,0 +1,19 @@
+language: python
+python:
+  - "3.5"
+  - "3.6"
+  - "3.7"
+  - "3.8"
+  - "pypy3"
+env:
+  - QUERY_STRING="Test0=Hello&Test1==World!&Test2=&Test4" HTTP_COOKIE="Test0=Hello; Test1 == World!; Test2=Hello=World%21; Test3=; Test4"
+sudo: required
+install:
+  - python3 setup.py bdist_wheel
+  - version=$(python3 setup.py --version)
+  - cd debian
+  - sudo ./build_deb.sh pyhp-test ../dist/pyhp_core-$version-py3-none-any.whl python3
+  - sudo dpkg -i pyhp-test.deb
+  - cd ../examples
+script:
+  - echo TODO
