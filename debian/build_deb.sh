@@ -14,8 +14,8 @@ else wheel=$2
 fi
 
 if [ "$3" = "" ]
-then read -p "python executeable: " python
-else python=$3
+then read -p "pip executeable: " pip
+else pip=$3
 fi
 
 mkdir "$package"
@@ -33,7 +33,7 @@ chmod +x "$package/usr/bin/pyhp"
 
 # place pyhp-core files
 mkdir -p "$package/usr/lib/python3/dist-packages"
-$python -m pip install --target "$package/usr/lib/python3/dist-packages" --ignore-installed $wheel
+$pip install --target "$package/usr/lib/python3/dist-packages" --ignore-installed $wheel
 
 # place metadata files
 mkdir "$package/DEBIAN"

@@ -12,7 +12,7 @@ install:
   - python3 setup.py bdist_wheel
   - version=$(python3 setup.py --version)
   - cd debian
-  - sudo ./build_deb.sh pyhp-test ../dist/pyhp_core-$version-py3-none-any.whl python3
+  - sudo ./build_deb.sh pyhp-test ../dist/pyhp_core-$version-py3-none-any.whl pip
   - sudo dpkg -i pyhp-test.deb
   - cd ../examples
 script:
