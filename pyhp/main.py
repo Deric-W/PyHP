@@ -102,9 +102,5 @@ def prepare_file(path):
         with open(path, "r") as fd:
             code = fd.read()
     if code.startswith("#!"):   # remove shebang
-        code = code.split("\n", maxsplit=1)  # split in first line, remaining lines
-        if len(code) == 1:  # no lines except shebang
-            code = ""
-        else:   # get all lines except the first line
-            code = code[1]
+        code = code.partition("\n")[2]  # get all lines except the first line
     return code

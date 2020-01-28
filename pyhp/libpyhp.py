@@ -109,9 +109,7 @@ class PyHP:
     # if http_response_code is not None set it as new response code
     def header(self, header, replace=True, http_response_code=None):
         header = header.splitlines()[0]  # prevent header injection
-        header = [part.strip() for part in header.split(":", maxsplit=1)]  # split in name and value and remove whitespace
-        if len(header) == 1:     # no value provided
-            header.append("")   # add empthy value
+        header = [part.strip() for part in header.partition(":")[0:3:2]]  # split in name and value and remove whitespace
         if replace:
             self.header_remove(header[0])   # remove headers with same name before adding header
         self.headers.append(header)    # add header
@@ -235,18 +233,10 @@ def parse_cookie(keep_blank_values=True):
     cookie_string = os.getenv("HTTP_COOKIE", default="")
     cookie_dict = {}
     for cookie in cookie_string.split(";"):
-        cookie = cookie.split("=", maxsplit=1)  # to allow "=" in value
-        if len(cookie) == 1:        # blank cookie (value is missing)
-            if keep_blank_values:
-                cookie.append("")   # add empthy value
-            else:
-                continue            # skip cookie
-        elif cookie[1] == "" and not keep_blank_values:   # skip cookie if value is blank (value is "")
+        cookie = cookie.partition("=")[0:3:2]  # split in name and value
+        if not keep_blank_values and (check_blank(cookie[0]) or check_blank(cookie[1])):
             continue
-        else:
-            pass
-        cookie[0] = urllib.parse.unquote(cookie[0].strip())    # unquote name and value and remove whitespace
-        cookie[1] = urllib.parse.unquote(cookie[1].strip())
+        cookie = [urllib.parse.unquote(part.strip()) for part in cookie]    # unquote name and value and remove whitespace
         if cookie[0] in cookie_dict:
             cookie_dict[cookie[0]].append(cookie[1])    # key already existing
         else:
@@ -271,6 +261,10 @@ def dict2defaultdict(_dict, fallback=None):
 # check if the response code is redirecting (201 or 3xx)
 def check_redirect(code):
     return code == 201 or code // 100 == 3
+
+# check if string is empthy or just whitespace
+def check_blank(string):
+    return string == "" or string.isspace()
 
 # Class containing a fallback cache handler (with no function)
 class dummy_cache_handler:
