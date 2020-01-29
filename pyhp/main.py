@@ -10,15 +10,15 @@ import configparser
 import importlib
 import atexit
 import errno
+from . import __version__
 from . import embed
 from . import libpyhp
 
-__all__ = ["main", "get_args", "prepare_file", "prepare_path", "import_path", "check_if_caching"]
-
 # get cli arguments for main as dict
 def get_args():
-    parser = argparse.ArgumentParser(description="Interpreter for .pyhp Scripts (https://github.com/Deric-W/PyHP)")
+    parser = argparse.ArgumentParser(prog="pyhp", description="Interpreter for .pyhp Scripts (https://github.com/Deric-W/PyHP)")
     parser.add_argument("-c", "--caching", help="enable caching (requires file)", action="store_true")
+    parser.add_argument("-v", "--version", help="display version number", action="version", version="%(prog)s {version}".format(version=__version__))
     parser.add_argument("file", type=str, help="file to be interpreted (omit for reading from stdin)", nargs="?", default="")
     parser.add_argument("--config", type=str, help="path to custom config file", nargs="?", const="/etc/pyhp.conf", default="/etc/pyhp.conf")
     args = parser.parse_args()
@@ -75,6 +75,7 @@ def main(file_path, caching=False, config_file="/etc/pyhp.conf"):
 
     if not PyHP.headers_sent(): # prevent error if no output occured, but not if an exception occured
         PyHP.send_headers()
+    return 0    # return 0 on success
 
 # prepare path for use
 def prepare_path(path):

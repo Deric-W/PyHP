@@ -9,8 +9,6 @@ import sys
 from io import StringIO
 from contextlib import redirect_stdout
 
-__all__ = ["FromString", "FromIter", "python_execute", "python_compile", "python_execute_compiled", "python_align", "python_get_indentation", "python_is_comment"]
-
 # class for handling strings
 class FromString:
     # get string, regex to isolate code and optional flags for the regex (default for processing text files)

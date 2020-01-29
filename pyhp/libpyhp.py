@@ -13,8 +13,6 @@ import urllib.parse
 from http import HTTPStatus
 from collections import defaultdict
 
-__all__ = ["PyHP", "dummy_cache_handler", "dummy_session_handler", "parse_get", "parse_post", "parse_cookie", "dict2defaultdict", "check_redirect"]
-
 # class containing the implementations
 class PyHP:
     def __init__(self,    # build GET, POST, COOKIE, SERVER, REQUEST
