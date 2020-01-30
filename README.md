@@ -19,7 +19,7 @@ The script is called either by the configuration of the web server or a shebang 
  - if the `-c` or `--caching` is given, the cache will be enabled and the file will additionally be preprocessed if needed 
    and cached in cache_path/absolute/path/of/filename.cache
  - python code is allowed to have a starting indentation for better readability inside (for example) HTML files
- - the following PHP features are available as methods of the `PyHP` class in pyhp.libpyhp:
+ - the following PHP features are available as methods of the `PyHP` class (available from the outside in pyhp.libpyhp):
      - `$_SERVER` as `SERVER`
      - `$_REQUEST` as `REQUEST`
      - `$_GET` as `GET`
