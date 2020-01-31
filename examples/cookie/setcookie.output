@@ -1,0 +1,14 @@
+Status: 200 OK
+Content-Type: text/html
+Set-Cookie: Test0=test%20%21
+
+
+<html>
+    <head>
+        <title>setcookie</title>
+    </head>
+    <body>
+        This function is like setrawcookie except the fact that it urlencodes name and value.
+
+    </body>
+</html>

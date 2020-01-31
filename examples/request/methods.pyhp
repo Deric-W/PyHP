@@ -1,0 +1,14 @@
+#!/usr/bin/pyhp
+<html>
+    <head>
+        <title>Methods</title>
+    </head>
+    <body>
+        <?pyhp
+            print("GET, POST, COOKIE and REQUEST are available.")
+            print("Their values are:")
+            for method in (PyHP.GET, PyHP.POST, PyHP.COOKIE, PyHP.REQUEST):
+                print(dict(method))
+        ?>
+    </body>
+</html>

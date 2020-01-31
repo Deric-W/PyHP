@@ -1,0 +1,13 @@
+#!/usr/bin/pyhp
+<html>
+    <head>
+        <title>Request Order</title>
+    </head>
+    <body>
+        <?pyhp
+            print("The standart order to fill REQUEST is 'GET POST COOKIE'.")
+            print("With the custom order 'GET POST unknown value', REQUEST will be like this:")
+            print(dict(PyHP.REQUEST))
+        ?>
+    </body>
+</html>

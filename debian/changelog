@@ -4,6 +4,7 @@ pyhp (2.0-1) stable; urgency=low
   * add max_size and ttl caching options
   * add more customizable Request handling
   * add --config argument
+  * add --version argument
   * add automatic response code setting to header
   * add python wheel
   * structural changes

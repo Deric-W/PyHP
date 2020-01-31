@@ -1,0 +1,12 @@
+#!/usr/bin/pyhp
+<html>
+    <head>
+        <title>headers_sent</title>
+    </head>
+    <body>
+        <?pyhp
+            print("This function tells you if the headers are already sent.")
+            print("The return value after output is %s." % PyHP.headers_sent())
+        ?>
+    </body>
+</html>

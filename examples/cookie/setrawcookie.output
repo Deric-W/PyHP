@@ -1,0 +1,16 @@
+Status: 200 OK
+Content-Type: text/html
+Set-Cookie: Test0=
+Set-Cookie: Test1=test !; Path=/test; Secure
+
+
+<html>
+    <head>
+        <title>setrawcookie</title>
+    </head>
+    <body>
+        With this function you can set raw cookies.
+Remember that this can't be done after the headers have been sent.
+
+    </body>
+</html>

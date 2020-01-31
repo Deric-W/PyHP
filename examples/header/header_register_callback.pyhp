@@ -1,0 +1,18 @@
+#!/usr/bin/pyhp
+<?pyhp
+    def test():
+        print("custom text")
+
+    PyHP.header_register_callback(test)
+?>
+<html>
+    <head>
+        <title>header_register_callback</title>
+    </head>
+    <body>
+        <?pyhp
+            print("With this function you can set a callback to be executed just before the headers are being send.")
+            print("Output from this callback will be send with the headers.")
+        ?>
+    </body>
+</html>

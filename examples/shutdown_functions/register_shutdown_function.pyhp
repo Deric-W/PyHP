@@ -1,0 +1,18 @@
+#!/usr/bin/pyhp
+<html>
+    <head>
+        <title>register_shutdown_function</title>
+    </head>
+    <body>
+        <?pyhp
+            import sys
+
+            print("This function can be used to register a function to be run at interpreter shutdown.")
+            print("The functions are executed even if an Exception occured.")
+            print("Furthermore, the functions are called with the additional args and kwargs of register_shutdown_function.")
+            PyHP.register_shutdown_function(print, "bb")
+            PyHP.register_shutdown_function(print, "Have a nice day", end="!\n")
+            sys.exit()
+        ?>
+    </body>
+</html>

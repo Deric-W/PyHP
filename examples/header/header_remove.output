@@ -1,0 +1,16 @@
+Status: 200 OK
+Content-Type: text/html
+Test1: test
+
+
+<html>
+    <head>
+        <title>header_remove</title>
+    </head>
+    <body>
+        header_remove(name) removes all headers of the type name.
+For example, instead of sending the headers Test0 and Test1,
+only Test1 is being sent.
+
+    </body>
+</html>

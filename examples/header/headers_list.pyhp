@@ -1,0 +1,16 @@
+#!/usr/bin/pyhp
+<?pyhp PyHP.header("Test0: 1")  ?>
+<html>
+    <head>
+        <?pyhp PyHP.header("Test1: 2")  # even headers set to late to be send are listed ?>
+        <title>headers_list</title>
+    </head>
+    <body>
+        <?pyhp
+            print("The headers_list function lists all headers like they would be sent to the client.")
+            print("The headers are: ")
+            for header in PyHP.headers_list():
+                print(header)            
+        ?>
+    </body>
+</html>

@@ -5,8 +5,6 @@ python:
   - "3.7"
   - "3.8"
   - "pypy3"
-env:
-  - QUERY_STRING="Test0=Hello&Test1==World!&Test2=&Test4" HTTP_COOKIE="Test0=Hello; Test1 == World!; Test2=Hello=World%21; Test3=; Test4"
 sudo: required
 install:
   - python3 setup.py bdist_wheel
@@ -16,4 +14,9 @@ install:
   - sudo dpkg -i pyhp-test.deb
   - cd ../examples
 script:
-  - echo TODO
+  - . ./embedding.sh
+  - . ./caching.sh
+  - . ./request.sh
+  - . ./header.sh
+  - . ./cookie.sh
+  - . ./shutdown_functions.sh

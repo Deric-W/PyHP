@@ -1,0 +1,22 @@
+Status: 404 Not Found
+Content-Type: text/html
+Test0: 
+Test1: 
+Test2: Hello
+Test2: World!
+test3: 1
+not_send: True
+
+
+
+<html>
+    <head>
+        <title>header</title>
+    </head>
+    <body>
+        <?pyhp
+            print("This is an example use of the header function.")
+            print("Because of already occured output, the next line will have no effect.")
+            PyHP.header("pointless: True", http_response_code=400)
+    </body>
+</html>

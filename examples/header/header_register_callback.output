@@ -1,0 +1,15 @@
+custom text
+Status: 200 OK
+Content-Type: text/html
+
+
+<html>
+    <head>
+        <title>header_register_callback</title>
+    </head>
+    <body>
+        With this function you can set a callback to be executed just before the headers are being send.
+Output from this callback will be send with the headers.
+
+    </body>
+</html>

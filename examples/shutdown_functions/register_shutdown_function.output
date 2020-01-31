@@ -1,0 +1,13 @@
+Status: 200 OK
+Content-Type: text/html
+
+<html>
+    <head>
+        <title>register_shutdown_function</title>
+    </head>
+    <body>
+        This function can be used to register a function to be run at interpreter shutdown.
+The functions are executed even if an Exception occured.
+Furthermore, the functions are called with the additional args and kwargs of register_shutdown_function.
+bb
+Have a nice day!

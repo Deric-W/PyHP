@@ -1,0 +1,9 @@
+#!/usr/bin/pyhp
+<html>
+    <head>
+        <title>Shebang</title>
+    </head>
+    <body>
+        <?pyhp print("If a Shebang is detected (first line starts with #!) the first line is removed before processing the file") ?>
+    </body>
+</html>

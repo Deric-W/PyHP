@@ -1,0 +1,12 @@
+#!/usr/bin/pyhp
+<?pyhp PyHP.setcookie("Test0", "test !") ?>
+<html>
+    <head>
+        <title>setcookie</title>
+    </head>
+    <body>
+        <?pyhp
+            print("This function is like setrawcookie except the fact that it urlencodes name and value.")
+        ?>
+    </body>
+</html>
