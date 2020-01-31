@@ -10,7 +10,7 @@ Test1: test
     <body>
         header_remove(name) removes all headers of the type name.
 For example, instead of sending the headers Test0 and Test1,
-only Test1 is being sent.
+only Test1 is being send.
 
     </body>
 </html>

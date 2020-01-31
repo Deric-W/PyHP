@@ -5,6 +5,8 @@ python:
   - "3.7"
   - "3.8"
   - "pypy3"
+env:
+  - QUERY_STRING='test0=Hello&Test1=World%21&Test2=&Test3&&test0=World!' HTTP_COOKIE='test0=Hello ; Test1 = World%21 = Hello; Test2 = ;Test3;;test0=World!; ;'
 sudo: required
 install:
   - python3 setup.py bdist_wheel
@@ -12,11 +14,23 @@ install:
   - cd debian
   - . ./build_deb.sh pyhp-test ../dist/pyhp_core-$version-py3-none-any.whl pip
   - sudo dpkg -i pyhp-test.deb
-  - cd ../examples
+  - cd ../tests
 script:
-  - . ./embedding.sh
-  - . ./caching.sh
-  - . ./request.sh
-  - . ./header.sh
-  - . ./cookie.sh
-  - . ./shutdown_functions.sh
+  - pyhp embedding/syntax.pyhp|diff embedding/syntax.output -
+  - pyhp embedding/shebang.pyhp|diff embedding/shebang.output -
+  - pyhp embedding/indentation.pyhp|diff embedding/indentation.output -
+  - test -f /lib/pyhp/cache_handlers/files_mtime.py
+  - test ! -f ~/.cache/pyhp/$(pwd)/embedding/syntax.pyhp.cache
+  - pyhp --caching embedding/syntax.pyhp|diff embedding/syntax.output -
+  - test -f ~/.cache/pyhp/$(pwd)/embedding/syntax.pyhp.cache
+  - pyhp --caching embedding/syntax.pyhp|diff embedding/syntax.output -
+  - pyhp request/methods.pyhp|diff request/methods.output -
+  - pyhp request/request-order.pyhp --config request/request-order.conf|diff request/request-order.output -
+  - pyhp header/header.pyhp|diff header/header.output -
+  - pyhp header/headers_list.pyhp|diff header/headers_list.output -
+  - pyhp header/header_remove.pyhp|diff header/header_remove.output -
+  - pyhp header/headers_sent.pyhp|diff header/headers_sent.output -
+  - pyhp header/header_register_callback.pyhp|diff header/header_register_callback.output -
+  - pyhp cookie/setrawcookie.pyhp|diff cookie/setrawcookie.output -
+  - pyhp cookie/setcookie.pyhp|diff cookie/setcookie.output -
+  - pyhp shutdown_functions/register_shutdown_function.pyhp|diff shutdown_functions/register_shutdown_function.output -

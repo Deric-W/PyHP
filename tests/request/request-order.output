@@ -8,7 +8,7 @@ Content-Type: test
     <body>
         The standart order to fill REQUEST is 'GET POST COOKIE'.
 With the custom order 'GET POST unknown value', REQUEST will be like this:
-{'test0': ['Hello', 'World!'], 'Test1': 'World!', 'Test2': '', 'Test3': ''}
+{'Test1': 'World!', 'Test2': '', 'Test3': '', 'test0': ['Hello', 'World!']}
 
     </body>
 </html>
