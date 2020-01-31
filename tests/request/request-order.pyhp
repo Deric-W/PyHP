@@ -1,3 +1,14 @@
-Status: 200 OK
-Content-Type: test
-
+#!/usr/bin/pyhp
+<html>
+    <head>
+        <title>Request Order</title>
+    </head>
+    <body>
+        <?pyhp
+            from collections import OrderedDict as dict
+            print("The standart order to fill REQUEST is 'GET POST COOKIE'.")
+            print("With the custom order 'GET POST unknown value', REQUEST will be like this:")
+            print(dict(sorted(PyHP.REQUEST.items())))
+        ?>
+    </body>
+</html>
