@@ -13,15 +13,16 @@ import urllib.parse
 from http import HTTPStatus
 from collections import defaultdict
 
+
 # class containing the implementations
 class PyHP:
     def __init__(self,    # build GET, POST, COOKIE, SERVER, REQUEST
-                file_path = sys.argv[0],    # override if not directly executed
-                request_order = ("GET", "POST", "COOKIE"),      # order in wich REQUEST gets updated
-                keep_blank_values = True,   # if to not remove "" values
-                fallback_value = None,      # fallback value of GET, POST, REQUEST and COOKIE if not None
-                enable_post_data_reading = False,   # if not to parse POST and consume stdin in the process
-                default_mimetype = "text/html"      # Content-Type header if not been set
+                 file_path=sys.argv[0],    # override if not directly executed
+                 request_order=("GET", "POST", "COOKIE"),      # order in wich REQUEST gets updated
+                 keep_blank_values=True,   # if to not remove "" values
+                 fallback_value=None,      # fallback value of GET, POST, REQUEST and COOKIE if not None
+                 enable_post_data_reading=False,   # if not to parse POST and consume stdin in the process
+                 default_mimetype="text/html"      # Content-Type header if not been set
                 ):
         self.__FILE__ = os.path.abspath(file_path)    # absolute path of script
         self.response_code = 200
@@ -81,7 +82,7 @@ class PyHP:
             self.POST = dict2defaultdict({}, fallback_value)
         else:       # parse POST and consume stdin
             self.POST = dict2defaultdict(parse_post(keep_blank_values), fallback_value)
-        
+
         # build REQUEST
         self.REQUEST = dict2defaultdict({}, fallback_value)   # empthy REQUEST
         for request in request_order:   # update REQUEST in the order given by request_order
@@ -113,12 +114,12 @@ class PyHP:
         self.headers.append(header)    # add header
         if http_response_code is not None:  # set response code if given (higher priority than location headers)
             self.response_code = http_response_code
-        elif header[0].lower() == "location" and not check_redirect(self.response_code): # set matching response code if code is not 201 or 3xx
+        elif header[0].lower() == "location" and not check_redirect(self.response_code):  # set matching response code if code is not 201 or 3xx
             self.response_code = 302
         else:
             pass
 
-    # list set headers            
+    # list set headers
     def headers_list(self):
         return [": ".join(header) for header in self.headers]   # list headers like received by the client
 
@@ -127,7 +128,7 @@ class PyHP:
     def header_remove(self, name=None):
         if name is not None:
             name = name.lower()  # header names are case-insensitive
-            self.headers = [header for header in self.headers if header[0].lower() != name] # remove headers with same name
+            self.headers = [header for header in self.headers if header[0].lower() != name]  # remove headers with same name
         else:
             self.headers = []   # remove all headers
 
@@ -150,7 +151,7 @@ class PyHP:
     def send_headers(self):
         self.header_sent = True     # prevent recursion if callback prints output
         self.header_callback()      # execute callback
-        print("Status:" , self.response_code, HTTPStatus(self.response_code).phrase)
+        print("Status:", self.response_code, HTTPStatus(self.response_code).phrase)
         for header in self.headers:
             print(": ".join(header))
         print()                     # end of headers
@@ -189,7 +190,7 @@ class PyHP:
             cookie = "Set-Cookie: %s=%s" % (name, value)    # initial header
             if expires != 0:
                 cookie += "; " + "Expires=%s" % time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime(time.time() + expires))    # add Expires and Max-Age just in case
-                cookie += "; " + "Max-Age=%d" % expires 
+                cookie += "; " + "Max-Age=%d" % expires
             if path is not None:
                 cookie += "; " + "Path=%s" % path
             if domain is not None:

@@ -7,6 +7,7 @@ import os.path
 from os import makedirs
 from time import time
 
+
 class Handler:
     def __init__(self, cache_path, file_path, config):
         self.cache_prefix = cache_path
@@ -23,7 +24,7 @@ class Handler:
                 filepath = os.path.join(dirpath, filename)
                 if not os.path.islink(filepath):        # dont count symlinks
                     size += os.path.getsize(filepath)
-        return size/(1000**2)       # bytes --> Mbytes
+        return size / (1000 ** 2)       # bytes --> Mbytes
 
     def is_available(self):     # if cache directory has free space or the cached file is already existing or max_size < 0
         return self.max_size < 0 or os.path.isfile(self.cache_path) or self.get_cachedir_size() < self.max_size
@@ -37,7 +38,7 @@ class Handler:
         else:
             return True     # file is not existing --> age = infinite
 
-    def load(self): # load sections
+    def load(self):  # load sections
         with open(self.cache_path, "rb") as cache:
             code = marshal.load(cache)
         return code

@@ -9,11 +9,12 @@ import sys
 from io import StringIO
 from contextlib import redirect_stdout
 
+
 # class for handling strings
 class FromString:
     # get string, regex to isolate code and optional flags for the regex (default for processing text files)
     # the userdata is given to the processor function to allow state
-    def __init__(self, string, regex, flags=re.MULTILINE|re.DOTALL, userdata=None):
+    def __init__(self, string, regex, flags=re.MULTILINE | re.DOTALL, userdata=None):
         self.sections = re.split(regex, string, flags=flags)
         self.userdata = userdata
 
@@ -48,9 +49,8 @@ class FromString:
 class FromIter(FromString):
     # get presplit string as iterator
     def __init__(self, iterator, userdata=None):
-        self.sections = list(iterator) 
-        self.userdata = userdata        
-
+        self.sections = list(iterator)
+        self.userdata = userdata
 
 # function for executing python code
 # userdata = [locals, section_number], init with [{}, 0]
@@ -66,7 +66,7 @@ def python_execute(code, userdata):
 def python_compile(code, userdata):
     userdata[1] += 1
     try:
-        return compile(python_align(code), userdata[0], "exec") 
+        return compile(python_align(code), userdata[0], "exec")
     except Exception as e:  # tell the user the section of the Exception
         raise Exception("Exception during executing of section %d" % userdata[1]) from e
 
@@ -85,15 +85,15 @@ def python_align(code, indentation=None):
     code = code.splitlines()     # split to lines
     for line in code:
         line_num += 1
-        if not (not line or line.isspace() or python_is_comment(line)): # ignore non code lines
-            if indentation == None:     # first line of code, get startindentation
+        if not (not line or line.isspace() or python_is_comment(line)):  # ignore non code lines
+            if indentation is None:     # first line of code, get startindentation
                 indentation = python_get_indentation(line)
-            if line.startswith(indentation): # if line starts with startindentation
+            if line.startswith(indentation):  # if line starts with startindentation
                 code[line_num - 1] = line[len(indentation):]  # remove startindentation
             else:
                 raise IndentationError("indentation not matching", ("embedded code section", line_num, len(indentation), line))  # raise Exception on bad indentation
     return "\n".join(code)  # join the lines back together
-                    
+
 
 # function for getting the indentation of a line of python code
 def python_get_indentation(line):
