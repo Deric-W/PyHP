@@ -1,0 +1,12 @@
+Status: 200 OK
+Content-Type: text/html
+
+<html>
+    <head>
+        <title>Shebang</title>
+    </head>
+    <body>
+        If a Shebang is detected (first line starts with #!) the first line is removed before processing the file
+
+    </body>
+</html>

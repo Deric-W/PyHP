@@ -1,0 +1,25 @@
+#!/usr/bin/pyhp
+<?pyhp
+    PyHP.header("Test0")  # value = ""
+    PyHP.header("Test1:")  # value = ""
+    PyHP.header("Test2 : Hello")
+    PyHP.header("Test2: World!", False, 404)  # set second Test2 header and response_code = 404
+    PyHP.header("Test3: 0")
+    PyHP.header("test3: 1")  # replace former Test3
+?><?pyhp 
+    PyHP.header("not_send: True")  # no characters between this and the first section, header not already send
+?>
+<?pyhp
+    PyHP.header("Test4: test")  # \n between this and the first section, header already send
+?>
+<html>
+    <head>
+        <title>header</title>
+    </head>
+    <body>
+        <?pyhp
+            print("This is an example use of the header function.")
+            print("Because of already occured output, the next line will have no effect.")
+            PyHP.header("pointless: True", http_response_code=400)
+    </body>
+</html>

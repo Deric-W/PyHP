@@ -1,0 +1,13 @@
+Status: 200 OK
+Content-Type: text/html
+
+<html>
+    <head>
+        <title>headers_sent</title>
+    </head>
+    <body>
+        This function tells you if the headers are already sent.
+The return value after output is True.
+
+    </body>
+</html>

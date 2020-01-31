@@ -1,0 +1,20 @@
+#!/usr/bin/pyhp
+<html>
+    <head>
+        <title>Indentation</title>
+    </head>
+    <body>
+        <?pyhp
+print("Normal python code would start with an indentation of 0 (like this).")
+print("But it looks a bit odd inside of an HTML document.")
+        ?>
+        <?pyhp
+ # comments and empthy lines are ignored by this feature
+
+            print("Because of this, PyHP will calculate the starting indentation of each section")
+            print("and remove it from all lines of it (12 spaces in this case)")
+            print("If a line is not starting with the starting indentation a IndentationError will be raised")
+    # comments and empthy lines are ignored by this feature
+        # the tags also dont need to be on the same level ?>
+    </body>
+</html>

@@ -1,0 +1,19 @@
+Status: 200 OK
+Content-Type: text/html
+Test0: 1
+
+
+<html>
+    <head>
+        
+        <title>headers_list</title>
+    </head>
+    <body>
+        The headers_list function lists all headers like they would be sent to the client.
+The headers are: 
+Content-Type: text/html
+Test0: 1
+Test1: 2
+
+    </body>
+</html>

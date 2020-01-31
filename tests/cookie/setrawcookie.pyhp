@@ -1,0 +1,17 @@
+#!/usr/bin/pyhp
+<?pyhp 
+    PyHP.setrawcookie("Test0")
+    PyHP.setrawcookie("Test1", "test !", path="/test", secure=True)
+?>
+<html>
+    <head>
+        <title>setrawcookie</title>
+    </head>
+    <body>
+        <?pyhp
+            print("With this function you can set raw cookies.")
+            print("Remember that this can't be done after the headers have been sent.")
+            PyHP.setrawcookie("Test2", "useless")  # will not be send
+        ?>
+    </body>
+</html>

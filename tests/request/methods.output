@@ -1,0 +1,17 @@
+Status: 200 OK
+Content-Type: text/html
+
+<html>
+    <head>
+        <title>Methods</title>
+    </head>
+    <body>
+        GET, POST, COOKIE and REQUEST are available.
+Their values are:
+OrderedDict([('Test1', 'World!'), ('Test2', ''), ('Test3', ''), ('test0', ['Hello', 'World!'])])
+OrderedDict()
+OrderedDict([('', ['', '', '']), ('Test1', 'World! = Hello'), ('Test2', ''), ('Test3', ''), ('test0', ['Hello', 'World!'])])
+OrderedDict([('', ['', '', '']), ('Test1', 'World! = Hello'), ('Test2', ''), ('Test3', ''), ('test0', ['Hello', 'World!'])])
+
+    </body>
+</html>

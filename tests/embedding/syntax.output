@@ -1,0 +1,18 @@
+Status: 200 OK
+Content-Type: text/html
+
+<html>
+    <head>
+        <title>Syntax
+</title>
+    </head>
+    <body>
+        basic synatx test
+With the default configuration, code needs to be contained
+between the '<?pyhp' and '?>' tags and one whitespace between
+the code and the tags.
+Dont forget that the parser ignores python syntax, so '?>' without the ' would
+end this section.
+
+    </body>
+</html>

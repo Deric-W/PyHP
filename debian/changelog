@@ -1,3 +1,24 @@
+pyhp (2.0-1) stable; urgency=low
+
+  * fourth release
+  * add max_size and ttl caching options
+  * add more customizable Request handling
+  * add --config argument
+  * add --version argument
+  * add automatic response code setting to header
+  * add python wheel
+  * structural changes
+  * php functions now useable outside .pyhp files
+  * rename pyhp class to PyHP
+  * replace print wrapper with PyHP.make_header_wrapper
+  * changed cache handler interface
+  * rework register_shutdown_function to use atexit
+  * improve IndentationError message
+  * fix wrong directory size calculation in files_mtime
+  * fix crash of files_mtime.py if os not in namespace
+
+ -- Eric Wolf <robo-eric@gmx.de>  Sun, 26 Jan 2020 18:11:00 +0100
+
 pyhp (1.2-1) stable; urgency=low
 
   * third release
@@ -12,7 +33,6 @@ pyhp (1.1-1) stable; urgency=low
   * add register_shutdown_function
   * add header_register_callback
   * add config
-  * reworked caching to use handlers (old code as files_mtime handler)
   * reworked caching to use handlers (old code as files_mtime handler)
   * reworked prepare file
   * now using argparse

@@ -1,0 +1,18 @@
+#!/usr/bin/pyhp
+<?pyhp
+    PyHP.header("Test0: test")
+    PyHP.header("Test1: test")
+    PyHP.header_remove("test0")  # case insensitive!
+?>
+<html>
+    <head>
+        <title>header_remove</title>
+    </head>
+    <body>
+        <?pyhp
+            print("header_remove(name) removes all headers of the type name.")
+            print("For example, instead of sending the headers Test0 and Test1,")
+            print("only Test1 is being send.")
+        ?>
+    </body>
+</html>
