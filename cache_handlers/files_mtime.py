@@ -9,12 +9,12 @@ from time import time
 
 
 class Handler:
-    def __init__(self, cache_path, file_path, config):
+    def __init__(self, cache_path, file_path, max_size, ttl):
         self.cache_prefix = cache_path
         self.cache_path = os.path.join(os.path.expanduser(cache_path), file_path.strip(os.path.sep) + ".cache")  # use full path to allow indentical named files in different directories with cache_path as root
         self.file_path = file_path
-        self.ttl = config.getint("ttl")
-        self.max_size = config.getint("max_size")
+        self.ttl = ttl
+        self.max_size = max_size
 
     def get_cachedir_size(self):        # get size of cache directory (with all sub directories) in Mbytes
         size = 0

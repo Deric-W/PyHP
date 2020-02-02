@@ -49,9 +49,11 @@ def main(file_path, caching=False, config_file="/etc/pyhp.conf"):
     # if file is not stdin and caching is enabled and wanted or auto_caching is enabled
     if check_if_caching(file_path, caching, caching_enabled, caching_allowed):
         handler_path = prepare_path(config.get("caching", "handler_path", fallback="/lib/pyhp/cache_handlers/files_mtime.py"))  # get neccesary data
-        cache_path = prepare_path(config.get("caching", "path", fallback="~/.pyhp/cache"))
+        cache_path = config.get("caching", "path", fallback="~/.pyhp/cache")
+        max_size = config.getint("caching", "max_size", fallback=16)
+        ttl = config.getint("caching", "ttl", fallback=-1)
         handler = import_path(handler_path)
-        handler = handler.Handler(cache_path, os.path.abspath(file_path), config["caching"])    # init handler
+        handler = handler.Handler(cache_path, os.path.abspath(file_path), max_size, ttl)    # init handler
         if handler.is_available():  # check if caching is possible
             cached = True
             if handler.is_outdated():   # update cache

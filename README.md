@@ -40,7 +40,7 @@ The script is called either by the configuration of the web server or a shebang 
   
  - are responsible for saving/loading/renewing caches
  - are python scripts with the following contents:
- - the `Handler` class, wich takes the cache path, absolute file path and `caching` section of the config file as  
+ - the `Handler` class, wich takes the cache path, absolute file path, max cache size and time to live as  
    initialization parameters and provides the following methods:
      - `is_available`, wich returns a boolean indicating if the handler can be used
      - `is_outdated`, wich returns a boolean indicating if the cache needs to be renewed

@@ -265,10 +265,10 @@ def check_redirect(code):
 def check_blank(string):
     return string == "" or string.isspace()
 
-# Class containing a fallback cache handler (with no function)
+# Class containing a example cache handler (with no function)
 class dummy_cache_handler:
-    # take the cache path, file path and the chache_handler section as arguments
-    def __init__(self, cache_path, file_path, config):
+    # take the cache path, file path, max cache directory size and time to live as arguments
+    def __init__(self, cache_path, file_path, max_size, ttl):
         pass
 
     # check if caching is possible
@@ -293,6 +293,28 @@ class dummy_cache_handler:
         pass
 
 
-# Class containing a fallback session handler (with no function)
+# Class containing a example session handler (with no function)
 class dummy_session_handler:
-    pass
+    def __init__(self, path, sid_length):
+        self.sid_length = sid_length
+
+    def read(self, id):
+        return ""
+
+    def write(self, id, data):
+        pass
+
+    def gc(self, max_lifetime):
+        return 0
+
+    def destroy(self, id):
+        pass
+
+    def create_sid(self):
+        return "X" * self.sid_length
+
+    def update_timestamp(self, id):
+        pass
+
+    def close(self):
+        pass
