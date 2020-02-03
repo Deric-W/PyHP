@@ -40,13 +40,13 @@ The script is called either by the configuration of the web server or a shebang 
   
  - are responsible for saving/loading/renewing caches
  - are python scripts with the following contents:
- - the `Handler` class, wich takes the cache path, absolute file path, max cache size and time to live as  
+ - the `Handler` class, wich takes the raw cache path (no expanduser, ...), max cache size and time to live as  
    initialization parameters and provides the following methods:
-     - `is_available`, wich returns a boolean indicating if the handler can be used
-     - `is_outdated`, wich returns a boolean indicating if the cache needs to be renewed
-     - `save`, wich takes an iterator as argument and saves it in the cache
-     - `load`, wich loads an iterator from the cache
-     - `close`, wich does cleanup tasks
+     - `is_available`, wich takes the absolute file path and returns a boolean indicating if the cache can be used
+     - `is_outdated`, wich takes the absolute file path and returns a boolean indicating if the cache needs to be renewed
+     - `save`, wich takes the absolute file path and an iterator as argument and saves it in the cache
+     - `load`, wich takes the absolute file path and loads an iterator from the cache
+     - `shutdown`, wich does cleanup tasks
   - note that the iterator may contain code objects which can't be pickled
   - examples are available in the *cache_handlers* directory
    

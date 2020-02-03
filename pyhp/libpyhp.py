@@ -267,29 +267,29 @@ def check_blank(string):
 
 # Class containing a example cache handler (with no function)
 class dummy_cache_handler:
-    # take the cache path, file path, max cache directory size and time to live as arguments
-    def __init__(self, cache_path, file_path, max_size, ttl):
+    # take the cache path, max cache directory size and time to live as arguments
+    def __init__(self, cache_path, max_size, ttl):
         pass
 
-    # check if caching is possible
-    def is_available(self):
-        return False    # we are only a fallback
+    # return True if cache is useable
+    def is_available(self, file_path):
+        return False
 
     # check if cache needs to be updated or created
-    def is_outdated(self):
+    def is_outdated(self, file_path):
         return False
 
     # save code, given as a iterator
     # note that the code sections are replaced with code objects
-    def save(self, code):
+    def save(self, file_path, code):
         pass
 
     # get cached code as iterator
-    def load(self):
+    def load(self, file_path):
         return ("WARNING: This is the dummy cache handler of the libpyhp module, iam providing no useful functions and are just a fallback", )     # return warning
 
     # cleanup
-    def close(self):
+    def shutdown(self):
         pass
 
 
@@ -297,6 +297,9 @@ class dummy_cache_handler:
 class dummy_session_handler:
     def __init__(self, path, sid_length):
         self.sid_length = sid_length
+
+    def open(self, id):
+        pass
 
     def read(self, id):
         return ""
@@ -316,5 +319,8 @@ class dummy_session_handler:
     def update_timestamp(self, id):
         pass
 
-    def close(self):
+    def close(self, id):
+        pass
+
+    def shutdown(self):
         pass
