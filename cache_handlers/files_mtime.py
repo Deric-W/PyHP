@@ -6,6 +6,8 @@ import marshal  # not pickle because only marshal supports code objects
 import os.path
 from os import makedirs
 from time import time
+from fcntl import LOCK_EX, LOCK_SH
+from pyhp.libpyhp import open_lock  # need for pyhp-core to be installed
 
 
 class Handler:
@@ -16,7 +18,7 @@ class Handler:
 
     def get_cachedir_size(self):        # get size of cache directory (with all sub directories) in Mbytes
         size = 0
-        for dirpath, dirnames, filenames in os.walk(self.cache_path, followlinks=False):
+        for dirpath, _, filenames in os.walk(self.cache_path, followlinks=False):
             size += os.path.getsize(dirpath)        # dont forget the size of the directory
             for filename in filenames:
                 filepath = os.path.join(dirpath, filename)
@@ -38,7 +40,7 @@ class Handler:
             return True     # file is not existing --> age = infinite
 
     def load(self, file_path):  # load sections
-        with open(mkcached_path(self.cache_path, file_path), "rb") as cache:
+        with open_lock(LOCK_SH, mkcached_path(self.cache_path, file_path), "rb") as cache:  # lock is shared to allow multiple readers
             code = marshal.load(cache)
         return code
 
@@ -47,7 +49,7 @@ class Handler:
         directory = os.path.dirname(cached_path)
         if not os.path.isdir(directory):     # directories not already created
             makedirs(directory, exist_ok=True)   # ignore already created directories
-        with open(cached_path, "wb") as cache:
+        with open_lock(LOCK_EX, cached_path, "wb") as cache:    # lock is exclusive to prevent reading while writing
             marshal.dump(code, cache)
 
     def shutdown(self):
