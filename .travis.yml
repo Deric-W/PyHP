@@ -20,9 +20,9 @@ script:
   - pyhp embedding/shebang.pyhp|diff embedding/shebang.output -
   - pyhp embedding/indentation.pyhp|diff embedding/indentation.output -
   - test -f /lib/pyhp/cache_handlers/files_mtime.py
-  - test ! -f ~/.cache/pyhp/$(pwd)/embedding/syntax.pyhp.cache
+  - test ! -f ~/.cache/pyhp/$(pwd)/embedding/syntax.pyhp.marshal$(python3 -c "import marshal; print(marshal.version, end='')")
   - pyhp --caching embedding/syntax.pyhp|diff embedding/syntax.output -
-  - test -f ~/.cache/pyhp/$(pwd)/embedding/syntax.pyhp.cache
+  - test -f ~/.cache/pyhp/$(pwd)/embedding/syntax.pyhp.marshal$(python3 -c "import marshal; print(marshal.version, end='')")
   - pyhp --caching embedding/syntax.pyhp|diff embedding/syntax.output -
   - pyhp request/methods.pyhp|diff request/methods.output -
   - pyhp request/request-order.pyhp --config request/request-order.conf|diff request/request-order.output -
