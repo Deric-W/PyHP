@@ -46,11 +46,11 @@ class Handler:
         cached_path = mkcached_path(self.cache_path, file_path)
         directory = os.path.dirname(cached_path)
         tmp_path = cached_path + ".new"     # to prevent potential readers from reading parts of the old AND new cache
-        cache_fd = os.open(cached_path, os.O_WRONLY)    # get fd for lock, file object not needed
+        if not os.path.isdir(directory):     # make sure that the directory exist
+            os.makedirs(directory, exist_ok=True)   # ignore already created directories
+        cache_fd = os.open(cached_path, os.O_WRONLY | os.O_CREAT)    # get fd for lock, file object not needed
         try:
             fcntl.lockf(cache_fd, fcntl.LOCK_EX)    # lock cache file to prevent race condition with other processes who want to update the cache (can be ignored by readers)
-            if not os.path.isdir(directory):     # make sure that the directory exist
-                os.makedirs(directory, exist_ok=True)   # ignore already created directories
             with open(tmp_path, "wb") as cache:   # write new cache to tmp file (truncate file if some process tried renewing the cache before but got terminated)
                 marshal.dump(code, cache)
             os.replace(tmp_path, cached_path)    # replace old cache with tmp file and remove tmp file in the process (also the reason why we cant use tempfile.mkstemp)
