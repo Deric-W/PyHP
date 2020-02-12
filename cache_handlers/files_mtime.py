@@ -3,11 +3,9 @@
 """PyHP cache handler (files with modification time)"""
 
 import marshal  # not pickle because only marshal supports code objects
-import os.path
-from os import makedirs
+import os
 from time import time
-from fcntl import LOCK_EX, LOCK_SH
-from pyhp.libpyhp import open_lock  # need for pyhp-core to be installed
+import fcntl
 
 
 class Handler:
@@ -40,21 +38,24 @@ class Handler:
             return True     # file is not existing --> age = infinite
 
     def load(self, file_path):  # load sections
-        with open_lock(LOCK_SH, mkcached_path(self.cache_path, file_path), "rb") as cache:  # lock is shared to allow multiple readers
+        with open(mkcached_path(self.cache_path, file_path), "rb") as cache:
             code = marshal.load(cache)
         return code
 
     def save(self, file_path, code):   # save sections
         cached_path = mkcached_path(self.cache_path, file_path)
         directory = os.path.dirname(cached_path)
-        if not os.path.isdir(directory):     # directories not already created
-            makedirs(directory, exist_ok=True)   # ignore already created directories
-        with open_lock(LOCK_EX, cached_path, "wb") as cache:    # lock is exclusive to prevent reading while writing
+        tmp_path = cached_path + ".new"     # to prevent potential readers from reading parts of the old AND new cache
+        if not os.path.isdir(directory):     # make sure that the directory exist
+            os.makedirs(directory, exist_ok=True)   # ignore already created directories
+        with open(tmp_path, "wb") as cache:   # write new cache to tmp file (truncate file if some process tried renewing the cache before but got terminated)
             marshal.dump(code, cache)
+        os.replace(tmp_path, cached_path)    # replace old cache with tmp file and remove tmp file in the process (also the reason why we cant use tempfile.mkstemp)
 
     def shutdown(self):
         pass    # nothing to do
 
 # use full path to allow indentical named files in different directories with cache_path as root
+# assumes the absence of a directory with the name of the file + the extension ".marshal{marshal.version}" in the same directory as the cached file
 def mkcached_path(cache_path, file_path):
-    return os.path.join(cache_path, file_path.strip(os.path.sep) + ".cache")
+    return os.path.join(cache_path, file_path.strip(os.path.sep) + ".marshal{0}".format(marshal.version))   # use version in extension to prevent exception with new marshal version

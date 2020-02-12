@@ -266,20 +266,6 @@ def check_redirect(code):
 def check_blank(string):
     return string == "" or string.isspace()
 
-# wrapper of open() to open a file with a file lock
-class open_lock:
-    def __init__(self, lock_type, *args, **kwargs):
-        self.file = open(*args, **kwargs)
-        self.lock_type = lock_type
-
-    def __enter__(self):
-        fcntl.lockf(self.file, self.lock_type)
-        return self.file
-
-    def __exit__(self, type, value, traceback):
-        self.file.flush()   # make sure the file is flushed
-        fcntl.lockf(self.file, fcntl.LOCK_UN)
-        self.file.close()
 
 # Class containing a example cache handler (with no function)
 class dummy_cache_handler:
