@@ -19,6 +19,7 @@ script:
   - pyhp embedding/syntax.pyhp|diff embedding/syntax.output -
   - pyhp embedding/shebang.pyhp|diff embedding/shebang.output -
   - pyhp embedding/indentation.pyhp|diff embedding/indentation.output -
+  - echo "<?pyhp print('stdin test') ?>" | pyhp | diff embedding/stdin.output -
   - test -f /lib/pyhp/cache_handlers/files_mtime.py
   - test ! -f ~/.cache/pyhp/$(pwd)/embedding/syntax.pyhp.marshal$(python3 -c "import marshal; print(marshal.version, end='')")
   - pyhp --caching embedding/syntax.pyhp|diff embedding/syntax.output -

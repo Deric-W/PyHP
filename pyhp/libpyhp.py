@@ -9,7 +9,6 @@ REQUEST_TIME = time.time()   # found no better solution
 import sys
 import os
 import cgi
-import fcntl
 import urllib.parse
 from http import HTTPStatus
 from collections import defaultdict
