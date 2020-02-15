@@ -67,8 +67,8 @@ The script is called either by the configuration of the web server or a shebang 
   #### Debian package
   1. build the *pyhp-core* python package with `python3 setup.py bdist_wheel`
   2. go to the *debian* directory and execute `./build_deb.sh`
-  3. enter a package name, the path of the *pyhp-core* wheel and the pip command you wish to use
-  4. Done! You can now install the debian package with `sudo dpkg -i <package name>.deb`
+  3. enter a package version, the path of the *pyhp-core* wheel and the pip command you wish to use
+  4. Done! You can now install the debian package with `sudo dpkg -i pyhp_<package version>_all.deb`
   
   #### Manually
   1. install the *pyhp-core* python package

@@ -4,8 +4,8 @@
 # you need to build the pyhp-core wheel first
 
 if [ "$1" = "" ]
-then read -p "Name: " package
-else package=$1
+then read -p "Version: " version
+else version=$1
 fi
 
 if [ "$2" = "" ]
@@ -18,11 +18,13 @@ then read -p "pip executeable: " pip
 else pip=$3
 fi
 
+package="pyhp_"$version"_all"
+
 mkdir "$package"
 
 # place config file, cache handlers and "executable"
 mkdir -p "$package/lib/pyhp/cache_handlers"
-cp ../cache_handlers/files_mtime.py "$package/lib/pyhp/cache_handlers"
+cp ../cache_handlers/* "$package/lib/pyhp/cache_handlers"
 
 mkdir "$package/etc"
 cp ../pyhp.conf "$package/etc"
@@ -37,8 +39,9 @@ $pip install --target "$package/usr/lib/python3/dist-packages" --ignore-installe
 
 # place metadata files
 mkdir "$package/DEBIAN"
+# calculate installed size
+cat control | python3 format.py "$version" $(du -sk --apparent-size --exclude "DEBIAN" "$package" 2>/dev/null | cut -f1) > "$package/DEBIAN/control"
 cp conffiles "$package/DEBIAN"
-cp control "$package/DEBIAN"
 
 mkdir -p "$package/usr/share/doc/pyhp"
 cp copyright "$package/usr/share/doc/pyhp"
@@ -48,6 +51,7 @@ gzip -n --best "$package/usr/share/doc/pyhp/changelog.Debian"
 # generate md5sums file
 chdir "$package"
 md5sum $(find . -type d -name "DEBIAN" -prune -o -type f -print) > DEBIAN/md5sums  # ignore metadata files
+sha256sum $(find . -type d -name "DEBIAN" -prune -o -type f -print) > DEBIAN/sha256sums
 chdir ../
 
 # if root set file permissions, else warn

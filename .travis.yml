@@ -12,8 +12,8 @@ install:
   - python3 setup.py bdist_wheel
   - version=$(python3 setup.py --version)
   - cd debian
-  - . ./build_deb.sh pyhp-test ../dist/pyhp_core-$version-py3-none-any.whl pip
-  - sudo dpkg -i pyhp-test.deb
+  - . ./build_deb.sh 0.0 ../dist/pyhp_core-$version-py3-none-any.whl pip
+  - sudo dpkg -i pyhp_0.0_all.deb
   - cd ../tests
 script:
   - pyhp embedding/syntax.pyhp|diff embedding/syntax.output -
