@@ -46,6 +46,7 @@ The script is called either by the configuration of the web server or a shebang 
      - `is_outdated`, wich takes the absolute file path and returns a boolean indicating if the cache needs to be renewed
      - `save`, wich takes the absolute file path and an iterator as argument and saves it in the cache
      - `load`, wich takes the absolute file path and loads an iterator from the cache
+     - `remove`, wich takes the absolute file path and removes the cached file from the cache
      - `shutdown`, wich does cleanup tasks
   - note that the iterator may contain code objects which can't be pickled
   - examples are available in the *cache_handlers* directory

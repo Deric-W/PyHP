@@ -57,6 +57,11 @@ class Handler:
         finally:    # close fd even if a exception occured
             os.close(cache_fd)
 
+    def remove(self, file_path):
+        cached_path = mkcached_path(self.cache_path, file_path)
+        if os.path.isfile(cached_path):  # prevent Exception if file is a directory or not yet created
+            os.unlink(cached_path)
+
     def shutdown(self):
         pass    # nothing to do
 

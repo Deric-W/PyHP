@@ -289,6 +289,10 @@ class dummy_cache_handler:
     def load(self, file_path):
         return ("WARNING: This is the dummy cache handler of the libpyhp module, iam providing no useful functions and are just a fallback", )     # return warning
 
+    # remove the cached file from the cache
+    def remove(self, file_path):
+        pass
+
     # cleanup
     def shutdown(self):
         pass
