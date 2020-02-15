@@ -1,8 +1,8 @@
 Package: pyhp
-Version: 2.0-1
+Version: {0}
 Architecture: all
 Maintainer: Eric Wolf <robo-eric@gmx.de>
-Installed-Size: 55
+Installed-Size: {1}
 Depends: python3:any (>= 3.5)
 Suggests: apache2
 Section: web
