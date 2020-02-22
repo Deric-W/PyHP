@@ -59,8 +59,10 @@ class Handler:
 
     def remove(self, file_path):
         cached_path = mkcached_path(self.cache_path, file_path)
-        if os.path.isfile(cached_path):  # prevent Exception if file is a directory or not yet created
+        try:
             os.unlink(cached_path)
+        except FileNotFoundError:   # prevent Exception if file is not yet created
+            pass
 
     def shutdown(self):
         pass    # nothing to do
