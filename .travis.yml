@@ -4,6 +4,7 @@ python:
   - "3.6"
   - "3.7"
   - "3.8"
+  - "3.9-dev"
   - "pypy3"
 env:
   - QUERY_STRING='test0=Hello&Test1=World%21&Test2=&Test3&&test0=World!' HTTP_COOKIE='test0=Hello ; Test1 = World%21 = Hello; Test2 = ;Test3;;test0=World!; ;'

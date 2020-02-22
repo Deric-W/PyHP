@@ -21,8 +21,8 @@ fi
 mkdir "$package"
 
 # place config file, cache handlers and "executable"
-mkdir -p "$package/lib/pyhp/cache_handlers"
-cp ../cache_handlers/files_mtime.py "$package/lib/pyhp/cache_handlers"
+mkdir -p "$package/usr/lib/pyhp/cache_handlers"
+cp ../cache_handlers/files_mtime.py "$package/usr/lib/pyhp/cache_handlers"
 
 mkdir "$package/etc"
 cp ../pyhp.conf "$package/etc"

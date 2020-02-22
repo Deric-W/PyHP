@@ -33,7 +33,6 @@ def main(file_path, caching=False, config_file="/etc/pyhp.conf"):
 
     if file_path != "":     # ignore if file is stdin
         file_path = os.path.abspath(file_path)  # prevent multiple calls to os.path.abspath for cache handler
-        os.chdir(os.path.dirname(file_path))    # change working directory to script directory
 
     # prepare the PyHP Object
     PyHP = libpyhp.PyHP(file_path=file_path,
