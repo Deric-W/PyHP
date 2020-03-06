@@ -6,36 +6,34 @@
 
 import re
 import sys
-from io import StringIO
-from contextlib import redirect_stdout
 
 
 # class for handling strings
 class FromString:
     # get string, regex to isolate code and optional flags for the regex (default for processing text files)
-    # the userdata is given to the processor function to allow state
-    def __init__(self, string, regex, flags=re.MULTILINE | re.DOTALL, userdata=None):
+    def __init__(self, string, regex, flags=re.MULTILINE | re.DOTALL):
         self.sections = re.split(regex, string, flags=flags)
-        self.userdata = userdata
 
     # process string with the code replaced by the output of the processor function
+    # the userdata is given to the processor function to allow state
     # this will modify self.sections
-    def process(self, processor):
+    def process(self, processor, userdata=None):
         code_sections = 0
         # the first section is always not code, and every code section has string sections as neighbors
         for i in range(1, len(self.sections), 2):
             code_sections += 1
-            self.sections[i] = processor(self.sections[i], self.userdata)
+            self.sections[i] = processor(self.sections[i], userdata)
         return code_sections
 
     # process the string and write the string and replaced code parts to sys.stdout
+    # the userdata is given to the processor function to allow state
     # this will not modify self.sections an requires an processor to write the data himself
-    def execute(self, processor):
+    def execute(self, processor, userdata=None):
         code_sections = 0
         for i in range(0, len(self.sections)):
             code_sections += 1
             if i % 2 == 1:  # uneven index --> code
-                processor(self.sections[i], self.userdata)
+                processor(self.sections[i], userdata)
             else:           # even index --> not code
                 if self.sections[i]:    # ignore empthy sections
                     sys.stdout.write(self.sections[i])
@@ -48,9 +46,8 @@ class FromString:
 # wrapper class for handling presplit strings
 class FromIter(FromString):
     # get presplit string as iterator
-    def __init__(self, iterator, userdata=None):
+    def __init__(self, iterator):
         self.sections = list(iterator)
-        self.userdata = userdata
 
 # function for executing python code
 # userdata = [locals, section_number], init with [{}, 0]

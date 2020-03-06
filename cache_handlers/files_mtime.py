@@ -29,13 +29,14 @@ class Handler:
 
     def is_outdated(self, file_path):      # return True if cache is not created or needs refresh or exceeds ttl
         cached_path = mkcached_path(self.cache_path, file_path)
-        if os.path.isfile(cached_path):     # to prevent Exception if cache not existing
+        try:     # to prevent Exception if cache not existing
             cache_mtime = os.path.getmtime(cached_path)
             file_mtime = os.path.getmtime(file_path)
-            age = time() - cache_mtime
-            return cache_mtime < file_mtime or age > self.ttl > -1      # age > ttl > -1 ignores ttl if -1 or lower
-        else:
+        except FileNotFoundError:
             return True     # file is not existing --> age = infinite
+        else:
+            age = time() - cache_mtime
+            return cache_mtime < file_mtime or age > self.ttl >= 0      # age > ttl >= 0 ignores ttl if lower than zero
 
     def load(self, file_path):  # load sections
         with open(mkcached_path(self.cache_path, file_path), "rb") as cache:

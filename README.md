@@ -47,7 +47,7 @@ The script is called either by the configuration of the web server or a shebang 
      - `save`, wich takes the absolute file path and an iterator as argument and saves it in the cache
      - `load`, wich takes the absolute file path and loads an iterator from the cache
      - `remove`, wich takes the absolute file path and removes the cached file from the cache
-     - `shutdown`, wich does cleanup tasks
+     - `shutdown`, wich does cleanup tasks and will run even if the initialization of the handler failed
   - note that the iterator may contain code objects which can't be pickled
   - examples are available in the *cache_handlers* directory
    
@@ -74,7 +74,7 @@ The script is called either by the configuration of the web server or a shebang 
   #### Manually
   1. install the *pyhp-core* python package
   2. copy *pyhp.conf* to */etc*
-  3. copy *cache_handlers* to */lib/pyhp/*
+  3. copy *cache_handlers* to */usr/lib/pyhp/*
   4. copy *debian/pyhp* to a directoy in your PATH
   5. Done! You can now use the `pyhp` command
   

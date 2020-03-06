@@ -51,33 +51,30 @@ def main(file_path, caching=False, config_file="/etc/pyhp.conf"):
     caching_allowed = config.getboolean("caching", "auto", fallback=False)
     # if file is not stdin and caching is enabled and wanted or auto_caching is enabled
     if check_if_caching(file_path, caching, caching_enabled, caching_allowed):
-        handler_path = prepare_path(config.get("caching", "handler_path", fallback="/lib/pyhp/cache_handlers/files_mtime.py"))  # get neccesary data
+        handler_path = prepare_path(config.get("caching", "handler_path", fallback="/usr/lib/pyhp/cache_handlers/files_mtime.py"))  # get neccesary data
         cache_path = config.get("caching", "path", fallback="~/.pyhp/cache")    # do not use prepare_path because cache_path may be used for configuration
         max_size = config.getint("caching", "max_size", fallback=16)
         ttl = config.getint("caching", "ttl", fallback=-1)
-        handler = import_path(handler_path)
-        handler = handler.Handler(cache_path, max_size, ttl)    # init handler
-        if handler.is_available(file_path):  # check if caching is possible
-            cached = True
-            if handler.is_outdated(file_path):   # update cache
-                code = embed.FromString(prepare_file(file_path), regex, userdata=[file_path, 0])  # set userdata for python_compile
-                code.process(embed.python_compile)  # compile python sections
-                code.userdata = [{"PyHP": PyHP}, 0]  # set userdata for python_execute_compiled
-                handler.save(file_path, code.sections)     # just save the code sections
-            else:   # load cache
-                code = embed.FromIter(handler.load(file_path), userdata=[{"PyHP": PyHP}, 0])
-        else:   # generate FromString Object
-            cached = False
-            code = embed.FromString(prepare_file(file_path), regex, userdata=[{"PyHP": PyHP}, 0])
-        handler.shutdown()
-    else:   # same as above
-        cached = False
-        code = embed.FromString(prepare_file(file_path), regex, userdata=[{"PyHP": PyHP}, 0])
-
-    if cached:  # run compiled code
-        code.execute(embed.python_execute_compiled)
-    else:   # run normal code
-        code.execute(embed.python_execute)
+        try:
+            handler = import_path(handler_path).Handler(cache_path, max_size, ttl)    # init handler
+            if not handler.is_available(file_path):
+                raise RuntimeError  # handler failed or caching not possible
+        except: # load file without cache
+            code = embed.FromString(prepare_file(file_path), regex)
+            code.execute(embed.python_execute, userdata=[{"PyHP": PyHP}, 0])
+        else:   # handler successful
+            if handler.is_outdated(file_path):  # update cache
+                code = embed.FromString(prepare_file(file_path), regex)
+                code.process(embed.python_compile, userdata=[file_path, 0]) # compile code sections
+                handler.save(file_path, code.sections)  # save preprocessed code
+            else:
+                code = embed.FromIter(handler.load(file_path))  # load cache
+            code.execute(embed.python_execute_compiled, userdata=[{"PyHP": PyHP}, 0])
+        finally:
+            handler.shutdown()  # shutdown handler
+    else:   # same as except clause
+        code = embed.FromString(prepare_file(file_path), regex)
+        code.execute(embed.python_execute, userdata=[{"PyHP": PyHP}, 0])
 
     if not PyHP.headers_sent():  # prevent error if no output occured, but not if an exception occured
         PyHP.send_headers()
