@@ -47,7 +47,7 @@ The script is called either by the configuration of the web server or a shebang 
      - `save`, wich takes the absolute file path and an iterator as argument and saves it in the cache
      - `load`, wich takes the absolute file path and loads an iterator from the cache
      - `remove`, wich takes the absolute file path and removes the cached file from the cache
-     - `shutdown`, wich does cleanup tasks and will run even if the initialization of the handler failed
+     - `shutdown`, wich does cleanup tasks
   - note that the iterator may contain code objects which can't be pickled
   - examples are available in the *cache_handlers* directory
    

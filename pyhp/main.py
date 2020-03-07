@@ -55,9 +55,9 @@ def main(file_path, caching=False, config_file="/etc/pyhp.conf"):
         cache_path = config.get("caching", "path", fallback="~/.pyhp/cache")    # do not use prepare_path because cache_path may be used for configuration
         max_size = config.getint("caching", "max_size", fallback=16)
         ttl = config.getint("caching", "ttl", fallback=-1)
+        handler = import_path(handler_path).Handler(cache_path, max_size, ttl)    # init handler
         try:
-            handler = import_path(handler_path).Handler(cache_path, max_size, ttl)    # init handler
-            if not handler.is_available(file_path):
+            if not handler.is_available(file_path): # assert(handler.is_available(file_path)) could be removed when optimized
                 raise RuntimeError  # handler failed or caching not possible
         except: # load file without cache
             code = embed.FromString(prepare_file(file_path), regex)
