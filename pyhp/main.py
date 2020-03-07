@@ -8,7 +8,6 @@ import os
 import argparse
 import configparser
 import importlib
-import atexit
 import errno
 from . import __version__
 from . import embed
@@ -34,16 +33,20 @@ def main(file_path, caching=False, config_file="/etc/pyhp.conf"):
     if file_path != "":     # ignore if file is stdin
         file_path = os.path.abspath(file_path)  # prevent multiple calls to os.path.abspath for cache handler
 
-    # prepare the PyHP Object
-    PyHP = libpyhp.PyHP(file_path=file_path,
-                        request_order=config.get("request", "request_order", fallback="GET POST COOKIE").split(),
-                        keep_blank_values=config.getboolean("request", "keep_blank_values", fallback=True),
-                        fallback_value=config.get("request", "fallback_value", fallback=""),
-                        enable_post_data_reading=config.getboolean("request", "enable_post_data_reading", fallback=False),
-                        default_mimetype=config.get("request", "default_mimetype", fallback="text/html")
-                        )
-    sys.stdout.write = PyHP.make_header_wrapper(sys.stdout.write)  # wrap stdout
-    atexit.register(PyHP.run_shutdown_functions)    # run shutdown functions even if a exception occured
+    request_order=config.get("request", "request_order", fallback="GET POST COOKIE").split()
+    keep_blank_values=config.getboolean("request", "keep_blank_values", fallback=True)
+    fallback_value=config.get("request", "fallback_value", fallback="")
+    enable_post_data_reading=config.getboolean("request", "enable_post_data_reading", fallback=False)
+    default_mimetype=config.get("request", "default_mimetype", fallback="text/html")
+    PyHP = libpyhp.PyHP(    # init PyHP object
+            file_path=file_path,
+            request_order=request_order,
+            keep_blank_values=keep_blank_values,
+            fallback_value=fallback_value,
+            enable_post_data_reading=enable_post_data_reading,
+            default_mimetype=default_mimetype,
+        )
+    libpyhp.setup_environment(PyHP)
 
     # handle caching
     regex = config.get("parser", "regex", fallback="\\<\\?pyhp[\\s](.*?)[\\s]\\?\\>").encode("utf8").decode("unicode_escape")  # process escape sequences like \n
@@ -63,6 +66,7 @@ def main(file_path, caching=False, config_file="/etc/pyhp.conf"):
             code = embed.FromString(prepare_file(file_path), regex)
             code.execute(embed.python_execute, userdata=[{"PyHP": PyHP}, 0])
         else:   # handler successful
+            PyHP.set_cache_handler(handler) # enable cache functions
             if handler.is_outdated(file_path):  # update cache
                 code = embed.FromString(prepare_file(file_path), regex)
                 code.process(embed.python_compile, userdata=[file_path, 0]) # compile code sections

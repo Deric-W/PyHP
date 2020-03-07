@@ -33,6 +33,9 @@ The script is called either by the configuration of the web server or a shebang 
      - `header_register_callback`
      - `setcookie` with an additional `samesite` keyword argument
      - `setrawcookie` also with an additional `samesite` keyword argument
+     - `opcache_is_script_cached` as `cache_is_script_cached` (raises NotImplementedError if cache is disabled)
+     - `opcache_invalidate` as `cache_invalidate` (raises NotImplementedError instead of returnig False if cache is disabled)
+     - `opcache_reset` as `cache_reset` (raises NotImplementedError instead of returnig False if cache is disabled)
      - `register_shutdown_function`
      
   
@@ -47,6 +50,7 @@ The script is called either by the configuration of the web server or a shebang 
      - `save`, wich takes the absolute file path and an iterator as argument and saves it in the cache
      - `load`, wich takes the absolute file path and loads an iterator from the cache
      - `remove`, wich takes the absolute file path and removes the cached file from the cache
+                 or the whole cache if the file path was not given
      - `shutdown`, wich does cleanup tasks
   - note that the iterator may contain code objects which can't be pickled
   - examples are available in the *cache_handlers* directory

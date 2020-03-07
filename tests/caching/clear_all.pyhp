@@ -1,0 +1,4 @@
+<?pyhp
+	# clear entire cache
+	PyHP.cache_reset()
+?>

@@ -1,0 +1,4 @@
+<?pyhp 
+	# invalidate this file
+	PyHP.cache_invalidate(PyHP.__FILE__, force=True)
+?>

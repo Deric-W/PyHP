@@ -9,9 +9,42 @@ REQUEST_TIME = time.time()   # found no better solution
 import sys
 import os
 import cgi
+import atexit
 import urllib.parse
 from http import HTTPStatus
 from collections import defaultdict
+
+
+# Class containing a example cache handler (with no function)
+class dummy_cache_handler:
+    # take the cache path, max cache directory size and time to live as arguments
+    def __init__(self, cache_path, max_size, ttl):
+        pass
+
+    # return True if cache is useable
+    def is_available(self, file_path):
+        return False
+
+    # check if cache needs to be updated or created
+    def is_outdated(self, file_path):
+        raise NotImplementedError
+
+    # save code, given as a iterator
+    # note that the code sections are replaced with code objects
+    def save(self, file_path, code):
+        raise NotImplementedError
+
+    # get cached code as iterator
+    def load(self, file_path):
+        raise NotImplementedError
+
+    # remove the cached file from the cache or entire cache if file_path is None
+    def remove(self, file_path=None):
+        raise NotImplementedError
+
+    # cleanup
+    def shutdown(self):
+        pass
 
 
 # class containing the implementations
@@ -22,13 +55,15 @@ class PyHP:
                  keep_blank_values=True,   # if to not remove "" values
                  fallback_value=None,      # fallback value of GET, POST, REQUEST and COOKIE if not None
                  enable_post_data_reading=False,   # if not to parse POST and consume stdin in the process
-                 default_mimetype="text/html"      # Content-Type header if not been set
+                 default_mimetype="text/html",      # Content-Type header if not been set
+                 cache_handler = dummy_cache_handler    # cache handler needed for cache functions
                 ):
         self.__FILE__ = os.path.abspath(file_path)    # absolute path of script
         self.response_code = 200
         self.headers = [["Content-Type", default_mimetype]]     # init with default mimetype header
         self.header_sent = False
         self.header_callback = lambda: None     # dummy callback
+        self.cache_handler = cache_handler
         self.shutdown_functions = []
         self.shutdown_functions_run = False
 
@@ -94,6 +129,12 @@ class PyHP:
                 self.REQUEST.update(self.COOKIE)
             else:   # ignore unknown methods
                 pass
+    
+    # change cache handler and shutdown old one if shutdown == True
+    def set_cache_handler(self, cache_handler, shutdown=True):
+        if shutdown:
+            self.cache_handler.shutdown()   # shutdown old handler
+        self.cache_handler = cache_handler
 
     # set new response code return the old one
     # if no code has been set it will return 200
@@ -189,20 +230,39 @@ class PyHP:
                 expires = expires.get("expires", 0)     # has to happen at the end because it overrides expires
             cookie = "Set-Cookie: %s=%s" % (name, value)    # initial header
             if expires != 0:
-                cookie += "; " + "Expires=%s" % time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime(time.time() + expires))    # add Expires and Max-Age just in case
-                cookie += "; " + "Max-Age=%d" % expires
+                cookie += "; Expires=%s" % time.strftime("%a, %d %b %Y %H:%M:%S GMT", time.gmtime(time.time() + expires))    # add Expires and Max-Age just in case
+                cookie += "; Max-Age=%d" % expires
             if path is not None:
-                cookie += "; " + "Path=%s" % path
+                cookie += "; Path=%s" % path
             if domain is not None:
-                cookie += "; " + "Domain=%s" % domain
+                cookie += "; Domain=%s" % domain
             if secure:
-                cookie += "; " + "Secure"
+                cookie += "; Secure"
             if httponly:
-                cookie += "; " + "HttpOnly"
+                cookie += "; HttpOnly"
             if samesite is not None:
-                cookie += "; " + "SameSite=%s" % samesite
+                cookie += "; SameSite=%s" % samesite
             self.header(cookie, False)
             return True
+
+    # return if the caching options are enabled (cache_handler given)
+    def cache_enabled(self):
+        return self.cache_handler is not dummy_cache_handler
+
+    # return if file is cached in the cache
+    def cache_is_script_cached(self, file):
+        file = os.path.abspath(file)
+        return not self.cache_handler.is_outdated(file)
+
+    # remove cached file if force == True or file is outdated
+    def cache_invalidate(self, file, force=False):
+        file = os.path.abspath(file)
+        if force or self.cache_handler.is_outdated(file):
+            self.cache_handler.remove(file)
+
+    # remove cache
+    def cache_reset(self):
+        self.cache_handler.remove()
 
     # register function to be run at shutdown
     # multiple functions are run in the order they have been registerd
@@ -265,38 +325,11 @@ def check_redirect(code):
 def check_blank(string):
     return string == "" or string.isspace()
 
-
-# Class containing a example cache handler (with no function)
-class dummy_cache_handler:
-    # take the cache path, max cache directory size and time to live as arguments
-    def __init__(self, cache_path, max_size, ttl):
-        pass
-
-    # return True if cache is useable
-    def is_available(self, file_path):
-        return False
-
-    # check if cache needs to be updated or created
-    def is_outdated(self, file_path):
-        return False
-
-    # save code, given as a iterator
-    # note that the code sections are replaced with code objects
-    def save(self, file_path, code):
-        pass
-
-    # get cached code as iterator
-    def load(self, file_path):
-        return ("WARNING: This is the dummy cache handler of the libpyhp module, iam providing no useful functions and are just a fallback", )     # return warning
-
-    # remove the cached file from the cache
-    def remove(self, file_path):
-        pass
-
-    # cleanup
-    def shutdown(self):
-        pass
-
+# prepare environment for usage
+def setup_environment(pyhp):
+    atexit.register(pyhp.run_shutdown_functions)    # run shutdown functions even if a exception occured
+    sys.stdout.write = pyhp.make_header_wrapper(sys.stdout.write)   # wrap stdout
+    sys.stdout.writelines = pyhp.make_header_wrapper(sys.stdout.writelines)
 
 # Class containing a example session handler (with no function)
 class dummy_session_handler:

@@ -1,0 +1,5 @@
+<?pyhp
+	import sys
+	if not PyHP.cache_is_script_cached(PyHP.__FILE__):	# fail if this file is not in cache
+		sys.exit(1)
+?>

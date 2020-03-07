@@ -58,12 +58,22 @@ class Handler:
         finally:    # close fd even if a exception occured
             os.close(cache_fd)
 
-    def remove(self, file_path):
-        cached_path = mkcached_path(self.cache_path, file_path)
-        try:
-            os.unlink(cached_path)
-        except FileNotFoundError:   # prevent Exception if file is not yet created
-            pass
+    # remove entire cache directory or just the cached file if file_path is not None
+    # doing this while there are other processes caching the affected files can lead to race conditions
+    # if the cache_path is '/' this will remove all files, dont use it as cache_path
+    def remove(self, file_path=None):
+        if file_path is not None:   # remove file
+            cached_path = mkcached_path(self.cache_path, file_path)
+            try:
+                os.unlink(cached_path)
+            except FileNotFoundError:   # prevent Exception if file is not yet created
+                pass
+        else:   # remove entire cache
+            for dirpath, dirnames, filenames in os.walk(self.cache_path, topdown=False, followlinks=False): # bottom-up to remove directory contents first and followlinks=False to prevent symlink attacks
+                for name in filenames:
+                    os.unlink(os.path.join(dirpath, name))
+                for name in dirnames:
+                    os.rmdir(os.path.join(dirpath, name))
 
     def shutdown(self):
         pass    # nothing to do
