@@ -56,7 +56,7 @@ class PyHP:
                  fallback_value=None,      # fallback value of GET, POST, REQUEST and COOKIE if not None
                  enable_post_data_reading=False,   # if not to parse POST and consume stdin in the process
                  default_mimetype="text/html",      # Content-Type header if not been set
-                 cache_handler = dummy_cache_handler    # cache handler needed for cache functions
+                 cache_handler = dummy_cache_handler(None, None, None)    # cache handler needed for cache functions
                 ):
         self.__FILE__ = os.path.abspath(file_path)    # absolute path of script
         self.response_code = 200
