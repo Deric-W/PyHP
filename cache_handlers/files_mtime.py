@@ -4,30 +4,25 @@
 
 import marshal  # not pickle because only marshal supports code objects
 import os
-from time import time
 import fcntl
+from time import time
+from shutil import rmtree
 
+__all__ = ["Handler"]
 
 class Handler:
     def __init__(self, cache_path, max_size, ttl):
+        """init with cache directory, max directory size in Megabytes and ttl of cached files"""
         self.cache_path = os.path.expanduser(cache_path)    # allow ~ in cache_path
         self.ttl = ttl
         self.max_size = max_size
 
-    def get_cachedir_size(self):        # get size of cache directory (with all sub directories) in Mbytes
-        size = 0
-        for dirpath, _, filenames in os.walk(self.cache_path, followlinks=False):
-            size += os.path.getsize(dirpath)        # dont forget the size of the directory
-            for filename in filenames:
-                filepath = os.path.join(dirpath, filename)
-                if not os.path.islink(filepath):        # dont count symlinks
-                    size += os.path.getsize(filepath)
-        return size / (1000 ** 2)       # bytes --> Mbytes
-
     def is_available(self, file_path):     # if cache directory has free space or the cached file is already existing or max_size < 0
-        return self.max_size < 0 or os.path.isfile(mkcached_path(self.cache_path, file_path)) or self.get_cachedir_size() < self.max_size
+        """return if caching is possible"""
+        return self.max_size < 0 or os.path.isfile(mkcached_path(self.cache_path, file_path)) or dir_size(self.cache_path) < self.max_size
 
     def is_outdated(self, file_path):      # return True if cache is not created or needs refresh or exceeds ttl
+        """return if cache is not created or is outdated"""
         cached_path = mkcached_path(self.cache_path, file_path)
         try:     # to prevent Exception if cache not existing
             cache_mtime = os.path.getmtime(cached_path)
@@ -38,12 +33,14 @@ class Handler:
             age = time() - cache_mtime
             return cache_mtime < file_mtime or age > self.ttl >= 0      # age > ttl >= 0 ignores ttl if lower than zero
 
-    def load(self, file_path):  # load sections
+    def load(self, file_path):
+        """return content of cached file"""
         with open(mkcached_path(self.cache_path, file_path), "rb") as cache:
             code = marshal.load(cache)
         return code
 
-    def save(self, file_path, code):   # save sections
+    def save(self, file_path, code):
+        """write code to cached file"""
         cached_path = mkcached_path(self.cache_path, file_path)
         directory = os.path.dirname(cached_path)
         tmp_path = cached_path + ".new"     # to prevent potential readers from reading parts of the old AND new cache
@@ -58,10 +55,10 @@ class Handler:
         finally:    # close fd even if a exception occured
             os.close(cache_fd)
 
-    # remove entire cache directory or just the cached file if file_path is not None
     # doing this while there are other processes caching the affected files can lead to race conditions
     # if the cache_path is '/' this will remove all files, dont use it as cache_path
     def remove(self, file_path=None):
+        """remove cached file or entire cache if file_path is None (not safe against race conditions)"""
         if file_path is not None:   # remove file
             cached_path = mkcached_path(self.cache_path, file_path)
             try:
@@ -69,16 +66,33 @@ class Handler:
             except FileNotFoundError:   # prevent Exception if file is not yet created
                 pass
         else:   # remove entire cache
-            for dirpath, dirnames, filenames in os.walk(self.cache_path, topdown=False, followlinks=False): # bottom-up to remove directory contents first and followlinks=False to prevent symlink attacks
-                for name in filenames:
-                    os.unlink(os.path.join(dirpath, name))
-                for name in dirnames:
-                    os.rmdir(os.path.join(dirpath, name))
+            rmtree(self.cache_path, onerror=error_handler)
 
     def shutdown(self):
+        """shutdown handler"""
         pass    # nothing to do
 
 # use full path to allow indentical named files in different directories with cache_path as root
 # assumes the absence of a directory with the name of the file + the extension ".marshal{marshal.version}" in the same directory as the cached file
 def mkcached_path(cache_path, file_path):
+    """generate cached path from cache path and absolute file path"""
     return os.path.join(cache_path, file_path.strip(os.path.sep) + ".marshal{0}".format(marshal.version))   # use version in extension to prevent exception with new marshal version
+
+def dir_size(path):
+    """get size of directory and its contents in megabytes"""
+    size = 0
+    for dirpath, _, filenames in os.walk(path, followlinks=False):
+        size += os.path.getsize(dirpath)        # dont forget the size of the directory
+        for filename in filenames:
+            filepath = os.path.join(dirpath, filename)
+            try:
+                if not os.path.islink(filepath):        # dont count symlinks
+                    size += os.path.getsize(filepath)
+            except FileNotFoundError:   # ignore if file was removed
+                 pass
+    return size / (1000 ** 2)       # bytes --> Mbytes
+
+def error_handler(func, path, info):
+    """ignore files which have already been deleted"""
+    if info[0] is not FileNotFoundError:
+        raise info[1]

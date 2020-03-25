@@ -13,9 +13,10 @@ from . import __version__
 from . import embed
 from . import libpyhp
 
+__all__ = ["get_args", "main"]
 
-# get cli arguments for main as dict
 def get_args():
+    """get cli arguments for main as dict"""
     parser = argparse.ArgumentParser(prog="pyhp", description="Interpreter for .pyhp Scripts (https://github.com/Deric-W/PyHP)")
     parser.add_argument("-c", "--caching", help="enable caching (requires file)", action="store_true")
     parser.add_argument("-v", "--version", help="display version number", action="version", version="%(prog)s {version}".format(version=__version__))
@@ -24,8 +25,8 @@ def get_args():
     args = parser.parse_args()
     return {"file_path": args.file, "caching": args.caching, "config_file": args.config}
 
-# start the PyHP Interpreter with predefined arguments
 def main(file_path, caching=False, config_file="/etc/pyhp.conf"):
+    """start the PyHP Interpreter with predefined arguments"""
     config = configparser.ConfigParser(inline_comment_prefixes="#")     # allow inline comments
     if config_file not in config.read(config_file):   # reading file failed
         raise FileNotFoundError(errno.ENOENT, "failed to read config file", config_file)
@@ -59,24 +60,22 @@ def main(file_path, caching=False, config_file="/etc/pyhp.conf"):
         max_size = config.getint("caching", "max_size", fallback=16)
         ttl = config.getint("caching", "ttl", fallback=-1)
         handler = import_path(handler_path).Handler(cache_path, max_size, ttl)    # init handler
+        PyHP.cache_set_handler(handler) # enable cache functions
         try:
-            if not handler.is_available(file_path): # assert(handler.is_available(file_path)) could be removed when optimized
-                raise RuntimeError  # handler failed or caching not possible
-        except: # load file without cache
-            code = embed.FromString(prepare_file(file_path), regex)
-            code.execute(embed.python_execute, userdata=[{"PyHP": PyHP}, 0])
-        else:   # handler successful
-            PyHP.set_cache_handler(handler) # enable cache functions
-            if handler.is_outdated(file_path):  # update cache
+            if handler.is_available(file_path): # caching possible
+                if handler.is_outdated(file_path):  # update cache
+                    code = embed.FromString(prepare_file(file_path), regex)
+                    code.process(embed.python_compile, userdata=[file_path, 0]) # compile code sections
+                    handler.save(file_path, code.sections)  # save preprocessed code
+                else:
+                    code = embed.FromIter(handler.load(file_path))  # load cache
+                code.execute(embed.python_execute_compiled, userdata=[{"PyHP": PyHP}, 0])
+            else:   # execute file without cache
                 code = embed.FromString(prepare_file(file_path), regex)
-                code.process(embed.python_compile, userdata=[file_path, 0]) # compile code sections
-                handler.save(file_path, code.sections)  # save preprocessed code
-            else:
-                code = embed.FromIter(handler.load(file_path))  # load cache
-            code.execute(embed.python_execute_compiled, userdata=[{"PyHP": PyHP}, 0])
+                code.execute(embed.python_execute, userdata=[{"PyHP": PyHP}, 0])
         finally:
             handler.shutdown()  # shutdown handler
-    else:   # same as except clause
+    else:   # execute file without cache
         code = embed.FromString(prepare_file(file_path), regex)
         code.execute(embed.python_execute, userdata=[{"PyHP": PyHP}, 0])
 

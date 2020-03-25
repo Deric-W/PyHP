@@ -5,7 +5,6 @@
 """Module containing multiple Python implementations of functions from PHP and utilities"""
 
 import time
-REQUEST_TIME = time.time()   # found no better solution
 import sys
 import os
 import cgi
@@ -14,50 +13,96 @@ import urllib.parse
 from http import HTTPStatus
 from collections import defaultdict
 
+__all__ = ["dummy_cache_handler", "dummy_session_handler", "PyHP", "setup_environment"]
 
-# Class containing a example cache handler (with no function)
 class dummy_cache_handler:
-    # take the cache path, max cache directory size and time to live as arguments
+    """fallback cache handler"""
     def __init__(self, cache_path, max_size, ttl):
+        """take the cache path, max cache directory size and time to live as arguments"""
         pass
 
-    # return True if cache is useable
     def is_available(self, file_path):
+        """return if cache is useable"""
         return False
 
-    # check if cache needs to be updated or created
     def is_outdated(self, file_path):
+        """check if cache needs to be updated or created"""
         raise NotImplementedError
 
-    # save code, given as a iterator
-    # note that the code sections are replaced with code objects
     def save(self, file_path, code):
+        """save code given as a iterator"""
         raise NotImplementedError
 
-    # get cached code as iterator
     def load(self, file_path):
+        """get cached code as iterator"""
         raise NotImplementedError
 
-    # remove the cached file from the cache or entire cache if file_path is None
     def remove(self, file_path=None):
+        """remove the cached file from the cache or entire cache if file_path is None"""
         raise NotImplementedError
 
-    # cleanup
     def shutdown(self):
+        """cleanup"""
         pass
 
 
-# class containing the implementations
+class dummy_session_handler:
+    """fallback session handler"""
+    def __init__(self, path, sid_length):
+        """init with session path and sid length"""
+        pass
+
+    def open(self, sid):
+        """prepare session for read/write"""
+        raise NotImplementedError
+
+    def read(self, sid):
+        """read data from session"""
+        raise NotImplementedError
+
+    def write(self, sid, data):
+        """wite data to session"""
+        raise NotImplementedError
+
+    def gc(self, max_lifetime):
+        """remove all sessions older than max_lifetime"""
+        raise NotImplementedError
+
+    def destroy(self, sid):
+        """remove session"""
+        raise NotImplementedError
+
+    def create_sid(self):
+        """allocate new unique session id"""
+        raise NotImplementedError
+
+    def update_timestamp(self, sid):
+        """update timestamp of session without changing anything"""
+        raise NotImplementedError
+
+    def close(self, sid):
+        """close session"""
+        raise NotImplementedError
+
+    def shutdown(self):
+        """cleanup"""
+        pass
+
+
 class PyHP:
+    """class containing the php functions"""
     def __init__(self,    # build GET, POST, COOKIE, SERVER, REQUEST
                  file_path=sys.argv[0],    # override if not directly executed
                  request_order=("GET", "POST", "COOKIE"),      # order in wich REQUEST gets updated
+                 request_time=None,        # not time.time() because it is only evaluated at import
                  keep_blank_values=True,   # if to not remove "" values
                  fallback_value=None,      # fallback value of GET, POST, REQUEST and COOKIE if not None
                  enable_post_data_reading=False,   # if not to parse POST and consume stdin in the process
                  default_mimetype="text/html",      # Content-Type header if not been set
                  cache_handler = dummy_cache_handler(None, None, None)    # cache handler needed for cache functions
-                ):
+        ):
+        if request_time is None:    # take time of creation
+            request_time = time.time()
         self.__FILE__ = os.path.abspath(file_path)    # absolute path of script
         self.response_code = 200
         self.headers = [["Content-Type", default_mimetype]]     # init with default mimetype header
@@ -65,7 +110,6 @@ class PyHP:
         self.header_callback = lambda: None     # dummy callback
         self.cache_handler = cache_handler
         self.shutdown_functions = []
-        self.shutdown_functions_run = False
 
         self.SERVER = {                                                                           # incomplete (AUTH)
             "PyHP_SELF": os.path.relpath(self.__FILE__, os.getenv("DOCUMENT_ROOT", default=os.curdir)),
@@ -77,8 +121,8 @@ class PyHP:
             "SERVER_SOFTWARE": os.getenv("SERVER_SOFTWARE", default=""),
             "SERVER_PROTOCOL": os.getenv("SERVER_PROTOCOL", default=""),
             "REQUEST_METHOD": os.getenv("REQUEST_METHOD", default=""),
-            "REQUEST_TIME": int(REQUEST_TIME),
-            "REQUEST_TIME_FLOAT": REQUEST_TIME,
+            "REQUEST_TIME": int(request_time),
+            "REQUEST_TIME_FLOAT": request_time,
             "QUERY_STRING": os.getenv("QUERY_STRING", default=""),
             "DOCUMENT_ROOT": os.getenv("DOCUMENT_ROOT", default=""),
             "HTTP_ACCEPT": os.getenv("HTTP_ACCEPT", default=""),
@@ -111,8 +155,8 @@ class PyHP:
         }
 
         # start processing GET, POST and COOKIE
-        self.GET = dict2defaultdict(parse_get(keep_blank_values), fallback_value)
-        self.COOKIE = dict2defaultdict(parse_cookie(keep_blank_values), fallback_value)
+        self.GET = dict2defaultdict(parse_get(self.SERVER["QUERY_STRING"], keep_blank_values), fallback_value)
+        self.COOKIE = dict2defaultdict(parse_cookie(os.getenv("HTTP_COOKIE", default=""), keep_blank_values), fallback_value)
         if enable_post_data_reading:    # dont consume stdin
             self.POST = dict2defaultdict({}, fallback_value)
         else:       # parse POST and consume stdin
@@ -129,95 +173,89 @@ class PyHP:
                 self.REQUEST.update(self.COOKIE)
             else:   # ignore unknown methods
                 pass
-    
-    # change cache handler and shutdown old one if shutdown == True
-    def set_cache_handler(self, cache_handler, shutdown=True):
-        if shutdown:
-            self.cache_handler.shutdown()   # shutdown old handler
-        self.cache_handler = cache_handler
 
-    # set new response code return the old one
     # if no code has been set it will return 200
     def http_response_code(self, response_code=None):
+        """set new response code return the old one"""
         old_code = self.response_code
         if response_code is not None:
             self.response_code = response_code
         return old_code     # is the current one if no response code has been provided
 
-    # set http header
     # if replace=True replace existing headers of the same type, else simply add
     # if http_response_code is not None set it as new response code
     def header(self, header, replace=True, http_response_code=None):
+        """set http header"""
         header = header.splitlines()[0]  # prevent header injection
         header = [part.strip() for part in header.partition(":")[0:3:2]]  # split in name and value and remove whitespace
         if replace:
             self.header_remove(header[0])   # remove headers with same name before adding header
         self.headers.append(header)    # add header
-        if http_response_code is not None:  # set response code if given (higher priority than location headers)
+        if http_response_code is not None:  # set response code if given (higher priority than location header)
             self.response_code = http_response_code
-        elif header[0].lower() == "location" and not check_redirect(self.response_code):  # set matching response code if code is not 201 or 3xx
+        elif header[0].lower() == "location" and not is_redirect(self.response_code):  # set matching response code if code is not 201 or 3xx
             self.response_code = 302
         else:
             pass
 
-    # list set headers
     def headers_list(self):
+        """list http headers"""
         return [": ".join(header) for header in self.headers]   # list headers like received by the client
 
-    # remove header with matching name
     # if name not given remove all headers (set-cookie and content-type too!)
     def header_remove(self, name=None):
+        """remove headers with matching name (case-insensitive) or all if name is None"""
         if name is not None:
             name = name.lower()  # header names are case-insensitive
             self.headers = [header for header in self.headers if header[0].lower() != name]  # remove headers with same name
         else:
             self.headers = []   # remove all headers
 
-    # return if header have been sent
     # unlike the PHP function it does not have file and line arguments
     def headers_sent(self):
+        """return if header have been sent"""
         return self.header_sent
 
-    # set calback to be executed just before headers are send
     # callback gets no arguments and the return value is ignored
     def header_register_callback(self, callback):
+        """set callback to be executed just before headers are send"""
         if not self.header_sent:
             self.header_callback = callback
             return True
         else:
             return False
 
-    # send headers and execute callback
     # DO NOT call this function from a header callback to prevent infinite recursion
     def send_headers(self):
+        """send headers and execute callback"""
         self.header_sent = True     # prevent recursion if callback prints output
         self.header_callback()      # execute callback
-        print("Status:", self.response_code, HTTPStatus(self.response_code).phrase)
+        print(": ".join(("Status", HTTPStatus(self.response_code).phrase)))
         for header in self.headers:
             print(": ".join(header))
         print()                     # end of headers
 
-    # make wrapper for target function to call send_headers if wrapped function is used, like print
     # use like print = PyHP.make_header_wrapper(print)
-    def make_header_wrapper(self, target=print):
+    def make_header_wrapper(self, target):
+        """make wrapper of target function that calls send_headers() if used for the first time"""
         def wrapper(*args, **kwargs):   # wrapper forwards all args and kwargs to target function
             if not self.header_sent:
                 self.send_headers()
             target(*args, **kwargs)     # call target with arguments
         return wrapper
 
-    # set Set-Cookie header, but quote special characters in name and value
     # same behavior with expires as setrawcookie
     # in contrast to php, the samesite keyword argument exists here
     def setcookie(self, name, value="", expires=0, path=None, domain=None, secure=False, httponly=False, samesite=None):
+        """set Set-Cookie header, but quote special characters in name and value"""
         name = urllib.parse.quote(name)
         value = urllib.parse.quote(value)
         return self.setrawcookie(name, value, expires, path, domain, secure, httponly, samesite)
 
-    # set Set-Cookie header
     # if expires is a dict the arguments are read from it
     # in contrast to php, the samesite keyword argument exists here
     def setrawcookie(self, name, value="", expires=0, path=None, domain=None, secure=False, httponly=False, samesite=None):
+        """set Set-Cookie header"""
         if self.header_sent:
             return False
         else:
@@ -245,55 +283,60 @@ class PyHP:
             self.header(cookie, False)
             return True
 
-    # return if the caching options are enabled (cache_handler given)
+    def cache_set_handler(self, cache_handler, shutdown=True):
+        """set cache handler and return old handler. If shutdown == True call old_handler.shutdown()"""
+        old_handler = self.cache_handler
+        self.cache_handler = cache_handler
+        if shutdown:
+            old_handler.shutdown()  # shutdown old handler
+        return old_handler
+
     def cache_enabled(self):
+        """return if the caching options are enabled (cache_handler given)"""
         return self.cache_handler is not dummy_cache_handler
 
-    # return if file is cached in the cache
     def cache_is_script_cached(self, file):
-        file = os.path.abspath(file)
-        return not self.cache_handler.is_outdated(file)
+        """return if file is cached"""
+        return not self.cache_handler.is_outdated(os.path.abspath(file))
 
-    # remove cached file if force == True or file is outdated
     def cache_invalidate(self, file, force=False):
+        """remove cached file if force == True or file is outdated"""
         file = os.path.abspath(file)
         if force or self.cache_handler.is_outdated(file):
             self.cache_handler.remove(file)
 
-    # remove cache
     def cache_reset(self):
+        """remove cache"""
         self.cache_handler.remove()
 
-    # register function to be run at shutdown
     # multiple functions are run in the order they have been registerd
     def register_shutdown_function(self, callback, *args, **kwargs):
+        """register function to be run at shutdown"""
         self.shutdown_functions.append((callback, args, kwargs))
 
-    # run the shutdown functions in the order they have been registerd
     # DO NOT call run_shutdown_functions from a shutdown_function, it will cause infinite recursion
     def run_shutdown_functions(self):
-        self.shutdown_functions_run = True
+        """run the shutdown functions in the order they have been registerd"""
         for function, args, kwargs in self.shutdown_functions:
             function(*args, **kwargs)
 
 
-# parse get values from query string
-def parse_get(keep_blank_values=True):
-    return urllib.parse.parse_qs(os.getenv("QUERY_STRING", default=""), keep_blank_values=keep_blank_values)
+# parse get values from query_string
+def parse_get(query_string, keep_blank_values=True):
+    return urllib.parse.parse_qs(query_string, keep_blank_values=keep_blank_values)
 
-# parse only post data
+# parse post data
 def parse_post(keep_blank_values=True):
     environ = os.environ.copy()     # dont modify original environ
     environ["QUERY_STRING"] = ""    # prevent the parsing of GET
     return cgi.parse(environ=environ, keep_blank_values=keep_blank_values)
 
 # parse cookie string
-def parse_cookie(keep_blank_values=True):
-    cookie_string = os.getenv("HTTP_COOKIE", default="")
+def parse_cookie(cookie_string, keep_blank_values=True):
     cookie_dict = {}
     for cookie in cookie_string.split(";"):
         cookie = cookie.partition("=")[0:3:2]  # split in name and value
-        if not keep_blank_values and (check_blank(cookie[0]) or check_blank(cookie[1])):
+        if not keep_blank_values and (is_blank(cookie[0]) or is_blank(cookie[1])):
             continue
         cookie = [urllib.parse.unquote(part.strip()) for part in cookie]    # unquote name and value and remove whitespace
         if cookie[0] in cookie_dict:
@@ -318,47 +361,15 @@ def dict2defaultdict(_dict, fallback=None):
     return output
 
 # check if the response code is redirecting (201 or 3xx)
-def check_redirect(code):
+def is_redirect(code):
     return code == 201 or code // 100 == 3
 
 # check if string is empthy or just whitespace
-def check_blank(string):
+def is_blank(string):
     return string == "" or string.isspace()
 
-# prepare environment for usage
 def setup_environment(pyhp):
+    """prepare environment for usage"""
     atexit.register(pyhp.run_shutdown_functions)    # run shutdown functions even if a exception occured
     sys.stdout.write = pyhp.make_header_wrapper(sys.stdout.write)   # wrap stdout
     sys.stdout.writelines = pyhp.make_header_wrapper(sys.stdout.writelines)
-
-# Class containing a example session handler (with no function)
-class dummy_session_handler:
-    def __init__(self, path, sid_length):
-        self.sid_length = sid_length
-
-    def open(self, id):
-        pass
-
-    def read(self, id):
-        return ""
-
-    def write(self, id, data):
-        pass
-
-    def gc(self, max_lifetime):
-        return 0
-
-    def destroy(self, id):
-        pass
-
-    def create_sid(self):
-        return "X" * self.sid_length
-
-    def update_timestamp(self, id):
-        pass
-
-    def close(self, id):
-        pass
-
-    def shutdown(self):
-        pass

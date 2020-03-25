@@ -8,16 +8,16 @@ import re
 import sys
 
 
-# class for handling strings
 class FromString:
+    """class for processing sections inside files"""
     # get string, regex to isolate code and optional flags for the regex (default for processing text files)
     def __init__(self, string, regex, flags=re.MULTILINE | re.DOTALL):
         self.sections = re.split(regex, string, flags=flags)
 
-    # process string with the code replaced by the output of the processor function
     # the userdata is given to the processor function to allow state
     # this will modify self.sections
     def process(self, processor, userdata=None):
+        """process code sections with processor function"""
         code_sections = 0
         # the first section is always not code, and every code section has string sections as neighbors
         for i in range(1, len(self.sections), 2):
@@ -25,10 +25,10 @@ class FromString:
             self.sections[i] = processor(self.sections[i], userdata)
         return code_sections
 
-    # process the string and write the string and replaced code parts to sys.stdout
     # the userdata is given to the processor function to allow state
     # this will not modify self.sections an requires an processor to write the data himself
     def execute(self, processor, userdata=None):
+        """process code sections and write sections to stdout"""
         code_sections = 0
         for i in range(0, len(self.sections)):
             code_sections += 1
@@ -43,33 +43,33 @@ class FromString:
         return "".join(self.sections)
 
 
-# wrapper class for handling presplit strings
 class FromIter(FromString):
+    """class for handling presplit strings"""
     # get presplit string as iterator
     def __init__(self, iterator):
         self.sections = list(iterator)
 
-# function for executing python code
 # userdata = [locals, section_number], init with [{}, 0]
 def python_execute(code, userdata):
+    """execute python code sections"""
     userdata[1] += 1
     try:
         exec(python_align(code), globals(), userdata[0])
     except Exception as e:  # tell the user the section of the Exception
         raise Exception("Exception during execution of section %d" % userdata[1]) from e
 
-# compile python code sections
 # userdata = [file, section_number], init with [str, 0]
 def python_compile(code, userdata):
+    """compile python code sections"""
     userdata[1] += 1
     try:
         return compile(python_align(code), userdata[0], "exec")
     except Exception as e:  # tell the user the section of the Exception
         raise Exception("Exception during executing of section %d" % userdata[1]) from e
 
-# execute compiled python sections
 # userdata is the same as python_execute
 def python_execute_compiled(code, userdata):
+    """execute compiled python code sections"""
     userdata[1] += 1
     try:
         exec(code, globals(), userdata[0])
@@ -78,13 +78,14 @@ def python_execute_compiled(code, userdata):
 
 # function for aligning python code in case of a startindentation
 def python_align(code, indentation=None):
+    """removes initial indentation from python code sections"""
     line_num = 0
     code = code.splitlines()     # split to lines
     for line in code:
         line_num += 1
-        if not (not line or line.isspace() or python_is_comment(line)):  # ignore non code lines
+        if not (not line or line.isspace() or is_comment(line)):  # ignore non code lines
             if indentation is None:     # first line of code, get startindentation
-                indentation = python_get_indentation(line)
+                indentation = get_indentation(line)
             if line.startswith(indentation):  # if line starts with startindentation
                 code[line_num - 1] = line[len(indentation):]  # remove startindentation
             else:
@@ -92,8 +93,8 @@ def python_align(code, indentation=None):
     return "\n".join(code)  # join the lines back together
 
 
-# function for getting the indentation of a line of python code
-def python_get_indentation(line):
+def get_indentation(line):
+    """get indentation of a line of python code"""
     indentation = ""
     for char in line:
         if char in " \t":
@@ -102,6 +103,6 @@ def python_get_indentation(line):
             break
     return indentation
 
-# check if complete line is a comment
-def python_is_comment(line):
+def is_comment(line):
+    """check if line of python code is a comment"""
     return line.lstrip().startswith("#")
