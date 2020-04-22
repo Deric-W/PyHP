@@ -46,18 +46,19 @@ class Code:
         """remove starting indentation from code sections"""
         code_section = 0
         for i in range(1, len(self.sections), 2):
+            start_indent = indentation
             code_section += 1
             line_num = 0
             lines = self.sections[i].splitlines()   # split code into lines
             for line in lines:
                 line_num += 1
                 if not (not line or line.isspace() or is_comment(line)):  # ignore non code lines
-                    if indentation is None:     # first line of code, set starting indentation
-                        indentation = get_indentation(line)
-                    if line.startswith(indentation):  # if line starts with starting indentation
-                        lines[line_num - 1] = line[len(indentation):]  # remove starting indentation
+                    if start_indent is None:     # first line of code, set starting indentation
+                        start_indent = get_indentation(line)
+                    if line.startswith(start_indent):  # if line starts with starting indentation
+                        lines[line_num - 1] = line[len(start_indent):]  # remove starting indentation
                     else:
-                        raise IndentationError("indentation not matching", ("code section {0}".format(code_section), line_num, len(indentation), line))  # raise Exception on bad indentation
+                        raise IndentationError("indentation not matching", ("code section {0}".format(code_section), line_num, len(start_indent), line))  # raise Exception on bad indentation
             self.sections[i] = "\n".join(lines) # join the lines back together
 
     def get_sections(self):
