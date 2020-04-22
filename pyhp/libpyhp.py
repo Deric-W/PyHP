@@ -230,7 +230,7 @@ class PyHP:
         """send headers and execute callback"""
         self.header_sent = True     # prevent recursion if callback prints output
         self.header_callback()      # execute callback
-        print(": ".join(("Status", HTTPStatus(self.response_code).phrase)))
+        print("Status: {code} {phrase}".format(code=self.response_code, phrase=HTTPStatus(self.response_code).phrase))
         for header in self.headers:
             print(": ".join(header))
         print()                     # end of headers
