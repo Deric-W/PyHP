@@ -9,6 +9,7 @@ import argparse
 import configparser
 import importlib
 import errno
+import re
 from . import __version__
 from . import embed
 from . import libpyhp
@@ -51,6 +52,7 @@ def main(file_path, caching=False, config_file="/etc/pyhp.conf"):
 
     # handle caching
     regex = config.get("parser", "regex", fallback="\\<\\?pyhp[\\s](.*?)[\\s]\\?\\>").encode("utf8").decode("unicode_escape")  # process escape sequences like \n
+    regex = re.compile(regex, flags=re.MULTILINE | re.DOTALL)
     caching_enabled = config.getboolean("caching", "enable", fallback=True)
     caching_allowed = config.getboolean("caching", "auto", fallback=False)
     # if file is not stdin and caching is enabled and wanted or auto_caching is enabled
@@ -64,20 +66,22 @@ def main(file_path, caching=False, config_file="/etc/pyhp.conf"):
         try:
             if handler.is_available(file_path): # caching possible
                 if handler.is_outdated(file_path):  # update cache
-                    code = embed.FromString(prepare_file(file_path), regex)
-                    code.process(embed.python_compile, userdata=[file_path, 0]) # compile code sections
-                    handler.save(file_path, code.sections)  # save preprocessed code
+                    code = embed.Code(prepare_file(file_path), regex)
+                    code.dedent()
+                    code.compile(file_path)
+                    handler.save(file_path, code.get_sections())  # save preprocessed code
                 else:
-                    code = embed.FromIter(handler.load(file_path))  # load cache
-                code.execute(embed.python_execute_compiled, userdata=[{"PyHP": PyHP}, 0])
+                    code = embed.Code(handler.load(file_path), None)  # load cache
             else:   # execute file without cache
-                code = embed.FromString(prepare_file(file_path), regex)
-                code.execute(embed.python_execute, userdata=[{"PyHP": PyHP}, 0])
+                code = embed.Code(prepare_file(file_path), regex)
+                code.dedent()
         finally:
             handler.shutdown()  # shutdown handler
     else:   # execute file without cache
-        code = embed.FromString(prepare_file(file_path), regex)
-        code.execute(embed.python_execute, userdata=[{"PyHP": PyHP}, 0])
+        code = embed.Code(prepare_file(file_path), regex)
+        code.dedent()
+    
+    code.execute(globals(), {"PyHP": PyHP})
 
     if not PyHP.headers_sent():  # prevent error if no output occured, but not if an exception occured
         PyHP.send_headers()
