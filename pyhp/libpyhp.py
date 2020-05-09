@@ -8,89 +8,22 @@ import time
 import sys
 import os
 import cgi
-import atexit
 import urllib.parse
 from http import HTTPStatus
 from collections import defaultdict
 
-__all__ = ["dummy_cache_handler", "dummy_session_handler", "PyHP", "setup_environment"]
 
-class dummy_cache_handler:
-    """fallback cache handler"""
-    def __init__(self, cache_path, max_size, ttl):
-        """take the cache path, max cache directory size and time to live as arguments"""
-        pass
-
-    def is_available(self, file_path):
-        """return if cache is useable"""
-        return False
-
-    def is_outdated(self, file_path):
-        """check if cache needs to be updated or created"""
-        raise NotImplementedError
-
-    def save(self, file_path, code):
-        """save code given as a iterator"""
-        raise NotImplementedError
-
-    def load(self, file_path):
-        """get cached code as iterator"""
-        raise NotImplementedError
-
-    def remove(self, file_path=None):
-        """remove the cached file from the cache or entire cache if file_path is None"""
-        raise NotImplementedError
-
-    def shutdown(self):
-        """cleanup"""
-        pass
-
-
-class dummy_session_handler:
-    """fallback session handler"""
-    def __init__(self, path, sid_length):
-        """init with session path and sid length"""
-        pass
-
-    def open(self, sid):
-        """prepare session for read/write"""
-        raise NotImplementedError
-
-    def read(self, sid):
-        """read data from session"""
-        raise NotImplementedError
-
-    def write(self, sid, data):
-        """wite data to session"""
-        raise NotImplementedError
-
-    def gc(self, max_lifetime):
-        """remove all sessions older than max_lifetime"""
-        raise NotImplementedError
-
-    def destroy(self, sid):
-        """remove session"""
-        raise NotImplementedError
-
-    def create_sid(self):
-        """allocate new unique session id"""
-        raise NotImplementedError
-
-    def update_timestamp(self, sid):
-        """update timestamp of session without changing anything"""
-        raise NotImplementedError
-
-    def close(self, sid):
-        """close session"""
-        raise NotImplementedError
-
-    def shutdown(self):
-        """cleanup"""
-        pass
+__all__ = ["PyHP"]
 
 
 class PyHP:
     """class containing the php functions"""
+    response_code = 200
+
+    header_sent = False
+    
+    cache_handler = None
+
     def __init__(self,    # build GET, POST, COOKIE, SERVER, REQUEST
                  file_path=sys.argv[0],    # override if not directly executed
                  request_order=("GET", "POST", "COOKIE"),      # order in wich REQUEST gets updated
@@ -99,16 +32,12 @@ class PyHP:
                  fallback_value=None,      # fallback value of GET, POST, REQUEST and COOKIE if not None
                  enable_post_data_reading=False,   # if not to parse POST and consume stdin in the process
                  default_mimetype="text/html",      # Content-Type header if not been set
-                 cache_handler = dummy_cache_handler(None, None, None)    # cache handler needed for cache functions
         ):
         if request_time is None:    # take time of creation
             request_time = time.time()
         self.__FILE__ = os.path.abspath(file_path)    # absolute path of script
-        self.response_code = 200
         self.headers = [["Content-Type", default_mimetype]]     # init with default mimetype header
-        self.header_sent = False
         self.header_callback = lambda: None     # dummy callback
-        self.cache_handler = cache_handler
         self.shutdown_functions = []
 
         self.SERVER = {                                                                           # incomplete (AUTH)
@@ -173,8 +102,16 @@ class PyHP:
                 self.REQUEST.update(self.COOKIE)
             else:   # ignore unknown methods
                 pass
+    
+    def __enter__(self):
+        return self
+    
+    def __exit__(self, type, value, traceback):
+        if type is None and not self.header_sent:    # send headers if no output and no exceptions occured
+            self.send_headers()
+        self.run_shutdown_functions()
+        return False    # we dont handle exceptions
 
-    # if no code has been set it will return 200
     def http_response_code(self, response_code=None):
         """set new response code return the old one"""
         old_code = self.response_code
@@ -282,32 +219,44 @@ class PyHP:
                 cookie += "; SameSite=%s" % samesite
             self.header(cookie, False)
             return True
+    
+    def cache_set_handler(self, handler, register_shutdown=True):
+        """set new cache handler and register shutdown function if register_shutdown = True"""
+        self.cache_handler = handler
+        if register_shutdown:
+            self.register_shutdown_function(lambda: handler.shutdown())
 
-    def cache_set_handler(self, cache_handler, shutdown=True):
-        """set cache handler and return old handler. If shutdown == True call old_handler.shutdown()"""
-        old_handler = self.cache_handler
-        self.cache_handler = cache_handler
-        if shutdown:
-            old_handler.shutdown()  # shutdown old handler
-        return old_handler
-
-    def cache_enabled(self):
-        """return if the caching options are enabled (cache_handler given)"""
-        return self.cache_handler is not dummy_cache_handler
-
+    def cache_compile_file(self, file):
+        """cache file"""
+        if self.cache_handler is None:
+            return False
+        else:
+            try:
+                self.cache_handler.cache(file)
+            except:
+                return False
+            else:
+                return True
+    
+    def cache_remove(self, file, force=False):
+        """removes file from the cache if it is outdated or force = True"""
+        if self.cache_handler is None:
+            return False
+        else:
+            self.cache_handler.remove(file, force=force)
+            return True
+    
     def cache_is_script_cached(self, file):
-        """return if file is cached"""
-        return not self.cache_handler.is_outdated(os.path.abspath(file))
-
-    def cache_invalidate(self, file, force=False):
-        """remove cached file if force == True or file is outdated"""
-        file = os.path.abspath(file)
-        if force or self.cache_handler.is_outdated(file):
-            self.cache_handler.remove(file)
-
+        """check if a file is cached"""
+        return not self.cache_handler.is_outdated(file)
+    
     def cache_reset(self):
-        """remove cache"""
-        self.cache_handler.remove()
+        """remove the entire cache, maybe not supported while the cache is in use"""
+        if self.cache_handler is None:
+            return False
+        else:
+            self.cache_handler.reset()
+            return True
 
     # multiple functions are run in the order they have been registerd
     def register_shutdown_function(self, callback, *args, **kwargs):
@@ -367,9 +316,3 @@ def is_redirect(code):
 # check if string is empthy or just whitespace
 def is_blank(string):
     return string == "" or string.isspace()
-
-def setup_environment(pyhp):
-    """prepare environment for usage"""
-    atexit.register(pyhp.run_shutdown_functions)    # run shutdown functions even if a exception occured
-    sys.stdout.write = pyhp.make_header_wrapper(sys.stdout.write)   # wrap stdout
-    sys.stdout.writelines = pyhp.make_header_wrapper(sys.stdout.writelines)

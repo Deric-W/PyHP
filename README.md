@@ -8,7 +8,7 @@ The script is called either by the configuration of the web server or a shebang 
   - Parser for embedding python Code in HTML
   - a bunch of PHP features implemented in python
   - modular structure to allow the use of features outside of the interpreter
-  - automatic code alignment for improved readability
+  - automatic code alignment for improved readability inside HTML files
   - caching
   
 ## How it works:
@@ -41,19 +41,19 @@ The script is called either by the configuration of the web server or a shebang 
   
   ## Cache Handlers
   
- - are responsible for saving/loading/renewing caches
- - are python scripts with the following contents:
- - the `Handler` class, wich takes the raw cache path (no expanduser, ...), max cache size and time to live as  
-   initialization parameters and provides the following methods:
-     - `is_available`, wich takes the absolute file path and returns a boolean indicating if the cache can be used
-     - `is_outdated`, wich takes the absolute file path and returns a boolean indicating if the cache needs to be renewed
-     - `save`, wich takes the absolute file path and an iterator as argument and saves it in the cache
-     - `load`, wich takes the absolute file path and loads an iterator from the cache
-     - `remove`, wich takes the absolute file path and removes the cached file from the cache
-                 or the whole cache if the file path was not given
-     - `shutdown`, wich does cleanup tasks
-  - note that the iterator may contain code objects which can't be pickled
-  - examples are available in the *cache_handlers* directory
+ - are responsible for saving, loading and removing caches
+ - are python scripts with a `Handler` class, which takes as parameters `location`, `max_size` and `ttl`, is thread safe and contains:
+     - a `renew_exceptions` attribute, which is a tuple containing exceptions to be raised by `load` if the cache entry is outdated
+     - a `is_outdated(file_path)` method, which returns a bool indicating if the cache entry for the file is outdated or does not exist
+     - a `load(file_path)` method, which loads the cache entry for the file or raises a exception from `renew_exceptions` if the cache entry is outdated
+     - a `save(file_path, sections)` method, which saves the code sections (a list) in the cache entry for the file
+     - a `remove(file_path, force=False)` method, which removes the cache entry from the cache if it is outdated or force = True
+     - a `reset()` method, which removes the entire cache
+     - a `shutdown()` method, which does cleanup tasks
+ - note that the list may contain code objects which can't be pickled
+ - handlers available in the *cache_handlers* directory:
+     - `files_mtime.py`, which stores the cache entries in seperate files and detects outdated entries with their modification time
+     - `memory_mtime.py`, which stores the cache entries in memory and  detects outdated entries with their modification time (unuseable when using CGI)
    
   ## Installation
   
@@ -81,4 +81,3 @@ The script is called either by the configuration of the web server or a shebang 
   3. copy *cache_handlers* to */usr/lib/pyhp/*
   4. copy *debian/pyhp* to a directoy in your PATH
   5. Done! You can now use the `pyhp` command
-  

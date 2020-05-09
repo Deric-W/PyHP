@@ -17,6 +17,10 @@ session_encode
 session_decode
 $_SESSION
 
-add handler for memcached
-add handler for redis
+runtime rework
+http form parameter array notation (<input type="text" name="array[key0][key1]" />)
+$_FILES
 
+WSGI support
+
+add handler for memcached
