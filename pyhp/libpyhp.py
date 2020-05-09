@@ -238,7 +238,7 @@ class PyHP:
             else:
                 return True
     
-    def cache_remove(self, file, force=False):
+    def cache_invalidate(self, file, force=False):
         """removes file from the cache if it is outdated or force = True"""
         if self.cache_handler is None:
             return False
