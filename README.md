@@ -47,7 +47,7 @@ The script is called either by the configuration of the web server or a shebang 
      - a `is_outdated(file_path)` method, which returns a bool indicating if the cache entry for the file is outdated or does not exist
      - a `load(file_path)` method, which loads the cache entry for the file or raises a exception from `renew_exceptions` if the cache entry is outdated
      - a `save(file_path, sections)` method, which saves the code sections (a list) in the cache entry for the file
-     - a `remove(file_path, force=False)` method, which removes the cache entry from the cache if it is outdated or force = True
+     - a `remove(file_path)` method, which removes the cache entry from the cache
      - a `reset()` method, which removes the entire cache
      - a `shutdown()` method, which does cleanup tasks
  - note that the list may contain code objects which can't be pickled

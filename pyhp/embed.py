@@ -116,6 +116,10 @@ class FileLoader:
     def _from_stream(self, stream):
         """get code object from stream"""
         return Code(strip_shebang(stream.read()), self.regex, dedent=self.dedent)
+    
+    def caching_enabled(self):
+        """return if caching is enabled"""
+        return self.cache_handler is not None
 
     def load(self, file_path):
         """load file from stream, disk or cache and renew cache if needed"""
@@ -144,9 +148,11 @@ class FileLoader:
         """check if cached file is outdated"""
         return self.cache_handler.is_outdated(os.path.abspath(file_path))
 
-    def remove(self, file_path, force=False):
+    def invalidate(self, file_path, force=False):
         """remove cached file from the cache if it is outdated or force = True"""
-        self.cache_handler.remove(os.path.abspath(file_path), force=force)
+        file_path = os.path.abspath(file_path)
+        if force or self.cache_handler.is_outdated(file_path):
+            self.cache_handler.remove(file_path)
 
     def reset(self):
         """remove entire cache"""

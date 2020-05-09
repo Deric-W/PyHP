@@ -240,10 +240,10 @@ class PyHP:
     
     def cache_invalidate(self, file, force=False):
         """removes file from the cache if it is outdated or force = True"""
-        if self.cache_handler is None:
+        if self.cache_handler is None or not self.cache_handler.caching_enabled():
             return False
         else:
-            self.cache_handler.remove(file, force=force)
+            self.cache_handler.invalidate(file, force=force)
             return True
     
     def cache_is_script_cached(self, file):
@@ -252,7 +252,7 @@ class PyHP:
     
     def cache_reset(self):
         """remove the entire cache, maybe not supported while the cache is in use"""
-        if self.cache_handler is None:
+        if self.cache_handler is None or not self.cache_handler.caching_enabled():
             return False
         else:
             self.cache_handler.reset()

@@ -57,9 +57,8 @@ class Handler:
             raise OutOfSpaceError("the cache dict has reached max. size")
 
     def remove(self, file_path, force=False):
-        """remove cached data of file if it is outdated or force = True"""
-        if force or self.is_outdated(file_path):
-            del self.cache[file_path]
+        """remove cached data of file"""
+        del self.cache[file_path]
 
     def reset(self):
         """remove entire cache"""

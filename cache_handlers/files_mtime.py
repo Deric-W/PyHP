@@ -91,10 +91,9 @@ class Handler:
         else:
             raise OutOfSpaceError("the cache directory has no free space left")
 
-    def remove(self, file_path, force=False):
-        """remove cached file if it is outdated or force = True"""
-        if force or self.is_outdated(file_path):
-            ensure_unlinked(self._cached_path(file_path))  # prevent Exception if file is not yet created or was removed by another process
+    def remove(self, file_path):
+        """remove cached file"""
+        ensure_unlinked(self._cached_path(file_path))  # prevent Exception if file is not yet created or was removed by another process
 
     def reset(self):
         """remove entire cache, do not call while the cache is in use!"""
