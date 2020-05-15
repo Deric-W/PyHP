@@ -82,14 +82,3 @@ def import_path(path):
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
     return module
-
-# get code and remove shebang
-def prepare_file(path):
-    if path == "":
-        code = sys.stdin.read()
-    else:
-        with open(path, "r") as fd:
-            code = fd.read()
-    if code.startswith("#!"):   # remove shebang
-        code = code.partition("\n")[2]  # get all lines except the first line
-    return code

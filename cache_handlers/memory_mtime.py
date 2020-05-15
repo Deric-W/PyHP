@@ -38,9 +38,13 @@ class Handler:
     def is_outdated(self, file_path):
         """return if the cached file is outdated"""
         file_mtime = os.path.getmtime(file_path)
-        cache_mtime = self.cache[file_path][0]
-        age = time() - cache_mtime
-        return cache_mtime < file_mtime or age > self.ttl >= 0      # age > ttl >= 0 ignores ttl if lower than zero
+        try:
+            cache_mtime = self.cache[file_path][0]
+        except KeyError:    # cache not created --> age = infinite
+            return True
+        else:
+            age = time() - cache_mtime
+            return cache_mtime < file_mtime or age > self.ttl >= 0      # age > ttl >= 0 ignores ttl if lower than zero
 
     def load(self, file_path):
         """return cached file"""

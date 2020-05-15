@@ -141,7 +141,7 @@ class FileLoader:
     def cache(self, file_path):
         """cache file"""
         code = self._from_file(file_path)
-        code.compile(file_path)
+        code.compile(file=file_path)
         self.cache_handler.save(os.path.abspath(file_path), code.sections)
 
     def is_outdated(self, file_path):
@@ -176,7 +176,7 @@ def get_indentation(line):
 
 def is_comment(line):
     """check if a line of python code is a comment"""
-    return line.lstrip().startswith("#")    # check if first 'normal' character is a '#'
+    return line.lstrip().startswith("#")    # check if first non-whitespace character is a '#'
 
 def strip_shebang(code):
     """strip shebang from code"""
