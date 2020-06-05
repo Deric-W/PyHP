@@ -21,5 +21,6 @@
             print("This is an example use of the header function.")
             print("Because of already occured output, the next line will have no effect.")
             PyHP.header("pointless: True", http_response_code=400)
+         ?>
     </body>
 </html>

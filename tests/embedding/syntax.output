@@ -11,8 +11,10 @@ Content-Type: text/html
 With the default configuration, code needs to be contained
 between the '<?pyhp' and '?>' tags and one whitespace between
 the code and the tags.
-Dont forget that the parser ignores python syntax, so '?>' without the ' would
+Dont forget that the parser ignores python syntax, so a '?>' without the ' ' would
 end this section.
 
     </body>
 </html>
+Like PHP, PyHP supports ending a section without a closing tag if
+the section ends with EOF
