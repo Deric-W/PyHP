@@ -26,6 +26,8 @@ class Handler:
     """Cache handler storing the cache on disk and detecting outdated files with their mtime"""
     renew_exceptions = (FileNotFoundError, OutdatedError) # cache was removed during load() or is outdated
 
+    __slots__ = "cache_path", "ttl", "max_size"
+
     def __init__(self, location, max_size, ttl):
         """init with cache directory, max directory size in Megabytes and ttl of cached files"""
         self.cache_path = os.path.expanduser(location)    # allow ~ in cache_path
@@ -37,7 +39,7 @@ class Handler:
         """return path of cached file"""
         return os.path.join(self.cache_path, file_path.strip(os.path.sep) + CACHE_EXTENSION)
 
-    def _cachedir_size(self):
+    def get_chachesize(self):
         """get size of the cache directory and its contents in megabytes"""
         size = 0
         for dirpath, _, filenames in os.walk(self.cache_path, followlinks=False):
@@ -53,14 +55,13 @@ class Handler:
 
     def is_outdated(self, file_path):
         """return if cache is not created or is outdated (mtime or ttl)"""
-        file_mtime = os.path.getmtime(file_path)
         try:     # to prevent Exception if cache not existing
             cache_mtime = os.path.getmtime(self._cached_path(file_path))
         except FileNotFoundError:
             return True     # file is not existing --> age = infinite
         else:
             age = time() - cache_mtime
-            return cache_mtime < file_mtime or age > self.ttl >= 0      # age > ttl >= 0 ignores ttl if lower than zero
+            return cache_mtime < os.path.getmtime(file_path) or 0 <= self.ttl < age      # 0 <= self.ttl < age ignores ttl if lower than zero
 
     def load(self, file_path):
         """return content of cached file"""
@@ -73,7 +74,7 @@ class Handler:
     def save(self, file_path, code):
         """write code to cached file"""
         cached_path = self._cached_path(file_path)
-        if self.max_size < 0 or os.path.isfile(cached_path) or self._cachedir_size() < self.max_size:   # file is already cached or the cache has not reached max_size yet
+        if self.max_size < 0 or os.path.isfile(cached_path) or self.get_chachesize() < self.max_size:   # file is already cached or the cache has not reached max_size yet
             directory = os.path.dirname(cached_path)
             if not os.path.isdir(directory):     # make sure that the directory exists
                 os.makedirs(directory, exist_ok=True)   # ignore already created directories

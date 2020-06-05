@@ -20,6 +20,8 @@ class Handler:
     """Cache handler storing the cache in memory and detecting outdated files with their mtime"""
     renew_exceptions = (OutdatedError, KeyError)
 
+    __slots__ = "cache", "ttl", "max_size"
+
     def __init__(self, location, max_size, ttl):
         self.cache = {} # location is ignored
         self.max_size = max_size
@@ -37,14 +39,13 @@ class Handler:
 
     def is_outdated(self, file_path):
         """return if the cached file is outdated"""
-        file_mtime = os.path.getmtime(file_path)
         try:
             cache_mtime = self.cache[file_path][0]
         except KeyError:    # cache not created --> age = infinite
             return True
         else:
             age = time() - cache_mtime
-            return cache_mtime < file_mtime or age > self.ttl >= 0      # age > ttl >= 0 ignores ttl if lower than zero
+            return cache_mtime < os.path.getmtime(file_path) or 0 <= self.ttl < age      # 0 <= self.ttl < age ignores ttl if lower than zero
 
     def load(self, file_path):
         """return cached file"""

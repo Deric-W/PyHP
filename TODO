@@ -18,8 +18,12 @@ session_decode
 $_SESSION
 
 runtime rework
+remove fallback value for dict
+add Array
 http form parameter array notation (<input type="text" name="array[key0][key1]" />)
+Cookie hmac
 $_FILES
+$_SERVER Auth
 
 WSGI support
 

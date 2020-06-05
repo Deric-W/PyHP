@@ -2,21 +2,24 @@
 <html>
 	<head>
 		<title>Fibonacci test</title>
+		<?pyhp 
+			from html import escape
+
+			def fib(n):
+				a,b = 0, 1
+				while a < n:
+					yield a
+					a, b = b, a + b
+		?>
 	</head>
 	<body>
-	<?pyhp
-	    def fib(n):
-	        a,b = 0, 1
-	        while a < n:
-	            yield a
-	            a, b = b, a + b
-	    
+	<?pyhp	    
 	    if "fib" in PyHP.REQUEST:
 	        if PyHP.REQUEST["fib"].isdecimal():
 	            n = int(PyHP.REQUEST["fib"])
-	            print("<p>These are the fibonacci numbers from 0 to %s</p>" % n)
+	            print("<p>These are the fibonacci numbers from 0 to {0}</p>".format(escape(n)))
 	            for number in fib(n):
-	                print("<p>%s</p>" % number)
+	                print("<p>{0}</p>".format(number))
 	        else:
 	            print("<p>Please enter a valid integer!</p>")
 	    else:
