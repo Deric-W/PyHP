@@ -4,23 +4,22 @@
 # This module is part of PyHP (https://github.com/Deric-W/PyHP)
 
 import sys
-import os
-import argparse
-import configparser
+import os.path
 import re
+from argparse import ArgumentParser
+from configparser import ConfigParser
 from importlib.util import spec_from_file_location, module_from_spec
 from . import __version__
 from .embed import FileLoader, RawParser, DedentParser
 from .libpyhp import PyHP
 
-__all__ = ["get_args", "main"]
 
 def get_args():
     """get cli arguments for main as dict"""
-    parser = argparse.ArgumentParser(prog="pyhp", description="Interpreter for .pyhp Scripts (https://github.com/Deric-W/PyHP)")
+    parser = ArgumentParser(prog="pyhp", description="Interpreter for .pyhp Scripts (https://github.com/Deric-W/PyHP)")
     parser.add_argument("-c", "--caching", help="enable caching (requires file)", action="store_true")
     parser.add_argument("-v", "--version", help="display version number", action="version", version="%(prog)s {version}".format(version=__version__))
-    parser.add_argument("file", type=str, help="file to be interpreted")
+    parser.add_argument("file", type=str, help="file to be interpreted (omit for reading from stdin)", nargs="?", default=None)
     parser.add_argument("--config", type=str, help="path to custom config file", nargs="?", const="/etc/pyhp.conf", default="/etc/pyhp.conf")
     args = parser.parse_args()
     return {"file_path": args.file, "caching": args.caching, "config_file": args.config}
@@ -39,7 +38,7 @@ def init_handlers(handlers):
 def main(file_path, caching=False, config_file="/etc/pyhp.conf"):
     """start the PyHP Interpreter with predefined arguments"""
     # create config obj
-    config = configparser.ConfigParser(inline_comment_prefixes=("#", ";"))  # allow inline comments
+    config = ConfigParser(inline_comment_prefixes=("#", ";"))  # allow inline comments
     with open(config_file, "r") as fd:
         config.read_file(fd, source=config_file)
     # create pyhp obj
@@ -49,7 +48,7 @@ def main(file_path, caching=False, config_file="/etc/pyhp.conf"):
     enable_post_data_reading=config.getboolean("request", "enable_post_data_reading", fallback=False)
     default_mimetype=config.get("request", "default_mimetype", fallback="text/html")
     pyhp = PyHP(    # init PyHP object
-        file_path=sys.argv[0] if file_path is sys.stdin else file_path,
+        file_path=sys.argv[0] if file_path is None else file_path,
         request_order=request_order,
         keep_blank_values=keep_blank_values,
         fallback_value=fallback_value,
@@ -81,5 +80,6 @@ def main(file_path, caching=False, config_file="/etc/pyhp.conf"):
         pyhp.cache_set_handler(loader, False)   # loader shutdown is handled by context manager
         sys.stdout.write = pyhp.make_header_wrapper(sys.stdout.write)   # make headers be send if output occurs
         sys.stdout.writelines = pyhp.make_header_wrapper(sys.stdout.writelines)
-        loader.load(file_path).execute(globals(), {"PyHP": pyhp})
+        code = parser.parse(sys.stdin.read()) if file_path is None else loader.load(file_path)
+        code.execute(globals(), {"PyHP": pyhp})
     return 0

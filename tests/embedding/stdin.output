@@ -1,0 +1,5 @@
+Status: 200 OK
+Content-Type: text/html
+
+<html>reading from stdin is also possible
+</html>

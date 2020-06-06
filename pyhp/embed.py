@@ -115,9 +115,7 @@ class DedentParser(RawParser):
 
 def strip_shebang(code):
     """strip shebang from code"""
-    if code.startswith("#!"):
-        code = code.partition("\n")[2]  # return all lines except the first line
-    return code
+    return code.partition("\n")[2] if code.startswith("#!") else code   # return all lines except the first line if the first line is a shebang
 
 
 class FileLoader:
