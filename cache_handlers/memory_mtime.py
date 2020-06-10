@@ -1,14 +1,12 @@
 #!/usr/bin/python3
 
-"""PyHP cache handler (memory with modification time)"""
+"""PyHP cache handler (memory with modification time and LRU cache replacement)"""
 
 import sys
 import os.path
 from time import time
-
-class OutOfSpaceError(Exception):
-    """Exception raised when the cache dict has no free space left"""
-    pass
+from threading import Lock
+from collections import OrderedDict
 
 
 class OutdatedError(Exception):
@@ -16,14 +14,20 @@ class OutdatedError(Exception):
     pass
 
 
+def code_size(code):
+    """claculate the size of a code object"""
+    return sum(sys.getsizeof(section) for section in code) + sys.getsizeof(code)
+
+
 class Handler:
     """Cache handler storing the cache in memory and detecting outdated files with their mtime"""
     renew_exceptions = (OutdatedError, KeyError)
 
-    __slots__ = "cache", "ttl", "max_size"
+    __slots__ = "cache", "lock", "ttl", "max_size"
 
     def __init__(self, location, max_size, ttl):
-        self.cache = {} # location is ignored
+        self.cache = OrderedDict()  # location is ignored
+        self.lock = Lock()  # OrderedDict not thread safe
         self.max_size = max_size
         self.ttl = ttl
 
@@ -32,9 +36,7 @@ class Handler:
         size = 0
         for file_path, value in self.cache.items():
             size += sys.getsizeof(file_path)
-            size += sys.getsizeof(value)
-            for section in value:
-                size += sys.getsizeof(section)
+            size += code_size(value)
         return size / (1000 ** 2)   # bytes --> Mbytes
 
     def is_outdated(self, file_path):
@@ -51,23 +53,31 @@ class Handler:
         """return cached file"""
         if self.is_outdated(file_path):
             raise OutdatedError("the cached file is outated")
-        else:
+        with self.lock:
+            self.cache.move_to_end(file_path, last=False)
             return self.cache[file_path][1]
 
     def save(self, file_path, code):
         """save code in cached file"""
-        if self.max_size < 0 or file_path in self.cache or self._size() < self.max_size:   # file is already cached or the cache has not reached max_size yet
+        with self.lock:
+            if file_path not in self.cache and 0 <= self.max_size < self._size():   # file not already cached and max_size reached
+                size_needed = code_size(code)   # space needed
+                while size_needed > 0:  # remove cached objects until there is enough space
+                    least_file, least_code = self.cache.popitem()
+                    size_needed -= sys.getsizeof(least_file)
+                    size_needed -= code_size(least_code)
             self.cache[file_path] = (time(), code)  # store timestamp
-        else:
-            raise OutOfSpaceError("the cache dict has reached max. size")
+            self.cache.move_to_end(file_path, last=False)
 
     def remove(self, file_path, force=False):
         """remove cached data of file"""
-        del self.cache[file_path]
+        with self.lock:
+            del self.cache[file_path]
 
     def reset(self):
         """remove entire cache"""
-        self.cache.clear()
+        with self.lock:
+            self.cache.clear()
 
     def shutdown(self):
         """shutdown Handler"""

@@ -2,9 +2,8 @@
 
 """Module for handling pyhp files"""
 
-import sys
 import os.path
-
+from sys import stdout
 
 class CompileError(ValueError, SyntaxError):
     """Exception raised if compiling a section fails"""
@@ -16,7 +15,7 @@ class Code:
     __slots__ = "sections"
 
     def __init__(self, sections):
-        self.sections = [section for section in sections]
+        self.sections = list(sections)
 
     def execute(self, globals, locals):
         """execute code sections with the given globals and locals"""
@@ -27,7 +26,7 @@ class Code:
                 except Exception as err:    # tell the user the section of the Exception
                     raise RuntimeError("Exception during execution of section {0}".format(index // 2)) from err
             elif section:       # even index --> not code
-                sys.stdout.write(section)
+                stdout.write(section)
             else:   # ignore empty sections
                 pass
 
