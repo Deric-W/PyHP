@@ -228,15 +228,12 @@ class PyHP:
 
     def cache_compile_file(self, file):
         """cache file"""
-        if self.cache_handler is None:
+        try:
+            self.cache_handler.cache(file)
+        except:
             return False
         else:
-            try:
-                self.cache_handler.cache(file)
-            except:
-                return False
-            else:
-                return True
+            return True
     
     def cache_invalidate(self, file, force=False):
         """removes file from the cache if it is outdated or force = True"""

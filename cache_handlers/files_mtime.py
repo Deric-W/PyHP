@@ -76,9 +76,8 @@ class Handler:
         cached_path = self._cached_path(file_path)
         if self.max_size < 0 or os.path.isfile(cached_path) or self.get_chachesize() < self.max_size:   # file is already cached or the cache has not reached max_size yet
             directory = os.path.dirname(cached_path)
-            if not os.path.isdir(directory):     # make sure that the directory exists
-                os.makedirs(directory, exist_ok=True)   # ignore already created directories
             tmp_path = cached_path + ".new"     # to prevent potential readers from reading parts of the old AND new cache
+            os.makedirs(directory, exist_ok=True)   # make sure that the directory exists, ignore already created directories
             try:
                 with open(tmp_path, "xb") as fd:    # if the process does not remove tmp_path or gets killed the saving of this cache entry will always be skipped
                     marshal.dump(code, fd)
@@ -88,7 +87,7 @@ class Handler:
             except OSError as err:
                 if err.errno == EXDEV:   # replace failed, clean up tmp_path
                      ensure_unlinked(tmp_path)
-                raise   # let the user know that replace failed
+                raise   # dont hide the error
         else:
             raise OutOfSpaceError("the cache directory has no free space left")
 

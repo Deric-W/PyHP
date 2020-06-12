@@ -81,4 +81,4 @@ class Handler:
 
     def shutdown(self):
         """shutdown Handler"""
-        pass
+        self.reset()    # free memory

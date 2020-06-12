@@ -1,4 +1,6 @@
 <?pyhp
+	import sys
 	# clear entire cache
 	PyHP.cache_reset()
+	sys.exit(1 if PyHP.cache_is_script_cached(PyHP.__FILE__) else 0)
 ?>
