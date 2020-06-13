@@ -1,5 +1,5 @@
 <?pyhp
 	import sys, os.path
-	file = os.path.abspath(sys.argv[2])
+	file = os.path.abspath(sys.argv[-1])
 	sys.exit(0 if file == PyHP.__FILE__ else 1)
 ?>
