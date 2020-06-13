@@ -133,7 +133,7 @@ class FileLoader:
         self.shutdown()
         return False    # we dont handle exceptions
 
-    def _get_code(self, file_path):
+    def get_code(self, file_path):
         """get code object from file"""
         with open(file_path, "r") as fd:
             return self.parser.parse(strip_shebang(fd.read()))
@@ -159,7 +159,7 @@ class FileLoader:
             else:   # valid cache found, exit loop
                 break
         else:   # no valid cache was found, load code from disk
-            code = self._get_code(file_path)
+            code = self.get_code(file_path)
             code.compile(file=file_path, optimize=self.optimize)
         for cache_handler in renew_stack:   # update all outdated caches
             try:
@@ -171,9 +171,9 @@ class FileLoader:
 
     def cache(self, file_path):
         """cache file in top level cache"""
-        code = self._get_code(file_path)
-        code.compile(file=file_path)
-        self.cache_handlers[0].save(os.path.abspath(file_path), code)
+        code = self.get_code(file_path)
+        code.compile(file=file_path, optimize=self.optimize)
+        self.cache_handlers[0].save(os.path.abspath(file_path), code.sections)
 
     def is_outdated(self, file_path):
         """check if cached file is outdated"""
