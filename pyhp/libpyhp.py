@@ -228,11 +228,10 @@ class PyHP:
 
     def cache_compile_file(self, file):
         """cache file"""
-        try:
-            self.cache_handler.cache(file)
-        except:
+        if self.cache_handler is None or not self.cache_handler.caching_enabled():
             return False
         else:
+            self.cache_handler.cache(file)
             return True
     
     def cache_invalidate(self, file, force=False):

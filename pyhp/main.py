@@ -63,6 +63,7 @@ def main(file_path, caching=False, config_file="/etc/pyhp.conf"):
     # create loader
     enabled = config.getboolean("caching", "enabled", fallback=True)
     forced = config.getboolean("caching", "auto", fallback=False)
+    optimization_level = config.getint("caching", "optimization_level", fallback=-1)
     ignore_errors = config.getboolean("caching", "ignore_errors", fallback=False)
     handlers = zip(
         config.get("caching", "handler_paths", fallback="/usr/lib/pyhp/cache_handlers/files_mtime.py").split(),
@@ -73,6 +74,7 @@ def main(file_path, caching=False, config_file="/etc/pyhp.conf"):
     loader = FileLoader(
         parser,
         *init_handlers(handlers) if (enabled and caching) or forced else [],
+        optimize=optimization_level,
         ignore_errors=ignore_errors
     )
     # setup and execute

@@ -119,10 +119,11 @@ def strip_shebang(code):
 
 class FileLoader:
     """implementation of the caching system"""
-    def __init__(self, parser, *cache_handlers, ignore_errors=False):
-        """init with parser, cache handlers and if cache errors should be ignored"""
+    def __init__(self, parser, *cache_handlers, optimize=-1, ignore_errors=False):
+        """init with parser, cache handlers, compile() optimization level and if cache errors should be ignored"""
         self.parser = parser
         self.cache_handlers = cache_handlers
+        self.optimize = optimize
         self.ignore_errors = ignore_errors
 
     def __enter__(self):
@@ -159,7 +160,7 @@ class FileLoader:
                 break
         else:   # no valid cache was found, load code from disk
             code = self._get_code(file_path)
-            code.compile(file=file_path)
+            code.compile(file=file_path, optimize=self.optimize)
         for cache_handler in renew_stack:   # update all outdated caches
             try:
                 cache_handler.save(file_path, code.sections)

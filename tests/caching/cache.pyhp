@@ -1,0 +1,5 @@
+<?pyhp
+	import sys
+	PyHP.cache_compile_file(PyHP.__FILE__)
+	sys.exit(0 if PyHP.cache_is_script_cached(PyHP.__FILE__) else 1)
+?>
