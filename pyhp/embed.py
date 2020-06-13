@@ -19,57 +19,20 @@ class Code:
 
     def execute(self, globals, locals):
         """execute code sections with the given globals and locals"""
-        for index, section in enumerate(self.sections):
-            if index % 2 != 0:  # uneven index --> code
-                try:
-                    exec(section, globals, locals)
-                except Exception as err:    # tell the user the section of the Exception
-                    raise RuntimeError("Exception during execution of section {0}".format(index // 2)) from err
-            elif section:       # even index --> not code
+        for section, is_code in self.iter_sections():
+            if is_code:
+                exec(section, globals, locals)
+            elif section:
                 stdout.write(section)
             else:   # ignore empty sections
                 pass
 
-    def compile(self, file="<string>", optimize=-1):
-        """compile code sections"""
-        # the first section is always not code, and every code section has string sections as neighbors
-        for index in range(1, len(self.sections), 2):
-            try:
-                self.sections[index] = compile(self.sections[index], file, "exec", optimize=optimize)
-            except Exception as err:    # tell the user the section of the Exception
-                raise CompileError("Exception during compilation of section {0}".format(index // 2)) from err
-
     def iter_sections(self):
         """generator yielding every section with a bool indicating if the section is code"""
-        for index, section in enumerate(self.sections):
-            yield section, index % 2 != 0
-
-
-class RawParser:
-    """class implementing a parser for pyhp files with raw code sections"""
-    def __init__(self, start, end):
-        """init with compiled start regex, end regex"""
-        self.start = start
-        self.end = end
-    
-    def parse_sections(self, string):
-        """iterator yielding the sections of str, beginning with non code section"""
-        pos = 0
-        length = len(string)
         is_code = False
-        while pos < length:
-            match = self.end.search(string, pos) if is_code else self.start.search(string, pos)   # search for the end if we are in a code section, otherwise for the next code section
-            if match is None:   # if we are still in this loop we are not at the end
-                yield string[pos:]
-                break
-            else:
-                yield string[pos:match.start()]
-                pos = match.end()
-                is_code = not is_code   # toggle mode
-
-    def parse(self, string):
-        """create code object from string"""
-        return Code(self.parse_sections(string))
+        for section in self.sections:
+            yield section, is_code
+            is_code = not is_code
 
 
 def get_indentation(line):
@@ -82,40 +45,77 @@ def get_indentation(line):
             break   # reached end of identation
     return indentation
 
-class DedentParser(RawParser):
-    """parser for pyhp files with indented code sections"""
-    def dedent(self, sections, start_indent=None):
-        """iterator removing a starting indentation from code sections"""
-        for index, section in enumerate(sections):
-            if index % 2 != 0:  # code section
-                indentation = start_indent
-                line_num = 0
-                lines = section.splitlines()
-                for line in lines:
-                    line_num += 1
-                    if not (not line or line.isspace() or line.lstrip().startswith("#")):  # ignore lines without code
-                        if indentation is None:             # first line of code, set starting indentation
-                            indentation = get_indentation(line)
-                        if line.startswith(indentation):    # if line starts with starting indentation
-                            lines[line_num - 1] = line[len(indentation):]  # remove starting indentation
-                        else:
-                            raise IndentationError(
-                                "indentation not matching",
-                                ("code section {0}".format(index // 2), line_num, len(indentation), line)
-                            )  # raise Exception on bad indentation
-                yield "\n".join(lines) # join the lines back together
-            else:   # not code, dont change
-                yield section
+def dedent_section(file, offset, section):
+    """remove a starting indentation from a code section"""
+    line_num = 0
+    lines = section.splitlines()
+    indentation = None
+    for line in lines:
+        line_num += 1
+        if not (not line or line.isspace() or line.lstrip().startswith("#")):  # ignore lines without code
+            if indentation is None:             # first line of code, set starting indentation
+                indentation = get_indentation(line)
+            if line.startswith(indentation):    # if line starts with starting indentation
+                lines[line_num - 1] = line[len(indentation):]  # remove starting indentation
+            else:
+                raise IndentationError(
+                    "indentation not matching",
+                    (file, line_num + offset - 1, len(indentation), line)
+                )  # raise Exception on bad indentation
+    return "\n".join(lines) # join the lines back together
 
-    def parse(self, string):
-        """create code object from string with dedented code sections"""
-        return Code(self.dedent(self.parse_sections(string)))
+class Parser:
+    """class implementing a parser for pyhp files"""
+    def __init__(self, start, end, dedent=True):
+        """init with compiled regex for section start and end and  if code section should be dedented"""
+        self.start = start
+        self.end = end
+        self.code_steps = [dedent_section] if dedent else []
+        self.text_steps = []
+
+    def iter_sections(self, string):
+        """iterator yielding the sections of str with their line offsets, beginning with a text section"""
+        pos = 0
+        line = 1
+        length = len(string)
+        is_code = False
+        while pos < length:
+            match = self.end.search(string, pos) if is_code else self.start.search(string, pos)   # search for the end if we are in a code section, otherwise for the next code section
+            if match is None:   # if we are still in this loop we are not at the end
+                yield line, string[pos:]
+                break
+            else:
+                yield line, string[pos:match.start()]
+                line += string.count("\n", pos, match.end())
+                pos = match.end()
+                is_code = not is_code   # toggle mode
+    
+    def process(self, string, file="<string>", optimize=-1):
+        """iterator yielding the processed code sections"""
+        steps = self.text_steps
+        for offset, section in self.iter_sections(string):
+            for step in steps:
+                section = step(file, offset, section)
+            if steps is self.code_steps:
+                try:
+                    section = compile(section, file, "exec", optimize=optimize)
+                except Exception as err:
+                    raise CompileError("Exception while compiling code section") from err
+                else:
+                    yield section   # Python >= 3.8 --> section.replace(co_firstlineno=section.co_firstlineno + offset - 1)   # set correct first line number
+                steps = self.text_steps
+            else:
+                yield section
+                steps = self.code_steps
+    
+    def compile(self, string, file="<string>", optimize=-1):
+        """compile string into a Code object"""
+        return Code(self.process(string, file, optimize))
 
 
 def strip_shebang(code):
     """strip shebang from code"""
     return code.partition("\n")[2] if code.startswith("#!") else code   # return all lines except the first line if the first line is a shebang
-
 
 class FileLoader:
     """implementation of the caching system"""
@@ -136,7 +136,7 @@ class FileLoader:
     def get_code(self, file_path):
         """get code object from file"""
         with open(file_path, "r") as fd:
-            return self.parser.parse(strip_shebang(fd.read()))
+            return self.parser.compile(strip_shebang(fd.read()), file_path, self.optimize)
     
     def caching_enabled(self):
         """return if caching is enabled"""
@@ -160,7 +160,6 @@ class FileLoader:
                 break
         else:   # no valid cache was found, load code from disk
             code = self.get_code(file_path)
-            code.compile(file=file_path, optimize=self.optimize)
         for cache_handler in renew_stack:   # update all outdated caches
             try:
                 cache_handler.save(file_path, code.sections)
@@ -171,9 +170,9 @@ class FileLoader:
 
     def cache(self, file_path):
         """cache file in top level cache"""
+        file_path = os.path.abspath(file_path)
         code = self.get_code(file_path)
-        code.compile(file=file_path, optimize=self.optimize)
-        self.cache_handlers[0].save(os.path.abspath(file_path), code.sections)
+        self.cache_handlers[0].save(file_path, code.sections)
 
     def is_outdated(self, file_path):
         """check if cached file is outdated"""

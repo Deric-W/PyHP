@@ -10,7 +10,7 @@ from argparse import ArgumentParser
 from configparser import ConfigParser
 from importlib.util import spec_from_file_location, module_from_spec
 from . import __version__
-from .embed import FileLoader, RawParser, DedentParser
+from .embed import FileLoader, Parser
 from .libpyhp import PyHP
 
 
@@ -59,7 +59,7 @@ def main(file_path, caching=False, config_file="/etc/pyhp.conf"):
     start = re.compile(config.get("parser", "start", fallback="<\\?pyhp\\s").encode("utf8").decode("unicode_escape"))  # process escape sequences like \n
     end = re.compile(config.get("parser", "end", fallback="\\s\\?>").encode("utf8").decode("unicode_escape"))  # process escape sequences like \n
     dedent = config.getboolean("parser", "dedent", fallback=True)
-    parser = DedentParser(start, end) if dedent else RawParser(start, end)
+    parser = Parser(start, end, dedent=dedent)
     # create loader
     enabled = config.getboolean("caching", "enabled", fallback=True)
     forced = config.getboolean("caching", "auto", fallback=False)
@@ -82,6 +82,6 @@ def main(file_path, caching=False, config_file="/etc/pyhp.conf"):
         pyhp.cache_set_handler(loader, False)   # loader shutdown is handled by context manager
         sys.stdout.write = pyhp.make_header_wrapper(sys.stdout.write)   # make headers be send if output occurs
         sys.stdout.writelines = pyhp.make_header_wrapper(sys.stdout.writelines)
-        code = parser.parse(sys.stdin.read()) if file_path is None else loader.load(file_path)
+        code = parser.compile(sys.stdin.read(), optimize=optimization_level) if file_path is None else loader.load(file_path)
         code.execute(globals(), {"PyHP": pyhp})
     return 0

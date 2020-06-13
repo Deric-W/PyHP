@@ -54,7 +54,16 @@ The script is called either by the configuration of the web server or a shebang 
  - handlers available in the *cache_handlers* directory:
      - `files_mtime.py`, which stores the cache entries in seperate files and detects outdated entries with their modification time
      - `memory_mtime.py`, which stores the cache entries in memory and  detects outdated entries with their modification time (unuseable when using CGI)
-   
+
+
+  ## Problems
+
+  Because code sections inside pyhp files are compiled one by one the exceptions raised by them think they startet at line 1.
+  This causes exceptions to have line numbers relative to the start of their code section and not display the code that caused them.
+  In Python 3.8 code objects got a `replace` method which PyHP can use to set the line numbers correctly.
+  While Python 3.7 is the Python version found on most Linux systems i cant drop support for it.
+  In the meantime, just ignore the code shown by exceptions and look at the correct line in the source file.
+
   ## Installation
   
   This section shows you how to install PyHP on your computer.
