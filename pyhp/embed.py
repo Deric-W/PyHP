@@ -47,20 +47,18 @@ def get_indentation(line):
 
 def dedent_section(file, offset, section):
     """remove a starting indentation from a code section"""
-    line_num = 0
     lines = section.splitlines()
     indentation = None
-    for line in lines:
-        line_num += 1
+    for line_num, line in enumerate(lines):
         if not (not line or line.isspace() or line.lstrip().startswith("#")):  # ignore lines without code
             if indentation is None:             # first line of code, set starting indentation
                 indentation = get_indentation(line)
             if line.startswith(indentation):    # if line starts with starting indentation
-                lines[line_num - 1] = line[len(indentation):]  # remove starting indentation
+                lines[line_num] = line[len(indentation):]  # remove starting indentation
             else:
                 raise IndentationError(
                     "indentation not matching",
-                    (file, line_num + offset - 1, len(indentation), line)
+                    (file, line_num + offset + 1, len(indentation), line)
                 )  # raise Exception on bad indentation
     return "\n".join(lines) # join the lines back together
 
@@ -73,27 +71,26 @@ class Parser:
         self.code_steps = [dedent_section] if dedent else []
         self.text_steps = []
 
-    def iter_sections(self, string):
+    def iter_sections(self, string, line_offset=0):
         """iterator yielding the sections of str with their line offsets, beginning with a text section"""
         pos = 0
-        line = 1
         length = len(string)
         is_code = False
         while pos < length:
             match = self.end.search(string, pos) if is_code else self.start.search(string, pos)   # search for the end if we are in a code section, otherwise for the next code section
             if match is None:   # if we are still in this loop we are not at the end
-                yield line, string[pos:]
+                yield line_offset, string[pos:]
                 break
             else:
-                yield line, string[pos:match.start()]
-                line += string.count("\n", pos, match.end())
+                yield line_offset, string[pos:match.start()]
+                line_offset += string.count("\n", pos, match.end())
                 pos = match.end()
                 is_code = not is_code   # toggle mode
     
-    def process(self, string, file="<string>", optimize=-1):
+    def process(self, string, file="<string>", optimize=-1, line_offset=0):
         """iterator yielding the processed code sections"""
         steps = self.text_steps
-        for offset, section in self.iter_sections(string):
+        for offset, section in self.iter_sections(string, line_offset=line_offset):
             for step in steps:
                 section = step(file, offset, section)
             if steps is self.code_steps:
@@ -102,20 +99,16 @@ class Parser:
                 except Exception as err:
                     raise CompileError("Exception while compiling code section") from err
                 else:
-                    yield section   # Python >= 3.8 --> section.replace(co_firstlineno=section.co_firstlineno + offset - 1)   # set correct first line number
+                    yield section   # Python >= 3.8 --> section.replace(co_firstlineno=section.co_firstlineno + offset)   # set correct first line number
                 steps = self.text_steps
             else:
                 yield section
                 steps = self.code_steps
     
-    def compile(self, string, file="<string>", optimize=-1):
+    def compile(self, string, file="<string>", optimize=-1, line_offset=0):
         """compile string into a Code object"""
-        return Code(self.process(string, file, optimize))
-
-
-def strip_shebang(code):
-    """strip shebang from code"""
-    return code.partition("\n")[2] if code.startswith("#!") else code   # return all lines except the first line if the first line is a shebang
+        return Code(self.process(string, file, optimize, line_offset))
+ 
 
 class FileLoader:
     """implementation of the caching system"""
@@ -136,7 +129,14 @@ class FileLoader:
     def get_code(self, file_path):
         """get code object from file"""
         with open(file_path, "r") as fd:
-            return self.parser.compile(strip_shebang(fd.read()), file_path, self.optimize)
+            first_line = fd.readline()
+            if first_line.startswith("#!"):  # shebang
+                code = fd.read()    # ignore first line
+                line_offset = 1
+            else:
+                code = first_line + fd.read()
+                line_offset = 0
+        return self.parser.compile(code, file_path, self.optimize, line_offset=line_offset)
     
     def caching_enabled(self):
         """return if caching is enabled"""
