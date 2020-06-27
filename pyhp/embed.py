@@ -5,6 +5,7 @@
 import os.path
 from sys import stdout
 
+
 class CompileError(ValueError, SyntaxError):
     """Exception raised if compiling a section fails"""
     pass
@@ -59,7 +60,7 @@ def dedent_section(file, offset, section):
                 raise IndentationError(
                     "indentation not matching",
                     (file, line_num + offset + 1, len(indentation), line)
-                )  # raise Exception on bad indentation
+                    )  # raise Exception on bad indentation
     return "\n".join(lines) # join the lines back together
 
 class Parser:
@@ -71,7 +72,7 @@ class Parser:
         self.code_steps = [dedent_section] if dedent else []
         self.text_steps = []
 
-    def iter_sections(self, string, line_offset=0):
+    def parse(self, string, line_offset=0):
         """iterator yielding the sections of str with their line offsets, beginning with a text section"""
         pos = 0
         length = len(string)
@@ -90,7 +91,7 @@ class Parser:
     def process(self, string, file="<string>", optimize=-1, line_offset=0):
         """iterator yielding the processed code sections"""
         steps = self.text_steps
-        for offset, section in self.iter_sections(string, line_offset=line_offset):
+        for offset, section in self.parse(string, line_offset=line_offset):
             for step in steps:
                 section = step(file, offset, section)
             if steps is self.code_steps:
@@ -140,7 +141,7 @@ class FileLoader:
     
     def caching_enabled(self):
         """return if caching is enabled"""
-        return len(self.cache_handlers) != 0
+        return len(self.cache_handlers) > 0
 
     def load(self, file_path):
         """load file from disk or cache and renew cache if needed"""

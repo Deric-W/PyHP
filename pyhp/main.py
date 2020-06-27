@@ -82,6 +82,9 @@ def main(file_path, caching=False, config_file="/etc/pyhp.conf"):
         pyhp.cache_set_handler(loader, False)   # loader shutdown is handled by context manager
         sys.stdout.write = pyhp.make_header_wrapper(sys.stdout.write)   # make headers be send if output occurs
         sys.stdout.writelines = pyhp.make_header_wrapper(sys.stdout.writelines)
-        code = parser.compile(sys.stdin.read(), optimize=optimization_level) if file_path is None else loader.load(file_path)
+        if file_path is None:
+            code = parser.compile(sys.stdin.read(), "<stdin>", optimize=optimization_level)
+        else:
+            code = loader.load(file_path)
         code.execute(globals(), {"PyHP": pyhp})
     return 0

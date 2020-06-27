@@ -4,7 +4,6 @@
 
 import marshal  # not pickle because only marshal supports code objects
 import os
-from errno import EXDEV
 from time import time
 from shutil import rmtree
 
@@ -84,9 +83,8 @@ class Handler:
                 os.replace(tmp_path, cached_path)   # atomic, old readers will continue reading the old cache
             except FileExistsError:   # cache is currently being renewed by another process
                 pass
-            except OSError as err:
-                if err.errno == EXDEV:   # replace failed, clean up tmp_path
-                     ensure_unlinked(tmp_path)
+            except: # something else happend, clean up tmp_path
+                ensure_unlinked(tmp_path)
                 raise   # dont hide the error
         else:
             raise OutOfSpaceError("the cache directory has no free space left")
