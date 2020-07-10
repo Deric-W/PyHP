@@ -10,7 +10,7 @@ from argparse import ArgumentParser
 from configparser import ConfigParser
 from importlib.util import spec_from_file_location, module_from_spec
 from . import __version__
-from .embed import FileLoader, Parser
+from .embed import Parser, CacheManager
 from .libpyhp import PyHP
 
 
@@ -56,14 +56,19 @@ def main(file_path, caching=False, config_file="/etc/pyhp.conf"):
         default_mimetype=default_mimetype
     )
     # create parser
-    start = re.compile(config.get("parser", "start", fallback="<\\?pyhp\\s").encode("utf8").decode("unicode_escape"))  # process escape sequences like \n
-    end = re.compile(config.get("parser", "end", fallback="\\s\\?>").encode("utf8").decode("unicode_escape"))  # process escape sequences like \n
+    start = config.get("parser", "start", fallback="<\\?pyhp\\s").encode("utf8").decode("unicode_escape")  # process escape sequences like \n
+    end = config.get("parser", "end", fallback="\\s\\?>").encode("utf8").decode("unicode_escape")  # process escape sequences like \n
     dedent = config.getboolean("parser", "dedent", fallback=True)
-    parser = Parser(start, end, dedent=dedent)
-    # create loader
-    enabled = config.getboolean("caching", "enabled", fallback=True)
+    optimization_level = config.getint("parser", "optimization_level", fallback=-1)
+    parser = Parser(
+        re.compile(start),
+        re.compile(end),
+        dedent=dedent,
+        optimization_level=optimization_level
+    )
+    # create cache manager
+    enabled = config.getboolean("caching", "enable", fallback=True)
     forced = config.getboolean("caching", "auto", fallback=False)
-    optimization_level = config.getint("caching", "optimization_level", fallback=-1)
     ignore_errors = config.getboolean("caching", "ignore_errors", fallback=False)
     handlers = zip(
         config.get("caching", "handler_paths", fallback="/usr/lib/pyhp/cache_handlers/files_mtime.py").split(),
@@ -71,20 +76,19 @@ def main(file_path, caching=False, config_file="/etc/pyhp.conf"):
         config.get("caching", "max_sizes", fallback="16").split(),
         config.get("caching", "ttls", fallback="-1").split(),
     )
-    loader = FileLoader(
+    cache = CacheManager(
         parser,
-        *init_handlers(handlers) if (enabled and caching) or forced else [],
-        optimize=optimization_level,
+        *init_handlers(handlers) if enabled and (caching or forced) else [],
         ignore_errors=ignore_errors
     )
     # setup and execute
-    with loader, pyhp:
-        pyhp.cache_set_handler(loader, False)   # loader shutdown is handled by context manager
+    with cache, pyhp:
+        pyhp.cache_set_handler(cache, False)   # cache shutdown is handled by context manager
         sys.stdout.write = pyhp.make_header_wrapper(sys.stdout.write)   # make headers be send if output occurs
         sys.stdout.writelines = pyhp.make_header_wrapper(sys.stdout.writelines)
         if file_path is None:
-            code = parser.compile(sys.stdin.read(), "<stdin>", optimize=optimization_level)
+            code = parser.compile_file(sys.stdin)
         else:
-            code = loader.load(file_path)
+            code = cache.load(file_path)
         code.execute(globals(), {"PyHP": pyhp})
     return 0

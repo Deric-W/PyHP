@@ -46,14 +46,14 @@ The script is called either by the configuration of the web server or a shebang 
      - a `renew_exceptions` attribute, which is a tuple containing exceptions to be raised by `load` if the cache entry is outdated
      - a `is_outdated(file_path)` method, which returns a bool indicating if the cache entry for the file is outdated or does not exist
      - a `load(file_path)` method, which loads the cache entry for the file or raises a exception from `renew_exceptions` if the cache entry is outdated
-     - a `save(file_path, sections)` method, which saves the code sections (a list) in the cache entry for the file
+     - a `save(file_path, sections)` method, which saves the code sections (a tuple) in the cache entry for the file
      - a `remove(file_path)` method, which removes the cache entry from the cache
      - a `reset()` method, which removes the entire cache
      - a `shutdown()` method, which does cleanup tasks
- - note that the list may contain code objects which can't be pickled
+ - note that the tuple may contain code objects which can't be pickled
  - handlers available in the *cache_handlers* directory:
      - `files_mtime.py`, which stores the cache entries in seperate files and detects outdated entries with their modification time
-     - `memory_mtime.py`, which stores the cache entries in memory and  detects outdated entries with their modification time (unuseable when using CGI)
+     - `memory_mtime.py`, which stores the cache entries in memory and detects outdated entries with their modification time (useless when using CGI)
 
 
   ## Problems

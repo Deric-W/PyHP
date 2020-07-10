@@ -12,11 +12,11 @@ class CompileError(ValueError, SyntaxError):
 
 
 class Code:
-    """class representing a parsed code string"""
+    """class representing a compiled code string"""
     __slots__ = "sections"
 
     def __init__(self, sections):
-        self.sections = list(sections)
+        self.sections = tuple(sections)
 
     def execute(self, globals, locals):
         """execute code sections with the given globals and locals"""
@@ -65,12 +65,16 @@ def dedent_section(file, offset, section):
 
 class Parser:
     """class implementing a parser for pyhp files"""
-    def __init__(self, start, end, dedent=True):
-        """init with compiled regex for section start and end and  if code section should be dedented"""
+    def __init__(self, start, end, dedent=True, optimization_level=-1):
+        """
+        init with compiled regex for section start and end,
+        if code section should be dedented and optimization level for compile()
+        """
         self.start = start
         self.end = end
         self.code_steps = [dedent_section] if dedent else []
         self.text_steps = []
+        self.optimization_level = optimization_level
 
     def parse(self, string, line_offset=0):
         """iterator yielding the sections of str with their line offsets, beginning with a text section"""
@@ -88,7 +92,7 @@ class Parser:
                 pos = match.end()
                 is_code = not is_code   # toggle mode
     
-    def process(self, string, file="<string>", optimize=-1, line_offset=0):
+    def process(self, string, file="<string>", line_offset=0):
         """iterator yielding the processed code sections"""
         steps = self.text_steps
         for offset, section in self.parse(string, line_offset=line_offset):
@@ -96,7 +100,7 @@ class Parser:
                 section = step(file, offset, section)
             if steps is self.code_steps:
                 try:
-                    section = compile(section, file, "exec", optimize=optimize)
+                    section = compile(section, file, "exec", optimize=self.optimization_level)
                 except Exception as err:
                     raise CompileError("Exception while compiling code section") from err
                 else:
@@ -106,18 +110,27 @@ class Parser:
                 yield section
                 steps = self.code_steps
     
-    def compile(self, string, file="<string>", optimize=-1, line_offset=0):
-        """compile string into a Code object"""
-        return Code(self.process(string, file, optimize, line_offset))
- 
+    def compile_string(self, string, file="<string>", line_offset=0):
+        """compile string into Code object"""
+        return Code(self.process(string, file, line_offset))
+    
+    def compile_file(self, fd, line_offset=0):
+        """compile file descriptor into Code object and strip shebang"""
+        first_line = fd.readline()
+        if first_line.startswith("#!"):  # shebang
+            code = fd.read()    # ignore first line
+            line_offset += 1    # increment offset because we removed the shebang
+        else:
+            code = first_line + fd.read()
+        return Code(self.process(code, fd.name, line_offset))
 
-class FileLoader:
+
+class CacheManager:
     """implementation of the caching system"""
-    def __init__(self, parser, *cache_handlers, optimize=-1, ignore_errors=False):
-        """init with parser, cache handlers, compile() optimization level and if cache errors should be ignored"""
+    def __init__(self, parser, *cache_handlers, ignore_errors=False):
+        """init with parser, cache handlers and if cache errors should be ignored"""
         self.parser = parser
         self.cache_handlers = cache_handlers
-        self.optimize = optimize
         self.ignore_errors = ignore_errors
 
     def __enter__(self):
@@ -126,18 +139,6 @@ class FileLoader:
     def __exit__(self, type, value, traceback):
         self.shutdown()
         return False    # we dont handle exceptions
-
-    def get_code(self, file_path):
-        """get code object from file"""
-        with open(file_path, "r") as fd:
-            first_line = fd.readline()
-            if first_line.startswith("#!"):  # shebang
-                code = fd.read()    # ignore first line
-                line_offset = 1
-            else:
-                code = first_line + fd.read()
-                line_offset = 0
-        return self.parser.compile(code, file_path, self.optimize, line_offset=line_offset)
     
     def caching_enabled(self):
         """return if caching is enabled"""
@@ -160,7 +161,8 @@ class FileLoader:
             else:   # valid cache found, exit loop
                 break
         else:   # no valid cache was found, load code from disk
-            code = self.get_code(file_path)
+            with open(file_path, "r") as fd:
+                code = self.parser.compile_file(fd)
         for cache_handler in renew_stack:   # update all outdated caches
             try:
                 cache_handler.save(file_path, code.sections)
@@ -172,7 +174,8 @@ class FileLoader:
     def cache(self, file_path):
         """cache file in top level cache"""
         file_path = os.path.abspath(file_path)
-        code = self.get_code(file_path)
+        with open(file_path, "r") as fd:
+            code = self.parser.compile_file(fd)
         self.cache_handlers[0].save(file_path, code.sections)
 
     def is_outdated(self, file_path):
@@ -192,6 +195,6 @@ class FileLoader:
             cache_handler.reset()
 
     def shutdown(self):
-        """shutdown cache handler"""
+        """shutdown cache handlers"""
         for cache_handler in self.cache_handlers:
             cache_handler.shutdown()
