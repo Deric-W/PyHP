@@ -51,33 +51,33 @@ jobs:
       with:
         flags: ${{ runner.os }}
 
-  Typecheck:
-    runs-on: ubuntu-latest
-    if: ${{ False }}  # disabled until we have type hints
-    strategy:
-      matrix:
-        python-version: ["3.5", "3.6", "3.7", "3.8", "3.9", "3.10", "pypy3"]
 
-    steps:
-    # setup
-    - name: Checkout Repository
-      uses: actions/checkout@v2
-    
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v2
-      with:
-        python-version: ${{ matrix.python-version }}
-
-    # dependencies
-    - name: Restore pip cache
-      uses: actions/cache@v2
-      with:
-        path: ~/.cache/pip
-        key: ${{ runner.os }}-pip-${{ hashFiles('setup.cfg') }}
-
-    - name: Install lint dependencies
-      run: python -m pip --cache-dir ~/.cache/pip install --quiet mypy
-    
-    # lint
-    - name: run MyPy
-      run: python -m mypy --config-file setupg.cfg .
+#  Typecheck:  # disabled until we have type hints
+#    runs-on: ubuntu-latest
+#    strategy:
+#      matrix:
+#        python-version: ["3.5", "3.6", "3.7", "3.8", "3.9", "3.10", "pypy3"]
+#
+#    steps:
+#    # setup
+#    - name: Checkout Repository
+#      uses: actions/checkout@v2
+#    
+#    - name: Set up Python ${{ matrix.python-version }}
+#      uses: actions/setup-python@v2
+#      with:
+#        python-version: ${{ matrix.python-version }}
+#
+#    # dependencies
+#    - name: Restore pip cache
+#      uses: actions/cache@v2
+#      with:
+#        path: ~/.cache/pip
+#        key: ${{ runner.os }}-pip-${{ hashFiles('setup.cfg') }}
+#
+#    - name: Install lint dependencies
+#      run: python -m pip --cache-dir ~/.cache/pip install --quiet mypy
+#    
+#    # lint
+#    - name: run MyPy
+#      run: python -m mypy --config-file setupg.cfg .
