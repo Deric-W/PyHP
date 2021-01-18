@@ -44,7 +44,7 @@ jobs:
       shell: bash
 
     - name: run tests
-      run: coverage run -m unittest discover
+      run: coverage run -m unittest discover --verbose
 
     - name: Upload coverage
       uses: codecov/codecov-action@v1
