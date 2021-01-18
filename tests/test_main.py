@@ -16,7 +16,7 @@ class TestCli(unittest.TestCase):
         """test reading from stdin"""
         self.assertEqual(
             subprocess.run(         # nosec -> inmutable input
-                ["python3", "-m", "pyhp", "--config", "./pyhp.conf"],
+                [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf"],
                 input=b"Test",
                 check=True,
                 stdout=subprocess.PIPE
@@ -28,7 +28,7 @@ class TestCli(unittest.TestCase):
         """test empty config file"""
         self.assertEqual(
             subprocess.run(         # nosec -> imutable input
-                ["python3", "-m", "pyhp", "--config", os.devnull],
+                [sys.executable, "-m", "pyhp", "--config", os.devnull],
                 input=b"Test",
                 check=True,
                 stdout=subprocess.PIPE
@@ -40,7 +40,7 @@ class TestCli(unittest.TestCase):
         """test failure on invalid file path"""
         with self.assertRaises(subprocess.CalledProcessError):
             subprocess.run(         # nosec -> imutable input
-                ["python3", "-m", "pyhp", "--config", "./pyhp.conf", "azhdawihd1ihudhai5iwzgbdua"],
+                [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "azhdawihd1ihudhai5iwzgbdua"],
                 check=True,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
@@ -54,7 +54,7 @@ class TestOutput(unittest.TestCase):
         with open("./tests/embedding/syntax.output", "rb") as fd:
             self.assertEqual(
                 subprocess.run(     # nosec -> imutable input
-                    ["python3", "-m", "pyhp", "--config", "./pyhp.conf", "./tests/embedding/syntax.pyhp"],
+                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "./tests/embedding/syntax.pyhp"],
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
@@ -66,7 +66,7 @@ class TestOutput(unittest.TestCase):
         with open("./tests/embedding/shebang.output", "rb") as fd:
             self.assertEqual(
                 subprocess.run(     # nosec -> imutable input
-                    ["python3", "-m", "pyhp", "--config", "./pyhp.conf", "./tests/embedding/shebang.pyhp"],
+                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "./tests/embedding/shebang.pyhp"],
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
@@ -78,7 +78,7 @@ class TestOutput(unittest.TestCase):
         with open("./tests/embedding/indentation.output", "rb") as fd:
             self.assertEqual(
                 subprocess.run(     # nosec -> imutable input
-                    ["python3", "-m", "pyhp", "--config", "./pyhp.conf", "./tests/embedding/indentation.pyhp"],
+                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "./tests/embedding/indentation.pyhp"],
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
@@ -90,7 +90,7 @@ class TestOutput(unittest.TestCase):
         with open("./tests/header/header.output", "rb") as fd:
             self.assertEqual(
                 subprocess.run(     # nosec -> imutable input
-                    ["python3", "-m", "pyhp", "--config", "./pyhp.conf", "./tests/header/header.pyhp"],
+                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "./tests/header/header.pyhp"],
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
@@ -102,7 +102,7 @@ class TestOutput(unittest.TestCase):
         with open("./tests/header/headers_list.output", "rb") as fd:
             self.assertEqual(
                 subprocess.run(     # nosec -> imutable input
-                    ["python3", "-m", "pyhp", "--config", "./pyhp.conf", "./tests/header/headers_list.pyhp"],
+                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "./tests/header/headers_list.pyhp"],
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
@@ -114,7 +114,7 @@ class TestOutput(unittest.TestCase):
         with open("./tests/header/header_remove.output", "rb") as fd:
             self.assertEqual(
                 subprocess.run(     # nosec -> imutable input
-                    ["python3", "-m", "pyhp", "--config", "./pyhp.conf", "./tests/header/header_remove.pyhp"],
+                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "./tests/header/header_remove.pyhp"],
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
@@ -126,7 +126,7 @@ class TestOutput(unittest.TestCase):
         with open("./tests/header/headers_sent.output", "rb") as fd:
             self.assertEqual(
                 subprocess.run(     # nosec -> imutable input
-                    ["python3", "-m", "pyhp", "--config", "./pyhp.conf", "./tests/header/headers_sent.pyhp"],
+                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "./tests/header/headers_sent.pyhp"],
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
@@ -138,7 +138,7 @@ class TestOutput(unittest.TestCase):
         with open("./tests/header/header_register_callback.output", "rb") as fd:
             self.assertEqual(
                 subprocess.run(     # nosec -> imutable input
-                    ["python3", "-m", "pyhp", "--config", "./pyhp.conf", "./tests/header/header_register_callback.pyhp"],
+                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "./tests/header/header_register_callback.pyhp"],
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
@@ -150,7 +150,7 @@ class TestOutput(unittest.TestCase):
         with open("./tests/cookie/setcookie.output", "rb") as fd:
             self.assertEqual(
                 subprocess.run(     # nosec -> imutable input
-                    ["python3", "-m", "pyhp", "--config", "./pyhp.conf", "./tests/cookie/setcookie.pyhp"],
+                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "./tests/cookie/setcookie.pyhp"],
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
@@ -162,7 +162,7 @@ class TestOutput(unittest.TestCase):
         with open("./tests/cookie/setrawcookie.output", "rb") as fd:
             self.assertEqual(
                 subprocess.run(     # nosec -> imutable input
-                    ["python3", "-m", "pyhp", "--config", "./pyhp.conf", "./tests/cookie/setrawcookie.pyhp"],
+                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "./tests/cookie/setrawcookie.pyhp"],
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
@@ -177,7 +177,7 @@ class TestOutput(unittest.TestCase):
             with open("./tests/request/methods.output", "rb") as fd:
                 self.assertEqual(
                     subprocess.run(     # nosec -> imutable input
-                        ["python3", "-m", "pyhp", "--config", "./pyhp.conf", "./tests/request/methods.pyhp"],
+                        [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "./tests/request/methods.pyhp"],
                         check=True,
                         stdout=subprocess.PIPE
                     ).stdout,
@@ -195,7 +195,7 @@ class TestOutput(unittest.TestCase):
             with open("./tests/request/request-order.output", "rb") as fd:
                 self.assertEqual(
                     subprocess.run(     # nosec -> imutable input
-                        ["python3", "-m", "pyhp", "--config", "./tests/request/request-order.conf", "./tests/request/request-order.pyhp"],
+                        [sys.executable, "-m", "pyhp", "--config", "./tests/request/request-order.conf", "./tests/request/request-order.pyhp"],
                         check=True,
                         stdout=subprocess.PIPE
                     ).stdout,
@@ -210,7 +210,7 @@ class TestOutput(unittest.TestCase):
         with open("./tests/shutdown_functions/register_shutdown_function.output", "rb") as fd:
             self.assertEqual(
                 subprocess.run(     # nosec -> imutable input
-                    ["python3", "-m", "pyhp", "--config", "./pyhp.conf", "./tests/shutdown_functions/register_shutdown_function.pyhp"],
+                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "./tests/shutdown_functions/register_shutdown_function.pyhp"],
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
