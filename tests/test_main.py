@@ -21,7 +21,7 @@ class TestCli(unittest.TestCase):
                 check=True,
                 stdout=subprocess.PIPE
             ).stdout,
-            b"Status: 200 OK\nContent-Type: text/html\n\nTest"
+            f"Status: 200 OK{os.linesep}Content-Type: text/html{os.linesep * 2}Test".encode()
         )
 
     def test_empty_config(self) -> None:
@@ -33,7 +33,7 @@ class TestCli(unittest.TestCase):
                 check=True,
                 stdout=subprocess.PIPE
             ).stdout,
-            b"Status: 200 OK\nContent-Type: text/html\n\nTest",
+            f"Status: 200 OK{os.linesep}Content-Type: text/html{os.linesep * 2}Test".encode()
         )
 
     def test_invalid_path(self) -> None:
@@ -237,23 +237,34 @@ class CheckInternals(unittest.TestCase):
 
     def test_prepare_file(self) -> None:
         """test the code retrieval"""
-        with NamedTemporaryFile("w+") as file:
+        file = NamedTemporaryFile("w+", delete=False)
+        try:
             file.write("Test")
-            file.flush()
+            file.close()
             self.assertEqual(main.prepare_file(file.name), "Test")
+        finally:
+            os.unlink(file.name)
 
-            file.seek(0)
+    def test_prepare_file_shebang(self) -> None:
+        """test code tetrieval of files with a shebang"""
+        file = NamedTemporaryFile("w+", delete=False)
+        try:
             file.write("#!Test\nTest\nTest")
-            file.flush()
+            file.close()
             self.assertEqual(main.prepare_file(file.name), "Test\nTest")
+        finally:
+            os.unlink(file.name)
 
     def test_import_path(self) -> None:
         """test the importing of files"""
         original_path = sys.path.copy()
 
-        with NamedTemporaryFile("w", suffix=".py") as file:
+        file = NamedTemporaryFile("w", suffix=".py", delete=False)
+        try:
             file.write("works = True")
-            file.flush()
+            file.close()
             self.assertTrue(main.import_path(file.name).works)
+        finally:
+            os.unlink(file.name)
 
         self.assertEqual(original_path, sys.path)
