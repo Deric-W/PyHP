@@ -36,18 +36,6 @@ class TestCli(unittest.TestCase):
             b"Status: 200 OK\nContent-Type: text/html\n\nTest",
         )
 
-    def test_caching(self) -> None:
-        """test syntax with caching"""
-        with open("./tests/embedding/syntax.output", "rb") as fd:
-            self.assertEqual(
-                subprocess.run(     # nosec -> imutable input
-                    ["python3", "-m", "pyhp", "--config", "./pyhp.conf", "-c", "./tests/embedding/syntax.pyhp"],
-                    check=True,
-                    stdout=subprocess.PIPE
-                ).stdout,
-                fd.read(),
-            )
-
     def test_invalid_path(self) -> None:
         """test failure on invalid file path"""
         with self.assertRaises(subprocess.CalledProcessError):
