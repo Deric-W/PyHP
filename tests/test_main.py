@@ -21,7 +21,7 @@ class TestCli(unittest.TestCase):
                 check=True,
                 stdout=subprocess.PIPE
             ).stdout,
-            f"Status: 200 OK{os.linesep}Content-Type: text/html{os.linesep * 2}Test".encode()
+            "Status: 200 OK{0}Content-Type: text/html{0}{0}Test".format(os.linesep).encode()
         )
 
     def test_empty_config(self) -> None:
@@ -33,7 +33,7 @@ class TestCli(unittest.TestCase):
                 check=True,
                 stdout=subprocess.PIPE
             ).stdout,
-            f"Status: 200 OK{os.linesep}Content-Type: text/html{os.linesep * 2}Test".encode()
+            "Status: 200 OK{0}Content-Type: text/html{0}{0}Test".format(os.linesep).encode()
         )
 
     def test_invalid_path(self) -> None:
