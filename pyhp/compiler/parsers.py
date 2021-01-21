@@ -32,7 +32,6 @@ class RegexParser(Parser):
     def parse(self, source: str, line_offset: int = 0) -> Iterator[Tuple[str, int, bool]]:
         """parse source code, yielding sections with line offset and bool to indicate if they are code"""
         pos = 0
-        line_offset = 0
         length = len(source)
         is_code = False                 # start with text section because code sections start after self.start
         while pos < length:             # finish parsing if we reached the end of the source
