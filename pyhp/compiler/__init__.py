@@ -14,8 +14,8 @@
 
 from __future__ import annotations
 from abc import ABCMeta, abstractmethod
-from importlib.abc import Loader
-from typing import Optional, Mapping, Iterator, Tuple, Any
+from importlib.machinery import ModuleSpec
+from typing import Dict, Iterator, Tuple, Any
 
 
 __all__ = (
@@ -35,9 +35,13 @@ class Code(metaclass=ABCMeta):
     __slots__ = ()
 
     @abstractmethod
-    def execute(self, variables: Mapping[str, Any]) -> Iterator[str]:
+    def execute(self, variables: Dict[str, Any]) -> Iterator[str]:
         """execute the code, yielding the text sections between code sections"""
         raise NotImplementedError
+
+
+class CompileError(ValueError, SyntaxError):
+    """Exception raised when compiling a section fails"""
 
 
 class CodeBuilder(metaclass=ABCMeta):
@@ -46,14 +50,12 @@ class CodeBuilder(metaclass=ABCMeta):
 
     def add_code(self, code: str, offset: int) -> None:
         """add a code section with a line offset"""
-        pass
 
     def add_text(self, text: str, offset: int) -> None:
         """add a text section with a line offset"""
-        pass
 
     @abstractmethod
-    def code(self, name: str, line_offset: int, loader: Optional[Loader]) -> Code:
+    def code(self, spec: ModuleSpec) -> Code:
         """build a code object from the received sections"""
         raise NotImplementedError
 
@@ -77,9 +79,9 @@ class CodeBuilderDecorator(CodeBuilder):
         """delegate method call to decorated builder"""
         self.builder.add_text(text, offset)
 
-    def code(self, name: str, line_offset: int, loader: Optional[Loader]) -> Code:
+    def code(self, spec: ModuleSpec) -> Code:
         """delegate method call to decorated builder"""
-        return self.builder.code(name, line_offset, loader)
+        return self.builder.code(spec)
 
     def detach(self) -> CodeBuilder:
         """detach the decorator from the builder, leaving it in a undefined state"""
@@ -91,13 +93,13 @@ class Parser(metaclass=ABCMeta):
     __slots__ = ()
 
     @abstractmethod
-    def parse(self, source: str) -> Iterator[Tuple[str, int, bool]]:
+    def parse(self, source: str, line_offset: int = 0) -> Iterator[Tuple[str, int, bool]]:
         """parse source code, yielding sections with line offset and bool to indicate if they are code"""
         raise NotImplementedError
 
-    def build(self, source: str, builder: CodeBuilder) -> None:
+    def build(self, source: str, builder: CodeBuilder, line_offset: int = 0) -> None:
         """parse source code and submit the results to the builder"""
-        for section, offset, is_code in self.parse(source):
+        for section, offset, is_code in self.parse(source, line_offset):
             if is_code:
                 builder.add_code(section, offset)
             else:
