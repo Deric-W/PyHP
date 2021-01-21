@@ -20,6 +20,7 @@ from typing import Dict, Iterator, Tuple, Any
 
 __all__ = (
     "Code",
+    "CompileError",
     "CodeBuilder",
     "CodeBuilderDecorator",
     "Parser",
@@ -40,8 +41,26 @@ class Code(metaclass=ABCMeta):
         raise NotImplementedError
 
 
-class CompileError(ValueError, SyntaxError):
+class CompileError(ValueError):
     """Exception raised when compiling a section fails"""
+    __slots__ = ()
+
+    def __init__(self, message: str, section: int) -> None:
+        self.args = (message, section)
+
+    @property
+    def message(self) -> str:
+        """message of the exception"""
+        return self.args[0]
+
+    @property
+    def section(self) -> int:
+        """section of the exception"""
+        return self.args[1]
+
+    def __str__(self) -> str:
+        message, section = self.args
+        return f"[Section {section}] {message}"
 
 
 class CodeBuilder(metaclass=ABCMeta):

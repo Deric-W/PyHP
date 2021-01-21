@@ -29,10 +29,10 @@ class RegexParser(Parser):
         self.start = start
         self.end = end
 
-    def parse(self, source: str) -> Iterator[Tuple[str, int, bool]]:
+    def parse(self, source: str, line_offset: int = 0) -> Iterator[Tuple[str, int, bool]]:
         """parse source code, yielding sections with line offset and bool to indicate if they are code"""
         pos = 0
-        offset = 0
+        line_offset = 0
         length = len(source)
         is_code = False                 # start with text section because code sections start after self.start
         while pos < length:             # finish parsing if we reached the end of the source
@@ -41,10 +41,10 @@ class RegexParser(Parser):
             else:                       # otherwise for the next code section
                 match = self.start.search(source, pos)
             if match is None:           # current section is the last one, yield rest of source
-                yield source[pos:], offset, is_code
+                yield source[pos:], line_offset, is_code
                 break                   # no match left in source, finish parsing
             else:
-                yield source[pos:match.start()], offset, is_code
-                offset += source.count("\n", pos, match.end())  # update offset
+                yield source[pos:match.start()], line_offset, is_code
+                line_offset += source.count("\n", pos, match.end())  # update offset
                 pos = match.end()       # update pos to end of match
                 is_code = not is_code   # toggle mode, codes comes after text and so on
