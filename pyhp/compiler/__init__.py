@@ -15,7 +15,7 @@
 from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from importlib.machinery import ModuleSpec
-from typing import Dict, Iterator, Tuple, Any
+from typing import Dict, Iterator, Tuple, Union, Literal, Any
 
 
 __all__ = (
@@ -34,6 +34,10 @@ __all__ = (
 class Code(metaclass=ABCMeta):
     """abstract base class for code objects"""
     __slots__ = ()
+
+    @abstractmethod
+    def __eq__(self, other: object) -> Union[bool, Literal[NotImplemented]]:
+        raise NotImplementedError
 
     @abstractmethod
     def execute(self, variables: Dict[str, Any]) -> Iterator[str]:

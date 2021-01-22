@@ -15,7 +15,7 @@
 from __future__ import annotations
 import marshal
 from types import CodeType
-from typing import Dict, Iterator, List, Sequence, Union, Any, Optional, Tuple
+from typing import Dict, Iterator, List, Sequence, Union, Any, Optional, Tuple, Literal
 from importlib.machinery import ModuleSpec
 from . import Code, CodeBuilder, CompileError
 
@@ -41,6 +41,14 @@ class GenericCode(Code):
         """support pickling"""
         self.sections = marshal.loads(state[0])
         self.spec = state[1]
+
+    def __eq__(self, other: object) -> Union[bool, Literal[NotImplemented]]:
+        if isinstance(other, GenericCode):
+            return self.sections == other.sections and self.spec == other.spec
+        elif isinstance(other, Code):
+            return NotImplemented
+        else:
+            return False
 
     def execute(self, variables: Dict[str, Any]) -> Iterator[str]:
         """execute the code, yielding the text sections between code sections"""
