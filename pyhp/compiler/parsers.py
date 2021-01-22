@@ -16,6 +16,9 @@ from typing import Pattern, Tuple, Iterator
 from . import Parser
 
 
+__all__ = ("RegexParser",)
+
+
 class RegexParser(Parser):
     """parser implementation identifying the start and end of a section with regular expressions"""
     __slots__ = ("start", "end")

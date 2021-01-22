@@ -18,6 +18,9 @@ from importlib.machinery import ModuleSpec
 from . import Parser, CodeBuilder, Code
 
 
+__all__ = ("Compiler",)
+
+
 class Compiler:
     """Facade to the compiler subsystem"""
     __slots__ = ("parser", "base_builder")

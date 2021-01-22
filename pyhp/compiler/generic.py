@@ -20,6 +20,9 @@ from importlib.machinery import ModuleSpec
 from . import Code, CodeBuilder, CompileError
 
 
+__all__ = ("GenericCode", "GenericCodeBuilder")
+
+
 class GenericCode(Code):
     """Code implementation using a sequence of code objects"""
     __slots__ = ("spec", "sections")
@@ -37,7 +40,7 @@ class GenericCode(Code):
         """support pickling"""
         return marshal.dumps(self.sections), self.spec
 
-    def __setstate__(self, state: Tuple) -> None:
+    def __setstate__(self, state: Tuple[bytes, ModuleSpec]) -> None:
         """support pickling"""
         self.sections = marshal.loads(state[0])
         self.spec = state[1]
@@ -74,9 +77,9 @@ class GenericCodeBuilder(CodeBuilder):
 
     optimization_level: int
 
-    def __init__(self, optimization_level: int = -1, sections: Optional[List[Union[CodeType, str]]] = None) -> None:
+    def __init__(self, optimization_level: int = -1) -> None:
         """construct a instance with the optimization level to compile code sections"""
-        self.sections = [] if sections is None else sections
+        self.sections = []
         self.optimization_level = optimization_level
 
     def add_code(self, code: str, offset: int) -> None:
@@ -112,4 +115,7 @@ class GenericCodeBuilder(CodeBuilder):
 
     def copy(self) -> GenericCodeBuilder:
         """copy the builder with his current state"""
-        return GenericCodeBuilder(self.optimization_level, self.sections.copy())
+        builder = self.__class__.__new__(self.__class__)
+        builder.sections = self.sections.copy()
+        builder.optimization_level = self.optimization_level
+        return builder
