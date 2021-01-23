@@ -15,7 +15,7 @@
 from __future__ import annotations
 import marshal
 from types import CodeType
-from typing import Dict, Iterator, List, Sequence, Union, Any, Optional, Tuple, Literal
+from typing import Dict, Iterator, List, Sequence, Union, Any, Tuple, Literal
 from importlib.machinery import ModuleSpec
 from . import Code, CodeBuilder, CompileError
 
@@ -25,7 +25,7 @@ __all__ = ("GenericCode", "GenericCodeBuilder")
 
 class GenericCode(Code):
     """Code implementation using a sequence of code objects"""
-    __slots__ = ("spec", "sections")
+    __slots__ = ("sections", "spec")
 
     sections: Sequence[Union[CodeType, str]]
 

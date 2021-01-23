@@ -12,13 +12,17 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # SPDX-License-Identifier: GPL-3.0-only
 
+from __future__ import annotations
+import re
 from typing import Optional, TextIO
 from importlib.abc import Loader
 from importlib.machinery import ModuleSpec
-from . import Parser, CodeBuilder, Code
+from . import Parser, CodeBuilder, CodeBuilderDecorator, Code
 
 
-__all__ = ("Compiler",)
+__all__ = ("Compiler", "StartingIndentationError", "Dedenter")
+
+WHITESPACE_REGEX = re.compile(r"\s*")   # match zero or more times to match no whitespace too
 
 
 class Compiler:
@@ -55,3 +59,54 @@ class Compiler:
         spec = ModuleSpec("__main__", loader, origin=file.name, is_package=False)
         spec.has_location = True
         return builder.code(spec)
+
+
+class StartingIndentationError(IndentationError):
+    """Exception raised when a line does not start with the starting indentation"""
+
+
+class Dedenter(CodeBuilderDecorator):
+    """decorator which removes a starting indentation from code sections"""
+    __slots__ = ("code_section",)
+
+    code_section: int
+
+    def __init__(self, builder: CodeBuilder) -> None:
+        """construct a instance with the builder to decorate"""
+        self.builder = builder
+        self.code_section = 1
+
+    @staticmethod
+    def get_indentation(line: str) -> str:
+        """get the indentation of a line of code"""
+        return WHITESPACE_REGEX.match(line).group(0)    # type: ignore
+
+    def add_code(self, code: str, offset: int) -> None:
+        """delegate method call to builder with dedented code"""
+        lines = code.splitlines()
+        indentation = None
+        for line_num, line in enumerate(lines):
+            if not (not line or line.isspace() or line.lstrip().startswith("#")):  # ignore lines without code
+                if indentation is None:             # first line of code, set starting indentation
+                    indentation = self.get_indentation(line)
+                if line.startswith(indentation):    # if line starts with starting indentation
+                    lines[line_num] = line[len(indentation):]  # remove starting indentation
+                else:
+                    raise StartingIndentationError(            # raise Exception on bad indentation
+                        f"line does not start with the indentation of code section {self.code_section}",
+                        (
+                            "<unkown>",
+                            line_num + offset + 1,
+                            len(indentation),
+                            line
+                        )
+                    )
+        self.code_section += 1
+        self.builder.add_code("\n".join(lines), offset)     # join the lines back together
+
+    def copy(self) -> Dedenter:
+        """copy the dedenter with his current state"""
+        dedenter = self.__class__.__new__(self.__class__)
+        dedenter.builder = self.builder.copy()
+        dedenter.code_section = self.code_section
+        return dedenter
