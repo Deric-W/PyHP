@@ -83,7 +83,7 @@ class GenericCodeBuilder(CodeBuilder):
         self.optimization_level = optimization_level
 
     def add_code(self, code: str, section: int, offset: int) -> None:
-        """add a code section with a line offset"""
+        """add a code section with a section number and line offset"""
         try:
             code_obj = compile(code, "<unknown>", "exec", dont_inherit=True, optimize=self.optimization_level)
         except ValueError as e:
@@ -94,7 +94,7 @@ class GenericCodeBuilder(CodeBuilder):
             self.sections.append(code_obj.replace(co_firstlineno=code_obj.co_firstlineno + offset))
 
     def add_text(self, text: str, section: int, offset: int) -> None:
-        """add a text section with a line offset"""
+        """add a text section with a section number and line offset"""
         self.sections.append(text)
 
     def patch_file(self, name: str) -> Iterator[Union[CodeType, str]]:
