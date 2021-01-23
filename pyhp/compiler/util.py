@@ -68,14 +68,11 @@ class StartingIndentationError(IndentationError):
 
 class Dedenter(CodeBuilderDecorator):
     """decorator which removes a starting indentation from code sections"""
-    __slots__ = ("code_section",)
-
-    code_section: int
+    __slots__ = ()
 
     def __init__(self, builder: CodeBuilder) -> None:
         """construct a instance with the builder to decorate"""
         self.builder = builder
-        self.code_section = 1
 
     @staticmethod
     def get_indentation(line: str) -> str:
@@ -87,7 +84,7 @@ class Dedenter(CodeBuilderDecorator):
         """check if the line contains code"""
         return not (not line or line.isspace() or line.lstrip().startswith("#"))
 
-    def add_code(self, code: str, offset: int) -> None:
+    def add_code(self, code: str, section: int, offset: int) -> None:
         """delegate method call to builder with dedented code"""
         lines = code.splitlines()
         indentation = None
@@ -99,7 +96,7 @@ class Dedenter(CodeBuilderDecorator):
                     lines[line_num] = line[len(indentation):]  # remove starting indentation
                 else:
                     raise StartingIndentationError(            # raise Exception on bad indentation
-                        f"line does not start with the indentation of code section {self.code_section}",
+                        f"line does not start with the indentation of section {section}",
                         (
                             "<unkown>",
                             line_num + offset + 1,
@@ -107,12 +104,10 @@ class Dedenter(CodeBuilderDecorator):
                             line
                         )
                     )
-        self.code_section += 1
-        self.builder.add_code("\n".join(lines), offset)     # join the lines back together
+        self.builder.add_code("\n".join(lines), section, offset)     # join the lines back together
 
     def copy(self) -> Dedenter:
         """copy the dedenter with his current state"""
         dedenter = self.__class__.__new__(self.__class__)
         dedenter.builder = self.builder.copy()
-        dedenter.code_section = self.code_section
         return dedenter

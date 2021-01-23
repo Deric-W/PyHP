@@ -120,10 +120,10 @@ class TestBuilder(unittest.TestCase):
     def test_build(self) -> None:
         """test the building of a generic code object"""
         builder = generic.GenericCodeBuilder(-1)
-        builder.add_text("1", 0)
-        builder.add_code("numbers.append('2')", 0)
-        builder.add_code("numbers.append('3')", 0)
-        builder.add_text("4", 0)
+        builder.add_text("1", 1, 0)
+        builder.add_code("numbers.append('2')", 2, 0)
+        builder.add_code("numbers.append('3')", 3, 0)
+        builder.add_text("4", 4, 0)
         spec = ModuleSpec("test", None, origin="this test", is_package=False)
         code = builder.code(spec)
         code2 = generic.GenericCode(
@@ -140,11 +140,11 @@ class TestBuilder(unittest.TestCase):
     def test_copy(self) -> None:
         """test GenericCodeBuilder.copy"""
         builder = generic.GenericCodeBuilder(-1)
-        builder.add_text("1", 0)
-        builder.add_code("numbers.append('2')", 0)
-        builder.add_code("numbers.append('3')", 0)
-        builder.add_text("4", 0)
+        builder.add_text("1", 1, 0)
+        builder.add_code("numbers.append('2')", 2, 0)
+        builder.add_code("numbers.append('3')", 3, 0)
+        builder.add_text("4", 4, 0)
         builder2 = builder.copy()
         self.assertEqual(builder.sections, builder2.sections)
-        builder2.add_text("test", 0)
+        builder2.add_text("test", 5, 0)
         self.assertNotEqual(builder.sections, builder2.sections)

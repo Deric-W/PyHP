@@ -82,18 +82,18 @@ class GenericCodeBuilder(CodeBuilder):
         self.sections = []
         self.optimization_level = optimization_level
 
-    def add_code(self, code: str, offset: int) -> None:
+    def add_code(self, code: str, section: int, offset: int) -> None:
         """add a code section with a line offset"""
         try:
-            section = compile(code, "<string>", "exec", dont_inherit=True, optimize=self.optimization_level)
+            code_obj = compile(code, "<unknown>", "exec", dont_inherit=True, optimize=self.optimization_level)
         except ValueError as e:
-            raise CompileError("source contains null bytes", len(self.sections)) from e
+            raise CompileError("source contains null bytes", section) from e
         except SyntaxError as e:
-            raise CompileError("source has a invalid syntax", len(self.sections)) from e
-        else:
-            self.sections.append(section.replace(co_firstlineno=section.co_firstlineno + offset))   # set correct first line number
+            raise CompileError("source has a invalid syntax", section) from e
+        else:                   # set correct first line number
+            self.sections.append(code_obj.replace(co_firstlineno=code_obj.co_firstlineno + offset))
 
-    def add_text(self, text: str, offset: int) -> None:
+    def add_text(self, text: str, section: int, offset: int) -> None:
         """add a text section with a line offset"""
         self.sections.append(text)
 
@@ -107,7 +107,7 @@ class GenericCodeBuilder(CodeBuilder):
 
     def code(self, spec: ModuleSpec) -> GenericCode:
         """build a code object from the received sections"""
-        if spec.origin is None or spec.origin == "<string>":
+        if spec.origin is None or spec.origin == "<unknown>":
             sections = tuple(self.sections)
         else:
             sections = tuple(self.patch_file(spec.origin))
