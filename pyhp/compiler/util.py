@@ -63,6 +63,7 @@ class Compiler:
 
 class StartingIndentationError(IndentationError):
     """Exception raised when a line does not start with the starting indentation"""
+    __slots__ = ()
 
 
 class Dedenter(CodeBuilderDecorator):

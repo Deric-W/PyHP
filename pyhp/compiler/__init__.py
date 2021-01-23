@@ -15,7 +15,7 @@
 from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from importlib.machinery import ModuleSpec
-from typing import Dict, Iterator, Tuple, Union, Literal, Any
+from typing import Dict, MutableMapping, Iterator, Tuple, Union, Literal, Any
 
 
 __all__ = (
@@ -70,6 +70,11 @@ class CompileError(ValueError):
 class CodeBuilder(metaclass=ABCMeta):
     """abstract base class for all code builders"""
     __slots__ = ()
+
+    def __deepcopy__(self, memo: MutableMapping[int, Any]) -> CodeBuilder:
+        builder = self.copy()
+        memo[id(self)] = builder
+        return builder
 
     def add_code(self, code: str, offset: int) -> None:
         """add a code section with a line offset"""

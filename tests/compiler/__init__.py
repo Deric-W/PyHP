@@ -5,6 +5,7 @@
 from __future__ import annotations
 import unittest
 import unittest.mock
+from copy import deepcopy
 from typing import Iterator, Tuple, Sequence
 from importlib.machinery import ModuleSpec
 from pyhp.compiler import CompileError, CodeBuilder, CodeBuilderDecorator, Parser
@@ -65,6 +66,19 @@ class TestCodeBuilderDecorator(unittest.TestCase):
         builder = unittest.mock.Mock()
         decorator = PointlessDecorator(builder)
         self.assertIs(decorator.detach(), builder)
+
+    def test_deepcopy(self) -> None:
+        """test the deepcopy implementation"""
+        builder = unittest.mock.Mock()
+        decorator = PointlessDecorator(builder)
+        copy1 = decorator.copy()
+        copy2 = deepcopy(decorator)
+        self.assertIsInstance(copy1, PointlessDecorator)
+        self.assertIsInstance(copy2, PointlessDecorator)
+        self.assertIsNot(copy1, decorator)
+        self.assertIsNot(copy2, decorator)
+        self.assertIsNot(copy1.builder, builder)
+        self.assertIsNot(copy2.builder, builder)
 
 
 class TestParser(unittest.TestCase):
