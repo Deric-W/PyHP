@@ -148,3 +148,9 @@ class TestBuilder(unittest.TestCase):
         self.assertEqual(builder.sections, builder2.sections)
         builder2.add_text("test", 5, 0)
         self.assertNotEqual(builder.sections, builder2.sections)
+
+    def test_empty(self) -> None:
+        """test if an empty builder works"""
+        builder = generic.GenericCodeBuilder(-1)
+        code = builder.code(ModuleSpec("test", None, origin="this test", is_package=False))
+        self.assertEqual(list(code.execute({})), [])
