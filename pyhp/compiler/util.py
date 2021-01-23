@@ -82,12 +82,17 @@ class Dedenter(CodeBuilderDecorator):
         """get the indentation of a line of code"""
         return WHITESPACE_REGEX.match(line).group(0)    # type: ignore
 
+    @staticmethod
+    def is_code(line: str) -> bool:
+        """check if the line contains code"""
+        return not (not line or line.isspace() or line.lstrip().startswith("#"))
+
     def add_code(self, code: str, offset: int) -> None:
         """delegate method call to builder with dedented code"""
         lines = code.splitlines()
         indentation = None
         for line_num, line in enumerate(lines):
-            if not (not line or line.isspace() or line.lstrip().startswith("#")):  # ignore lines without code
+            if self.is_code(line):                  # ignore lines without code
                 if indentation is None:             # first line of code, set starting indentation
                     indentation = self.get_indentation(line)
                 if line.startswith(indentation):    # if line starts with starting indentation

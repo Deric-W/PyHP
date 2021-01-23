@@ -109,3 +109,12 @@ class TestDedenter(unittest.TestCase):
         dedenter.add_text("test", 0)
         builder.add_text.assert_called_with("test", 0)
         dedenter2.builder.add_text.assert_not_called()
+
+    def test_is_code(self) -> None:
+        """test Dedenter.is_code"""
+        self.assertTrue(util.Dedenter.is_code("test"))
+        self.assertTrue(util.Dedenter.is_code("   test"))
+        self.assertFalse(util.Dedenter.is_code("#test"))
+        self.assertFalse(util.Dedenter.is_code("  #test"))
+        self.assertFalse(util.Dedenter.is_code(""))
+        self.assertFalse(util.Dedenter.is_code("\t\t  \n"))
