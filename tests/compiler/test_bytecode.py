@@ -3,6 +3,7 @@
 """Unit tests for the bytecode code implementation"""
 
 import unittest
+import sys
 import ast
 import pickle
 from importlib.machinery import ModuleSpec
@@ -125,3 +126,18 @@ class TestBuilder(unittest.TestCase):
         builder = bytecode.ByteCodeBuilder(-1)
         code = builder.code(ModuleSpec("test", None, origin="this test", is_package=False))
         self.assertEqual(list(code.execute({})), [])
+
+    def test_lineno(self) -> None:
+        """test if line numbers are set correctly"""
+        builder = bytecode.ByteCodeBuilder(-1)
+        builder.add_code("x", 1, 99)    # offset starts with 0
+        spec = ModuleSpec("test", None, origin="this test", is_package=False)
+        code = builder.code(spec)
+        try:
+            list(code.execute({}))
+        except NameError:
+            _, _, traceback = sys.exc_info()
+            self.assertEqual(traceback.tb_next.tb_frame.f_code.co_filename, spec.origin)
+            self.assertEqual(traceback.tb_next.tb_frame.f_lineno, 100)
+        else:
+            raise RuntimeError("bad bytecode executed without error")
