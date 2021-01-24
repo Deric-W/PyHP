@@ -70,10 +70,7 @@ class ByteCode(Code):
     def __eq__(self, other: object) -> Union[bool, Literal[NotImplemented]]:
         if isinstance(other, ByteCode):
             return self.code == other.code and self.spec == other.spec
-        elif isinstance(other, Code):
-            return NotImplemented
-        else:
-            return False
+        return NotImplemented
 
     def execute(self, variables: Dict[str, Any]) -> Iterator[str]:
         """execute the code, yielding the text sections between code sections"""
@@ -107,7 +104,9 @@ class ByteCodeBuilder(CodeBuilder):
     def add_code(self, code: str, section: int, offset: int) -> None:
         """add a code section with a section number and line offset"""
         try:
-            nodes = [ast.increment_lineno(node, offset) for node in ast.parse(code, mode="exec").body]
+            nodes = [
+                ast.increment_lineno(node, offset) for node in ast.parse(code, mode="exec").body
+            ]
         except ValueError as e:
             raise CompileError("source contains null bytes", section) from e
         except SyntaxError as e:

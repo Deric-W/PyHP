@@ -48,10 +48,7 @@ class GenericCode(Code):
     def __eq__(self, other: object) -> Union[bool, Literal[NotImplemented]]:
         if isinstance(other, GenericCode):
             return self.sections == other.sections and self.spec == other.spec
-        elif isinstance(other, Code):
-            return NotImplemented
-        else:
-            return False
+        return NotImplemented
 
     def execute(self, variables: Dict[str, Any]) -> Iterator[str]:
         """execute the code, yielding the text sections between code sections"""
@@ -85,13 +82,19 @@ class GenericCodeBuilder(CodeBuilder):
     def add_code(self, code: str, section: int, offset: int) -> None:
         """add a code section with a section number and line offset"""
         try:
-            code_obj = compile(code, "<unknown>", "exec", dont_inherit=True, optimize=self.optimization_level)
+            code_obj = compile(
+                code,
+                "<unknown>",
+                "exec",
+                dont_inherit=True,
+                optimize=self.optimization_level
+            )
         except ValueError as e:
             raise CompileError("source contains null bytes", section) from e
         except SyntaxError as e:
             raise CompileError("source has a invalid syntax", section) from e
-        else:                   # set correct first line number
-            self.sections.append(code_obj.replace(co_firstlineno=code_obj.co_firstlineno + offset))
+        # set correct first line number
+        self.sections.append(code_obj.replace(co_firstlineno=code_obj.co_firstlineno + offset))
 
     def add_text(self, text: str, section: int, offset: int) -> None:
         """add a text section with a section number and line offset"""

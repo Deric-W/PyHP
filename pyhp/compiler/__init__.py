@@ -49,7 +49,7 @@ class CompileError(ValueError):
     """Exception raised when compiling a section fails"""
     __slots__ = ()
 
-    def __init__(self, message: str, section: int) -> None:
+    def __init__(self, message: str, section: int = -1) -> None:
         self.args = (message, section)
 
     @property
@@ -64,7 +64,7 @@ class CompileError(ValueError):
 
     def __str__(self) -> str:
         message, section = self.args
-        return f"[Section {section}] {message}"
+        return f"[Section {'unknown' if section < 0 else section}] {message}"
 
 
 class CodeBuilder(metaclass=ABCMeta):

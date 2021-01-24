@@ -45,6 +45,7 @@ class TestCompileError(unittest.TestCase):
     def test_str(self) -> None:
         """test if CompileError.__str__ works"""
         str(CompileError("test", 1))
+        str(CompileError("test"))
 
 
 class TestCodeBuilderDecorator(unittest.TestCase):
