@@ -15,7 +15,7 @@
 from __future__ import annotations
 import marshal
 from types import CodeType
-from typing import Dict, Iterator, List, Sequence, Union, Any, Tuple, Literal
+from typing import Dict, Iterator, List, Sequence, Union, Any, Tuple
 from importlib.machinery import ModuleSpec
 from . import Code, CodeBuilder, CompileError
 
@@ -45,7 +45,7 @@ class GenericCode(Code):
         self.sections = marshal.loads(state[0])
         self.spec = state[1]
 
-    def __eq__(self, other: object) -> Union[bool, Literal[NotImplemented]]:
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, GenericCode):
             return self.sections == other.sections and self.spec == other.spec
         return NotImplemented
@@ -96,7 +96,7 @@ class GenericCodeBuilder(CodeBuilder):
         # set correct first line number
         self.sections.append(code_obj.replace(co_firstlineno=code_obj.co_firstlineno + offset))
 
-    def add_text(self, text: str, section: int, offset: int) -> None:
+    def add_text(self, text: str, section: int, offset: int) -> None:   # pylint: disable=W0613
         """add a text section with a section number and line offset"""
         self.sections.append(text)
 

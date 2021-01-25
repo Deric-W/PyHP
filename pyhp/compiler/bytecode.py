@@ -16,7 +16,7 @@ from __future__ import annotations
 import ast
 import marshal
 from types import CodeType
-from typing import Dict, List, Tuple, Iterator, Union, Literal, Any
+from typing import Dict, List, Tuple, Iterator, Any
 from importlib.machinery import ModuleSpec
 from . import Code, CodeBuilder, CompileError
 
@@ -67,7 +67,7 @@ class ByteCode(Code):
         self.code = marshal.loads(state[0])
         self.spec = state[1]
 
-    def __eq__(self, other: object) -> Union[bool, Literal[NotImplemented]]:
+    def __eq__(self, other: object) -> bool:
         if isinstance(other, ByteCode):
             return self.code == other.code and self.spec == other.spec
         return NotImplemented
@@ -113,7 +113,7 @@ class ByteCodeBuilder(CodeBuilder):
             raise CompileError("source has a invalid syntax", section) from e
         self.nodes.extend(nodes)
 
-    def add_text(self, text: str, section: int, offset: int) -> None:
+    def add_text(self, text: str, section: int, offset: int) -> None:   # pylint: disable=W0613
         """add a text section with a section number and line offset"""
         self.nodes.append(
             ast.Expr(

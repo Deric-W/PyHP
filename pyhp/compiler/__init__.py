@@ -15,7 +15,7 @@
 from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 from importlib.machinery import ModuleSpec
-from typing import Dict, MutableMapping, Iterator, Tuple, Union, Literal, Any
+from typing import Dict, MutableMapping, Iterator, Tuple, Any, TypeVar, Generic
 
 
 __all__ = (
@@ -24,11 +24,13 @@ __all__ = (
     "CodeBuilder",
     "CodeBuilderDecorator",
     "Parser",
-    "parsers",  # submodules are imported on demand
-    "generic",
-    "bytecode",
-    "util"
+    "parsers",      # pylint: disable=E0603
+    "generic",      # pylint: disable=E0603
+    "bytecode",     # pylint: disable=E0603
+    "util"          # pylint: disable=E0603
 )
+
+B = TypeVar("B", bound="CodeBuilder")
 
 
 class Code(metaclass=ABCMeta):
@@ -36,7 +38,7 @@ class Code(metaclass=ABCMeta):
     __slots__ = ()
 
     @abstractmethod
-    def __eq__(self, other: object) -> Union[bool, Literal[NotImplemented]]:
+    def __eq__(self, other: object) -> bool:
         raise NotImplementedError
 
     @abstractmethod
@@ -48,6 +50,8 @@ class Code(metaclass=ABCMeta):
 class CompileError(ValueError):
     """Exception raised when compiling a section fails"""
     __slots__ = ()
+
+    args: Tuple[str, int]
 
     def __init__(self, message: str, section: int = -1) -> None:
         self.args = (message, section)
@@ -88,16 +92,16 @@ class CodeBuilder(metaclass=ABCMeta):
         raise NotImplementedError
 
     @abstractmethod
-    def copy(self) -> CodeBuilder:
+    def copy(self: B) -> B:
         """copy the builder with his current state"""
         raise NotImplementedError
 
 
-class CodeBuilderDecorator(CodeBuilder):
+class CodeBuilderDecorator(CodeBuilder, Generic[B]):
     """abstract base class for code builder decorators"""
     __slots__ = ("builder",)
 
-    builder: CodeBuilder
+    builder: B
 
     def add_code(self, code: str, section: int, offset: int) -> None:
         """delegate method call to decorated builder"""
@@ -111,7 +115,7 @@ class CodeBuilderDecorator(CodeBuilder):
         """delegate method call to decorated builder"""
         return self.builder.code(spec)
 
-    def detach(self) -> CodeBuilder:
+    def detach(self) -> B:
         """detach the decorator from the builder, leaving it in a undefined state"""
         return self.builder
 

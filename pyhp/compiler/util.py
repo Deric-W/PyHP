@@ -14,7 +14,7 @@
 
 from __future__ import annotations
 import re
-from typing import Optional, TextIO
+from typing import Optional, TextIO, TypeVar, Generic
 from importlib.abc import Loader
 from importlib.machinery import ModuleSpec
 from . import Parser, CodeBuilder, CodeBuilderDecorator, Code
@@ -24,21 +24,24 @@ __all__ = ("Compiler", "StartingIndentationError", "Dedenter")
 
 WHITESPACE_REGEX = re.compile(r"\s*")   # match zero or more times to match no whitespace too
 
+P = TypeVar("P", bound=Parser)
+B = TypeVar("B", bound=CodeBuilder)
 
-class Compiler:
+
+class Compiler(Generic[P, B]):
     """Facade to the compiler subsystem"""
     __slots__ = ("parser", "base_builder")
 
-    parser: Parser
+    parser: P
 
-    base_builder: CodeBuilder
+    base_builder: B
 
-    def __init__(self, parser: Parser, builder: CodeBuilder) -> None:
+    def __init__(self, parser: P, builder: B) -> None:
         """construct a instance with a parser and a code builder"""
         self.parser = parser
         self.base_builder = builder
 
-    def builder(self) -> CodeBuilder:
+    def builder(self) -> B:
         """get a code builder who is not used by other threads"""
         return self.base_builder.copy()
 
@@ -66,11 +69,11 @@ class StartingIndentationError(IndentationError):
     __slots__ = ()
 
 
-class Dedenter(CodeBuilderDecorator):
+class Dedenter(CodeBuilderDecorator[B]):
     """decorator which removes a starting indentation from code sections"""
     __slots__ = ()
 
-    def __init__(self, builder: CodeBuilder) -> None:
+    def __init__(self, builder: B) -> None:
         """construct a instance with the builder to decorate"""
         self.builder = builder
 
@@ -106,7 +109,7 @@ class Dedenter(CodeBuilderDecorator):
                     )
         self.builder.add_code("\n".join(lines), section, offset)     # join the lines back together
 
-    def copy(self) -> Dedenter:
+    def copy(self) -> Dedenter[B]:
         """copy the dedenter with his current state"""
         dedenter = self.__class__.__new__(self.__class__)
         dedenter.builder = self.builder.copy()
