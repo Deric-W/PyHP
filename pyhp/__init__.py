@@ -13,14 +13,15 @@
 
 # package metadata
 # needs to be defined before .main is imported
-__version__ = "2.0"
+__version__ = "2.1"
 __author__ = "Eric Wolf"
 __maintainer__ = "Eric Wolf"
-__license__ = "MIT"
+__license__ = "GPLv3"
 __email__ = "robo-eric@gmx.de"  # please dont use for spam :(
 __contact__ = "https://github.com/Deric-W/PyHP"
 
-# import all submodules
-from . import embed
-from . import libpyhp
-from . import main
+__all__ = (
+    "compiler",
+    "libpyhp",
+    "main"
+)

@@ -14,9 +14,8 @@ not_send: True
         <title>header</title>
     </head>
     <body>
-        <?pyhp
-            print("This is an example use of the header function.")
-            print("Because of already occured output, the next line will have no effect.")
-            PyHP.header("pointless: True", http_response_code=400)
+        This is an example use of the header function.
+Because of already occured output, the next line will have no effect.
+
     </body>
 </html>

@@ -98,7 +98,8 @@ class GenericCodeBuilder(CodeBuilder):
 
     def add_text(self, text: str, section: int, offset: int) -> None:   # pylint: disable=W0613
         """add a text section with a section number and line offset"""
-        self.sections.append(text)
+        if text:    # ignore empty sections
+            self.sections.append(text)
 
     def patch_file(self, name: str) -> Iterator[Union[CodeType, str]]:
         """patch the filename of the code sections"""

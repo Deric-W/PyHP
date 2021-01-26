@@ -115,22 +115,23 @@ class ByteCodeBuilder(CodeBuilder):
 
     def add_text(self, text: str, section: int, offset: int) -> None:   # pylint: disable=W0613
         """add a text section with a section number and line offset"""
-        self.nodes.append(
-            ast.Expr(
-                value=ast.Yield(
-                    value=ast.Constant(
-                        value=text,
+        if text:    # ignore empty sections
+            self.nodes.append(
+                ast.Expr(
+                    value=ast.Yield(
+                        value=ast.Constant(
+                            value=text,
+                            lineno=offset + 1,
+                            col_offset=0
+                        ),
                         lineno=offset + 1,
                         col_offset=0
                     ),
                     lineno=offset + 1,
                     col_offset=0
-                ),
-                lineno=offset + 1,
-                col_offset=0
+                )
             )
-        )
-        self.has_text = True
+            self.has_text = True
 
     def code(self, spec: ModuleSpec) -> ByteCode:
         """build a code object from the received sections"""

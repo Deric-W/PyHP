@@ -44,9 +44,9 @@ The script is called either by the configuration of the web server or a shebang 
    initialization parameters and provides the following methods:
      - `is_available`, wich returns a boolean indicating if the handler can be used
      - `is_outdated`, wich returns a boolean indicating if the cache needs to be renewed
-     - `save`, wich takes an iterator as argument and saves it in the cache
-     - `load`, wich loads an iterator from the cache
-     - `close`, wich does cleanup tasks
+     - `save`, wich takes an code object as an argument and saves it in the cache
+     - `load`, wich loads an code object from the cache
+     - `close`, wich does cleanup tasks and gets called when used as a context manager
   - note that the iterator may contain code objects which can't be pickled
   - examples are available in the *cache_handlers* directory
    

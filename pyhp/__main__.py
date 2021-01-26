@@ -13,10 +13,16 @@
 # SPDX-License-Identifier: GPL-3.0-only
 
 import sys
-from .main import main, get_args
+from .main import main, argparser
 
 # get cli arguments
-args = get_args()
+args = argparser.parse_args()
 
-# execute main with file_path as normal argument and the rest as keyword arguments
-sys.exit(main(args.pop("file_path"), **args))
+# execute main
+sys.exit(
+    main(
+        args.file,
+        args.caching,
+        args.config
+    )
+)
