@@ -13,6 +13,7 @@
 # SPDX-License-Identifier: GPL-3.0-only
 
 from __future__ import annotations
+import ast
 import marshal
 from types import CodeType
 from typing import Dict, Iterator, List, Sequence, Union, Any, Tuple
@@ -70,7 +71,7 @@ class GenericCodeBuilder(CodeBuilder):
     """Code builder for the generic code implementation"""
     __slots__ = ("sections", "optimization_level")
 
-    sections: List[Union[CodeType, str]]
+    sections: List[Union[ast.AST, str]]
 
     optimization_level: int
 
@@ -80,42 +81,42 @@ class GenericCodeBuilder(CodeBuilder):
         self.optimization_level = optimization_level
 
     def add_code(self, code: str, offset: int) -> None:
-        """add a code section with a section number and line offset"""
+        """add a code section with a line offset"""
         try:
-            code_obj = compile(
-                code,
-                "<unknown>",
-                "exec",
-                dont_inherit=True,
-                optimize=self.optimization_level
-            )
-        except SyntaxError as e:  # set correct lineno and reraise
+            module = ast.parse(code, "<unknown>", mode="exec")
+        except SyntaxError as e:    # set correct lineno and reraise
             if e.lineno is not None:
                 e.lineno += offset
             raise
-        # set correct first line number
-        self.sections.append(code_obj.replace(co_firstlineno=code_obj.co_firstlineno + offset))
+        ast.increment_lineno(module, offset)
+        self.sections.append(module)
 
     def add_text(self, text: str, offset: int) -> None:   # pylint: disable=W0613
-        """add a text section with a section number and line offset"""
+        """add a text section with a line offset"""
         if text:    # ignore empty sections
             self.sections.append(text)
 
-    def patch_file(self, name: str) -> Iterator[Union[CodeType, str]]:
-        """patch the filename of the code sections"""
+    def compile_sections(self, name: str) -> Iterator[Union[CodeType, str]]:
+        """compile the code sections"""
         for section in self.sections:
-            if isinstance(section, CodeType):
-                yield section.replace(co_filename=name)
+            if isinstance(section, ast.AST):
+                yield compile(
+                    section,
+                    name,
+                    "exec",
+                    dont_inherit=True,
+                    optimize=self.optimization_level
+                )
             else:
                 yield section
 
     def code(self, spec: ModuleSpec) -> GenericCode:
         """build a code object from the received sections"""
-        if spec.origin is None or spec.origin == "<unknown>":
-            sections = tuple(self.sections)
+        if spec.origin is None:
+            sections = self.compile_sections("<unknown>")
         else:
-            sections = tuple(self.patch_file(spec.origin))
-        return GenericCode(sections, spec)
+            sections = self.compile_sections(spec.origin)
+        return GenericCode(tuple(sections), spec)
 
     def copy(self) -> GenericCodeBuilder:
         """copy the builder with his current state"""

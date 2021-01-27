@@ -102,7 +102,7 @@ class ByteCodeBuilder(CodeBuilder):
         self.optimization_level = optimization_level
 
     def add_code(self, code: str, offset: int) -> None:
-        """add a code section with a section number and line offset"""
+        """add a code section with a line offset"""
         try:
             nodes = [
                 ast.increment_lineno(node, offset) for node in ast.parse(code, mode="exec").body
@@ -114,7 +114,7 @@ class ByteCodeBuilder(CodeBuilder):
         self.nodes.extend(nodes)
 
     def add_text(self, text: str, offset: int) -> None:   # pylint: disable=W0613
-        """add a text section with a section number and line offset"""
+        """add a text section with a line offset"""
         if text:    # ignore empty sections
             self.nodes.append(
                 ast.Expr(
