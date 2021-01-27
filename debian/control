@@ -3,7 +3,7 @@ Version: {0}
 Architecture: all
 Maintainer: Eric Wolf <robo-eric@gmx.de>
 Installed-Size: {1}
-Depends: python3:any (>= 3.5)
+Depends: python3:any (>= 3.7)
 Suggests: apache2
 Section: web
 Priority: optional

@@ -11,7 +11,7 @@ But it looks a bit odd inside of an HTML document.
 
         Because of this, PyHP will calculate the starting indentation of each section
 and remove it from all lines of it (12 spaces in this case)
-If a line is not starting with the starting indentation a IndentationError will be raised
+If a line is not starting with the starting indentation a StartingIndentationError will be raised
 
     </body>
 </html>

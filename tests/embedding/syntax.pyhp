@@ -4,12 +4,12 @@
     </head>
     <body>
         <?pyhp
-            print("basic synatx test")
-            print("With the default configuration, code needs to be contained")
-            print("between the '<?pyhp' and '?>' tags and one whitespace between")
-            print("the code and the tags.")
-            print("Dont forget that the parser ignores python syntax, so '?>' without the ' would")
-            print("end this section.")
+print("basic synatx test")
+print("With the default configuration, code needs to be contained")
+print("between the '<?pyhp' and '?>' tags and one whitespace between")
+print("the code and the tags.")
+print("Dont forget that the parser ignores python syntax, so '?>' without the ' would")
+print("end this section.")
         ?>
     </body>
 </html>

@@ -2,9 +2,9 @@ Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
 Upstream-Name: pyhp
 Upstream-Contact: Eric Wolf <robo-eric@gmx.de>
 Source: https://github.com/Deric-W/PyHP
-Copyright: 2019 Eric Wolf
-License: Expat
+Copyright: 2021 Eric Wolf
+License: GPLv3
 
 Files: *
-Copyright: 2019 Eric Wolf
-License: Expat
+Copyright: 2021 Eric Wolf
+License: GPLv3

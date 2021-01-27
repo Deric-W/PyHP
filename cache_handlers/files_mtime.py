@@ -2,7 +2,7 @@
 
 """PyHP cache handler (files with modification time)"""
 
-import marshal  # not pickle because only marshal supports code objects
+import pickle
 import os.path
 from os import makedirs
 from time import time
@@ -15,6 +15,12 @@ class Handler:
         self.file_path = file_path
         self.ttl = config.getint("ttl")
         self.max_size = config.getint("max_size")
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, type, value, traceback):
+        self.close()
 
     def get_cachedir_size(self):        # get size of cache directory (with all sub directories) in Mbytes
         size = 0
@@ -40,14 +46,13 @@ class Handler:
 
     def load(self):  # load sections
         with open(self.cache_path, "rb") as cache:
-            code = marshal.load(cache)
-        return code
+            return pickle.load(cache)
 
     def save(self, code):   # save sections
         if not os.path.isdir(os.path.dirname(self.cache_path)):     # directories not already created
             makedirs(os.path.dirname(self.cache_path), exist_ok=True)   # ignore already created directories
         with open(self.cache_path, "wb") as cache:
-            marshal.dump(code, cache)
+            pickle.dump(code, cache)
 
     def close(self):
         pass    # nothing to do

@@ -222,38 +222,19 @@ class CheckInternals(unittest.TestCase):
     """check internal functions"""
     def test_check_caching(self) -> None:
         """test the caching detection"""
-        self.assertTrue(main.check_if_caching("test", True, True, True))
-        self.assertTrue(main.check_if_caching("test", True, True, False))
-        self.assertTrue(main.check_if_caching("test", False, True, True))
-        self.assertTrue(main.check_if_caching("test", True, True, False))
-        self.assertFalse(main.check_if_caching("", True, True, True))
-        self.assertFalse(main.check_if_caching("", True, True, False))
-        self.assertFalse(main.check_if_caching("", False, True, True))
-        self.assertFalse(main.check_if_caching("", True, True, False))
-        self.assertFalse(main.check_if_caching("test", True, False, True))
-        self.assertFalse(main.check_if_caching("test", True, False, False))
-        self.assertFalse(main.check_if_caching("test", False, False, True))
-        self.assertFalse(main.check_if_caching("test", False, True, False))
-
-    def test_prepare_file(self) -> None:
-        """test the code retrieval"""
-        file = NamedTemporaryFile("w+", delete=False)
-        try:
-            file.write("Test")
-            file.close()
-            self.assertEqual(main.prepare_file(file.name), "Test")
-        finally:
-            os.unlink(file.name)
-
-    def test_prepare_file_shebang(self) -> None:
-        """test code tetrieval of files with a shebang"""
-        file = NamedTemporaryFile("w+", delete=False)
-        try:
-            file.write("#!Test\nTest\nTest")
-            file.close()
-            self.assertEqual(main.prepare_file(file.name), "Test\nTest")
-        finally:
-            os.unlink(file.name)
+        with open(os.devnull, "r") as fd:
+            self.assertTrue(main.check_if_caching(fd, True, True, True))
+            self.assertTrue(main.check_if_caching(fd, True, True, False))
+            self.assertTrue(main.check_if_caching(fd, False, True, True))
+            self.assertTrue(main.check_if_caching(fd, True, True, False))
+            self.assertFalse(main.check_if_caching(sys.stdin, True, True, True))
+            self.assertFalse(main.check_if_caching(sys.stdin, True, True, False))
+            self.assertFalse(main.check_if_caching(sys.stdin, False, True, True))
+            self.assertFalse(main.check_if_caching(sys.stdin, True, True, False))
+            self.assertFalse(main.check_if_caching(fd, True, False, True))
+            self.assertFalse(main.check_if_caching(fd, True, False, False))
+            self.assertFalse(main.check_if_caching(fd, False, False, True))
+            self.assertFalse(main.check_if_caching(fd, False, True, False))
 
     def test_import_path(self) -> None:
         """test the importing of files"""
