@@ -20,7 +20,6 @@ from typing import Dict, MutableMapping, Iterator, Tuple, Any, TypeVar, Generic
 
 __all__ = (
     "Code",
-    "CompileError",
     "CodeBuilder",
     "CodeBuilderDecorator",
     "Parser",
@@ -47,30 +46,6 @@ class Code(metaclass=ABCMeta):
         raise NotImplementedError
 
 
-class CompileError(ValueError):
-    """Exception raised when compiling a section fails"""
-    __slots__ = ()
-
-    args: Tuple[str, int]
-
-    def __init__(self, message: str, section: int = -1) -> None:
-        self.args = (message, section)
-
-    @property
-    def message(self) -> str:
-        """message of the exception"""
-        return self.args[0]
-
-    @property
-    def section(self) -> int:
-        """section of the exception"""
-        return self.args[1]
-
-    def __str__(self) -> str:
-        message, section = self.args
-        return f"[Section {'unknown' if section < 0 else section}] {message}"
-
-
 class CodeBuilder(metaclass=ABCMeta):
     """abstract base class for all code builders"""
     __slots__ = ()
@@ -80,11 +55,11 @@ class CodeBuilder(metaclass=ABCMeta):
         memo[id(self)] = builder
         return builder
 
-    def add_code(self, code: str, section: int, offset: int) -> None:
-        """add a code section with a section number and line offset"""
+    def add_code(self, code: str, offset: int) -> None:
+        """add a code section with a line offset"""
 
-    def add_text(self, text: str, section: int, offset: int) -> None:
-        """add a text section with a section number and line offset"""
+    def add_text(self, text: str, offset: int) -> None:
+        """add a text section with a line offset"""
 
     @abstractmethod
     def code(self, spec: ModuleSpec) -> Code:
@@ -103,13 +78,13 @@ class CodeBuilderDecorator(CodeBuilder, Generic[B]):
 
     builder: B
 
-    def add_code(self, code: str, section: int, offset: int) -> None:
+    def add_code(self, code: str, offset: int) -> None:
         """delegate method call to decorated builder"""
-        self.builder.add_code(code, section, offset)
+        self.builder.add_code(code, offset)
 
-    def add_text(self, text: str, section: int, offset: int) -> None:
+    def add_text(self, text: str, offset: int) -> None:
         """delegate method call to decorated builder"""
-        self.builder.add_text(text, section, offset)
+        self.builder.add_text(text, offset)
 
     def code(self, spec: ModuleSpec) -> Code:
         """delegate method call to decorated builder"""
@@ -131,8 +106,8 @@ class Parser(metaclass=ABCMeta):
 
     def build(self, source: str, builder: CodeBuilder, line_offset: int = 0) -> None:
         """parse source code and submit the results to the builder"""
-        for index, (section, offset, is_code) in enumerate(self.parse(source, line_offset), start=1):
+        for section, offset, is_code in self.parse(source, line_offset):
             if is_code:
-                builder.add_code(section, index, offset)
+                builder.add_code(section, offset)
             else:
-                builder.add_text(section, index, offset)
+                builder.add_text(section, offset)

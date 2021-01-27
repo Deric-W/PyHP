@@ -18,7 +18,7 @@ import marshal
 from types import CodeType
 from typing import Dict, List, Tuple, Iterator, Any
 from importlib.machinery import ModuleSpec
-from . import Code, CodeBuilder, CompileError
+from . import Code, CodeBuilder
 
 
 __all__ = ("ByteCode", "ByteCodeBuilder")
@@ -101,19 +101,19 @@ class ByteCodeBuilder(CodeBuilder):
         self.has_text = False
         self.optimization_level = optimization_level
 
-    def add_code(self, code: str, section: int, offset: int) -> None:
+    def add_code(self, code: str, offset: int) -> None:
         """add a code section with a section number and line offset"""
         try:
             nodes = [
                 ast.increment_lineno(node, offset) for node in ast.parse(code, mode="exec").body
             ]
-        except ValueError as e:
-            raise CompileError("source contains null bytes", section) from e
-        except SyntaxError as e:
-            raise CompileError("source has a invalid syntax", section) from e
+        except SyntaxError as e:    # set correct lineno and reraise
+            if e.lineno is not None:
+                e.lineno += offset
+            raise
         self.nodes.extend(nodes)
 
-    def add_text(self, text: str, section: int, offset: int) -> None:   # pylint: disable=W0613
+    def add_text(self, text: str, offset: int) -> None:   # pylint: disable=W0613
         """add a text section with a section number and line offset"""
         if text:    # ignore empty sections
             self.nodes.append(

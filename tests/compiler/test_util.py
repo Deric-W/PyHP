@@ -77,27 +77,27 @@ class TestDedenter(unittest.TestCase):
         """test the dedentation process"""
         builder = unittest.mock.Mock()
         dedenter = util.Dedenter(builder)
-        dedenter.add_code("test", 1, 0)    # no indent
-        dedenter.add_code(" test", 2, 0)   # simple indent
-        dedenter.add_code(" test\n test", 3, 0)
-        dedenter.add_code("\t\t#test\ntest\ntest", 4, 0)   # ignore non code lines
-        dedenter.add_code("\t\t#test\n test\n test", 5, 0)
-        dedenter.add_code("\t\t\ntest\ntest", 6, 0)
-        dedenter.add_code("\ntest", 7, 0)
+        dedenter.add_code("test", 0)    # no indent
+        dedenter.add_code(" test", 0)   # simple indent
+        dedenter.add_code(" test\n test", 0)
+        dedenter.add_code("\t\t#test\ntest\ntest", 0)   # ignore non code lines
+        dedenter.add_code("\t\t#test\n test\n test", 0)
+        dedenter.add_code("\t\t\ntest\ntest", 0)
+        dedenter.add_code("\ntest", 0)
         builder.add_code.assert_has_calls(
             (
-                unittest.mock.call("test", 1, 0),
-                unittest.mock.call("test", 2, 0),
-                unittest.mock.call("test\ntest", 3, 0),
-                unittest.mock.call("\t\t#test\ntest\ntest", 4, 0),
-                unittest.mock.call("\t\t#test\ntest\ntest", 5, 0),
-                unittest.mock.call("\t\t\ntest\ntest", 6, 0),
-                unittest.mock.call("\ntest", 7, 0)
+                unittest.mock.call("test", 0),
+                unittest.mock.call("test", 0),
+                unittest.mock.call("test\ntest", 0),
+                unittest.mock.call("\t\t#test\ntest\ntest", 0),
+                unittest.mock.call("\t\t#test\ntest\ntest", 0),
+                unittest.mock.call("\t\t\ntest\ntest", 0),
+                unittest.mock.call("\ntest", 0)
             ),
             any_order=False
         )
         with self.assertRaises(util.StartingIndentationError):
-            dedenter.add_code("\ttest\ntest", 8, 0)    # test bad indentation
+            dedenter.add_code("\ttest\ntest", 0)    # test bad indentation
 
     def test_copy(self) -> None:
         """test Dedenter.copy"""
@@ -106,8 +106,8 @@ class TestDedenter(unittest.TestCase):
         dedenter2 = dedenter.copy()
         self.assertFalse(dedenter2 is dedenter)
         self.assertFalse(dedenter2.builder is builder)
-        dedenter.add_text("test", 1, 0)
-        builder.add_text.assert_called_with("test", 1, 0)
+        dedenter.add_text("test", 0)
+        builder.add_text.assert_called_with("test", 0)
         dedenter2.builder.add_text.assert_not_called()
 
     def test_is_code(self) -> None:

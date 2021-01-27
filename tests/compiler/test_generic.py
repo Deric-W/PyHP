@@ -121,10 +121,10 @@ class TestBuilder(unittest.TestCase):
     def test_build(self) -> None:
         """test the building of a generic code object"""
         builder = generic.GenericCodeBuilder(-1)
-        builder.add_text("1", 1, 0)
-        builder.add_code("numbers.append('2')", 2, 0)
-        builder.add_code("numbers.append('3')", 3, 0)
-        builder.add_text("4", 4, 0)
+        builder.add_text("1", 0)
+        builder.add_code("numbers.append('2')", 0)
+        builder.add_code("numbers.append('3')", 0)
+        builder.add_text("4", 0)
         spec = ModuleSpec("test", None, origin="this test", is_package=False)
         code = builder.code(spec)
         code2 = generic.GenericCode(
@@ -141,13 +141,13 @@ class TestBuilder(unittest.TestCase):
     def test_copy(self) -> None:
         """test GenericCodeBuilder.copy"""
         builder = generic.GenericCodeBuilder(-1)
-        builder.add_text("1", 1, 0)
-        builder.add_code("numbers.append('2')", 2, 0)
-        builder.add_code("numbers.append('3')", 3, 0)
-        builder.add_text("4", 4, 0)
+        builder.add_text("1", 0)
+        builder.add_code("numbers.append('2')", 0)
+        builder.add_code("numbers.append('3')", 0)
+        builder.add_text("4", 0)
         builder2 = builder.copy()
         self.assertEqual(builder.sections, builder2.sections)
-        builder2.add_text("test", 5, 0)
+        builder2.add_text("test", 0)
         self.assertNotEqual(builder.sections, builder2.sections)
 
     def test_empty(self) -> None:
@@ -159,7 +159,7 @@ class TestBuilder(unittest.TestCase):
     def test_lineno(self) -> None:
         """test if line numbers are set correctly"""
         builder = generic.GenericCodeBuilder(-1)
-        builder.add_code("x", 1, 99)    # offset starts with 0
+        builder.add_code("x", 99)    # offset starts with 0
         spec = ModuleSpec("test", None, origin="this test", is_package=False)
         code = builder.code(spec)
         try:
@@ -170,3 +170,13 @@ class TestBuilder(unittest.TestCase):
             self.assertEqual(traceback.tb_next.tb_next.tb_frame.f_lineno, 100)
         else:
             raise RuntimeError("bad generic code executed without error")
+
+    def test_error_lineno(self) -> None:
+        """test if the line numbers of syntax errors are correct"""
+        builder = generic.GenericCodeBuilder(-1)
+        try:
+            builder.add_code("9***9", 99)    # offset starts with 0
+        except SyntaxError as e:
+            self.assertEqual(e.lineno, 100)
+        else:
+            raise RuntimeError("bad syntax compiled without error")

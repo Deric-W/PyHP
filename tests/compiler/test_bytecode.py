@@ -79,13 +79,13 @@ class TestCode(unittest.TestCase):
     def test_equal(self) -> None:
         """test if equality between generic code objetcs works"""
         builder = bytecode.ByteCodeBuilder(-1)
-        builder.add_code("print(1)", 1, 0)
-        builder.add_text("X", 1, 0)
+        builder.add_code("print(1)", 0)
+        builder.add_text("X", 0)
         spec = ModuleSpec("test", None, origin="this test", is_package=False)
         code = builder.code(spec)
         code2 = builder.code(spec)
         code3 = builder.code(ModuleSpec("X", None, origin="this test", is_package=False))
-        builder.add_text("Y", 2, 0)
+        builder.add_text("Y", 0)
         code4 = builder.code(spec)
         self.assertEqual(code, code2)
         self.assertNotEqual(code, code3)
@@ -97,10 +97,10 @@ class TestBuilder(unittest.TestCase):
     def test_build(self) -> None:
         """test the building of a generic code object"""
         builder = bytecode.ByteCodeBuilder(-1)
-        builder.add_text("1", 1, 0)
-        builder.add_code("numbers.append('2')", 2, 1)
-        builder.add_code("numbers.append('3')", 3, 2)
-        builder.add_text("4", 4, 3)
+        builder.add_text("1", 0)
+        builder.add_code("numbers.append('2')", 1)
+        builder.add_code("numbers.append('3')", 2)
+        builder.add_text("4", 3)
         spec = ModuleSpec("test", None, origin="this test", is_package=False)
         code = builder.code(spec)
         code2 = bytecode.ByteCode(
@@ -112,13 +112,13 @@ class TestBuilder(unittest.TestCase):
     def test_copy(self) -> None:
         """test GenericCodeBuilder.copy"""
         builder = bytecode.ByteCodeBuilder(-1)
-        builder.add_text("1", 1, 0)
-        builder.add_code("numbers.append('2')", 2, 1)
-        builder.add_code("numbers.append('3')", 3, 2)
-        builder.add_text("4", 4, 3)
+        builder.add_text("1", 0)
+        builder.add_code("numbers.append('2')", 1)
+        builder.add_code("numbers.append('3')", 2)
+        builder.add_text("4", 3)
         builder2 = builder.copy()
         self.assertEqual(builder.nodes, builder2.nodes)
-        builder2.add_text("test", 5, 3)
+        builder2.add_text("test", 3)
         self.assertNotEqual(builder.nodes, builder2.nodes)
 
     def test_empty(self) -> None:
@@ -130,7 +130,7 @@ class TestBuilder(unittest.TestCase):
     def test_lineno(self) -> None:
         """test if line numbers are set correctly"""
         builder = bytecode.ByteCodeBuilder(-1)
-        builder.add_code("x", 1, 99)    # offset starts with 0
+        builder.add_code("x", 99)    # offset starts with 0
         spec = ModuleSpec("test", None, origin="this test", is_package=False)
         code = builder.code(spec)
         try:
@@ -141,3 +141,13 @@ class TestBuilder(unittest.TestCase):
             self.assertEqual(traceback.tb_next.tb_frame.f_lineno, 100)
         else:
             raise RuntimeError("bad bytecode executed without error")
+
+    def test_error_lineno(self) -> None:
+        """test if the line numbers of syntax errors are correct"""
+        builder = bytecode.ByteCodeBuilder(-1)
+        try:
+            builder.add_code("9***9", 99)    # offset starts with 0
+        except SyntaxError as e:
+            self.assertEqual(e.lineno, 100)
+        else:
+            raise RuntimeError("bad syntax compiled without error")

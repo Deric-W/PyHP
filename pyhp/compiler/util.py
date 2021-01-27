@@ -87,7 +87,7 @@ class Dedenter(CodeBuilderDecorator[B]):
         """check if the line contains code"""
         return not (not line or line.isspace() or line.lstrip().startswith("#"))
 
-    def add_code(self, code: str, section: int, offset: int) -> None:
+    def add_code(self, code: str, offset: int) -> None:
         """delegate method call to builder with dedented code"""
         lines = code.splitlines()
         indentation = None
@@ -99,7 +99,7 @@ class Dedenter(CodeBuilderDecorator[B]):
                     lines[line_num] = line[len(indentation):]  # remove starting indentation
                 else:
                     raise StartingIndentationError(            # raise Exception on bad indentation
-                        f"line does not start with the indentation of section {section}",
+                        "line does not start with the starting indentation",
                         (
                             "<unkown>",
                             line_num + offset + 1,
@@ -107,7 +107,7 @@ class Dedenter(CodeBuilderDecorator[B]):
                             line
                         )
                     )
-        self.builder.add_code("\n".join(lines), section, offset)     # join the lines back together
+        self.builder.add_code("\n".join(lines), offset)     # join the lines back together
 
     def copy(self) -> Dedenter[B]:
         """copy the dedenter with his current state"""

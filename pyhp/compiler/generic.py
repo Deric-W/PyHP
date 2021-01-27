@@ -17,7 +17,7 @@ import marshal
 from types import CodeType
 from typing import Dict, Iterator, List, Sequence, Union, Any, Tuple
 from importlib.machinery import ModuleSpec
-from . import Code, CodeBuilder, CompileError
+from . import Code, CodeBuilder
 
 
 __all__ = ("GenericCode", "GenericCodeBuilder")
@@ -79,7 +79,7 @@ class GenericCodeBuilder(CodeBuilder):
         self.sections = []
         self.optimization_level = optimization_level
 
-    def add_code(self, code: str, section: int, offset: int) -> None:
+    def add_code(self, code: str, offset: int) -> None:
         """add a code section with a section number and line offset"""
         try:
             code_obj = compile(
@@ -89,14 +89,14 @@ class GenericCodeBuilder(CodeBuilder):
                 dont_inherit=True,
                 optimize=self.optimization_level
             )
-        except ValueError as e:
-            raise CompileError("source contains null bytes", section) from e
-        except SyntaxError as e:
-            raise CompileError("source has a invalid syntax", section) from e
+        except SyntaxError as e:  # set correct lineno and reraise
+            if e.lineno is not None:
+                e.lineno += offset
+            raise
         # set correct first line number
         self.sections.append(code_obj.replace(co_firstlineno=code_obj.co_firstlineno + offset))
 
-    def add_text(self, text: str, section: int, offset: int) -> None:   # pylint: disable=W0613
+    def add_text(self, text: str, offset: int) -> None:   # pylint: disable=W0613
         """add a text section with a section number and line offset"""
         if text:    # ignore empty sections
             self.sections.append(text)
