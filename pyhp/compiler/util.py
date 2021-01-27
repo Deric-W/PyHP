@@ -99,7 +99,7 @@ class Dedenter(CodeBuilderDecorator[B]):
                     lines[line_num] = line[len(indentation):]  # remove starting indentation
                 else:
                     raise StartingIndentationError(            # raise Exception on bad indentation
-                        "line does not start with the starting indentation",
+                        f"line does not start with the indentation of line {offset + 1}",
                         (
                             "<unkown>",
                             line_num + offset + 1,
