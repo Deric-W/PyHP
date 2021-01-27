@@ -33,10 +33,7 @@ jobs:
         key: ${{ runner.os }}-pip-${{ hashFiles('setup.cfg') }}
 
     - name: Install test dependencies
-      run: python -m pip --cache-dir ~/.cache/pip install --quiet mypy wheel setuptools coverage
-
-    - name: run MyPy
-      run: python -m mypy --config-file setup.cfg -p pyhp
+      run: python -m pip --cache-dir ~/.cache/pip install --quiet wheel setuptools coverage
 
     # test
     - name: Build wheel
@@ -53,3 +50,29 @@ jobs:
       uses: codecov/codecov-action@v1
       with:
         flags: ${{ runner.os }}
+  
+  Typecheck:
+    runs-on: ubuntu-latest
+    steps:
+    # setup
+    - name: Checkout Repository
+      uses: actions/checkout@v2
+
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: actions/setup-python@v2
+      with:
+        python-version: "3.9"
+
+    # dependencies
+    - name: Restore pip cache
+      uses: actions/cache@v2
+      with:
+        path: ~/.cache/pip
+        key: ${{ runner.os }}-pip-${{ hashFiles('setup.cfg') }}
+
+    - name: Install test dependencies
+      run: python -m pip --cache-dir ~/.cache/pip install --quiet mypy
+
+    # check
+    - name: run MyPy
+      run: python -m mypy --config-file setup.cfg -p pyhp
