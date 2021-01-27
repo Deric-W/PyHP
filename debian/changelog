@@ -1,3 +1,15 @@
+pyhp (2.1-1) stable; urgency=low
+
+  * fifth release
+  * add bytecode code object implementation
+  * change CacheHandlers to support the context manager protocol
+  * change CacheHandlers to work with code objects directly
+  * replace pyhp.embed with pyhp.compiler
+  * fix errors during compilation and execution having wrong line numbers
+  * fix code objects lacking proper module constants
+
+ -- Eric Wolf <robo-eric@gmx.de>  Wed, 27 Jan 2021 19:17:00 +0100
+
 pyhp (2.0-1) stable; urgency=low
 
   * fourth release

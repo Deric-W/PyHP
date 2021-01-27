@@ -13,16 +13,17 @@
 # SPDX-License-Identifier: GPL-3.0-only
 
 import sys
-import os
+import os.path
 import re
 import argparse
 import configparser
 import importlib
-import errno
 from typing import TextIO, Any
 from . import __version__, libpyhp
 from .compiler import util, generic, parsers
 
+
+__all__ = ("argparser", "main")
 
 argparser = argparse.ArgumentParser(
     prog="pyhp",
@@ -56,8 +57,8 @@ argparser.add_argument(
 def main(file: TextIO, caching: bool = False, config_file: str = "/etc/pyhp.conf") -> int:
     """start the PyHP Interpreter with predefined arguments"""
     config = configparser.ConfigParser(inline_comment_prefixes="#")     # allow inline comments
-    if config_file not in config.read(config_file):   # reading file failed
-        raise FileNotFoundError(errno.ENOENT, "failed to read config file", config_file)
+    with open(config_file, "r") as fd:
+        config.read_file(fd)
 
     # prepare the PyHP Object
     PyHP = libpyhp.PyHP(
