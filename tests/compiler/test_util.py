@@ -46,8 +46,8 @@ class TestCompiler(unittest.TestCase):
             builder.code(spec)
         )
 
-    def test_shebang(self) -> None:
-        """test the handling of shebangs"""
+    def test_file_shebang(self) -> None:
+        """test the handling of shebangs in files"""
         path = "./tests/embedding/shebang.pyhp"
         with open(path, "r") as file:
             code = self.compiler.compile_file(file)
@@ -61,6 +61,15 @@ class TestCompiler(unittest.TestCase):
             code,
             builder.code(spec)
         )
+
+    def test_string_shebang(self) -> None:
+        """test the handling of shebangs in strings"""
+        source = "#!test\ntext1<?pyhp code1 ?>text2<?pyhp code2 ?>"
+        code = self.compiler.compile_str(source, "Test")
+        builder = self.compiler.builder()
+        self.compiler.parser.build("text1<?pyhp code1 ?>text2<?pyhp code2 ?>", builder, 1)
+        code2 = builder.code(ModuleSpec("__main__", None, origin="Test", is_package=False))
+        self.assertEqual(code, code2)
 
 
 class TestDedenter(unittest.TestCase):

@@ -13,6 +13,7 @@
 # SPDX-License-Identifier: GPL-3.0-only
 
 from __future__ import annotations
+import os
 import re
 from typing import Optional, TextIO, TypeVar, Generic
 from importlib.abc import Loader
@@ -48,7 +49,10 @@ class Compiler(Generic[P, B]):
     def compile_str(self, source: str, origin: str = "<string>", loader: Optional[Loader] = None) -> Code:
         """compile a source string into a code object"""
         builder = self.builder()
-        self.parser.build(source, builder)
+        if source.startswith("#!"):     # shebang, remove first line
+            self.parser.build(source.partition(os.linesep)[2], builder, 1)
+        else:
+            self.parser.build(source, builder)
         return builder.code(ModuleSpec("__main__", loader, origin=origin, is_package=False))
 
     def compile_file(self, file: TextIO, loader: Optional[Loader] = None) -> Code:
