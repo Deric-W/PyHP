@@ -208,7 +208,7 @@ class CodeSourceContainer(Mapping[str, S]):
         pass
 
 
-class CodeSourceContainerDecorator(Generic[C, S], CodeSourceContainer[S]):
+class CodeSourceContainerDecorator(CodeSourceContainer[S], Generic[C, S]):
     """abc code source container decorators"""
     __slots__ = ("source_container",)
 
