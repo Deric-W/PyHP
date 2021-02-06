@@ -26,7 +26,7 @@ from typing import (
     Pattern,
     Tuple
 )
-from ..compiler import Parser, Code, CodeBuilder
+from ..compiler import Code
 from ..compiler.util import Compiler
 
 
@@ -193,7 +193,7 @@ class CodeSourceContainer(Mapping[str, S]):
 
     @classmethod
     @abstractmethod
-    def from_config(cls, config: Mapping[str, Any], before: Union[Compiler[Parser, CodeBuilder], CodeSourceContainer[CodeSource]]) -> CodeSourceContainer[S]:
+    def from_config(cls, config: Mapping[str, Any], before: Union[Compiler, CodeSourceContainer]) -> CodeSourceContainer[S]:
         """create a instance from configuration data"""
         raise NotImplementedError
 
