@@ -49,16 +49,16 @@ __all__ = (
 T = TypeVar("T")
 
 S = TypeVar("S", bound="CodeSource")
-CS = TypeVar("CS", bound="CacheSource[CodeSource]")
+CS = TypeVar("CS", bound="CacheSource")
 
-C = TypeVar("C", bound="CodeSourceContainer[CodeSource]")
+C = TypeVar("C", bound="CodeSourceContainer")
 
 
 class SourceInfo(NamedTuple):
     """named tuple containing all timestamps of a source"""
-    mtime: float
-    ctime: float
-    atime: float
+    mtime: int
+    ctime: int
+    atime: int
 
 
 class CacheException(Exception):
@@ -82,7 +82,7 @@ class CodeSource(metaclass=ABCMeta):
 
     @abstractmethod
     def code(self) -> Code:
-        """return the represented code object"""
+        """retrieve the represented code object"""
         raise NotImplementedError
 
     def close(self) -> None:
@@ -117,18 +117,18 @@ class TimestampedCodeSource(CodeSource):
         )
 
     @abstractmethod
-    def mtime(self) -> float:
-        """retrieve the modification timestamp"""
+    def mtime(self) -> int:
+        """retrieve the modification timestamp in ns"""
         raise NotImplementedError
 
     @abstractmethod
-    def ctime(self) -> float:
-        """retrieve the creation timestamp"""
+    def ctime(self) -> int:
+        """retrieve the creation timestamp in ns"""
         raise NotImplementedError
 
     @abstractmethod
-    def atime(self) -> float:
-        """retireve the access timestamp"""
+    def atime(self) -> int:
+        """retireve the access timestamp in ns"""
         raise NotImplementedError
 
 

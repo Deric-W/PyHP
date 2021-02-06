@@ -22,23 +22,23 @@ PATTERN = re.compile(r"a|b")
 
 class TestSource(unittest.TestCase, DirectCodeSource, TimestampedCodeSource):
     """test the source abc methods"""
-    def mtime(self) -> float:
-        return 99.9
+    def mtime(self) -> int:
+        return 99
 
-    def ctime(self) -> float:
-        return 10.9
+    def ctime(self) -> int:
+        return 10
 
-    def atime(self) -> float:
-        return -9.0
+    def atime(self) -> int:
+        return -9
 
     def test_info(self) -> None:
         """test TimestampedCodeSource.info"""
         self.assertEqual(
             self.info(),
             SourceInfo(
-                99.9,
-                10.9,
-                -9.0
+                99,
+                10,
+                -9
             )
         )
 
