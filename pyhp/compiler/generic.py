@@ -80,6 +80,12 @@ class GenericCodeBuilder(CodeBuilder):
         self.sections = []
         self.optimization_level = optimization_level
 
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, GenericCodeBuilder):
+            return self.sections == other.sections \
+                and self.optimization_level == other.optimization_level
+        return NotImplemented
+
     def add_code(self, code: str, offset: int) -> None:
         """add a code section with a line offset"""
         try:

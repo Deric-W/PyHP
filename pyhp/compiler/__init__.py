@@ -72,7 +72,7 @@ class CodeBuilder(metaclass=ABCMeta):
         raise NotImplementedError
 
 
-class CodeBuilderDecorator(CodeBuilder, Generic[B]):
+class CodeBuilderDecorator(Generic[B], CodeBuilder):
     """abstract base class for code builder decorators"""
     __slots__ = ("builder",)
 

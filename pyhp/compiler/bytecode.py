@@ -101,6 +101,13 @@ class ByteCodeBuilder(CodeBuilder):
         self.has_text = False
         self.optimization_level = optimization_level
 
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, ByteCodeBuilder):
+            return self.nodes == other.nodes \
+                and self.has_text == other.has_text \
+                and self.optimization_level == other.optimization_level
+        return NotImplemented
+
     def add_code(self, code: str, offset: int) -> None:
         """add a code section with a line offset"""
         try:

@@ -49,3 +49,18 @@ class TestRegexParser(unittest.TestCase):
                 ("text1", 0, False)
             ]
         )
+
+    def test_eq(self) -> None:
+        """test RegexParser.__eq__"""
+        self.assertEqual(
+            self.parser,
+            parsers.RegexParser(re.compile("{"), re.compile("}"))
+        )
+        self.assertNotEqual(
+            self.parser,
+            parsers.RegexParser(re.compile("a"), re.compile("}"))
+        )
+        self.assertNotEqual(
+            self.parser,
+            parsers.RegexParser(re.compile("{"), re.compile("b"))
+        )

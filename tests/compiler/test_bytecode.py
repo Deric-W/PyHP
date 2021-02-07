@@ -151,3 +151,19 @@ class TestBuilder(unittest.TestCase):
             self.assertEqual(e.lineno, 100)
         else:
             raise RuntimeError("bad syntax compiled without error")
+
+    def test_eq(self) -> None:
+        """test ByteCodeBuilder.__eq__"""
+        builders = [
+            bytecode.ByteCodeBuilder(-1),
+            bytecode.ByteCodeBuilder(0),
+            bytecode.ByteCodeBuilder(-1),
+            bytecode.ByteCodeBuilder(-1)
+        ]
+        builders[2].add_text("test", 0)
+        builders[3].add_text("abc", 0)
+        for index, builder in enumerate(builders):
+            self.assertEqual(
+                [builder],
+                [b for b in builders if b == builder]
+            )

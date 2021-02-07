@@ -32,6 +32,11 @@ class RegexParser(Parser):
         self.start = start
         self.end = end
 
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, RegexParser):
+            return self.start == other.start and self.end == other.end
+        return NotImplemented
+
     def parse(self, source: str, line_offset: int = 0) -> Iterator[Tuple[str, int, bool]]:
         """parse source code, yielding sections with line offset and bool to indicate if they are code"""
         pos = 0

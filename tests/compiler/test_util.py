@@ -127,3 +127,15 @@ class TestDedenter(unittest.TestCase):
         self.assertFalse(util.Dedenter.is_code("  #test"))
         self.assertFalse(util.Dedenter.is_code(""))
         self.assertFalse(util.Dedenter.is_code("\t\t  \n"))
+
+    def test_eq(self) -> None:
+        """test Dedenter.__eq__"""
+        builder = generic.GenericCodeBuilder(-1)
+        self.assertEqual(
+            util.Dedenter(builder),
+            util.Dedenter(builder)
+        )
+        self.assertNotEqual(
+            util.Dedenter(builder),
+            util.Dedenter(generic.GenericCodeBuilder(2))
+        )

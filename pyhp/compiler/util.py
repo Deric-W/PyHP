@@ -41,6 +41,11 @@ class Compiler(Generic[P, B]):
         self.parser = parser
         self.base_builder = builder
 
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Compiler):
+            return self.parser == other.parser and self.base_builder == other.base_builder
+        return NotImplemented
+
     def builder(self) -> B:
         """get a code builder who is not used by other threads"""
         return self.base_builder.copy()
@@ -79,6 +84,11 @@ class Dedenter(CodeBuilderDecorator[B]):
     def __init__(self, builder: B) -> None:
         """construct a instance with the builder to decorate"""
         self.builder = builder
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Dedenter):
+            return self.builder == other.builder
+        return NotImplemented
 
     @staticmethod
     def get_indentation(line: str) -> str:
