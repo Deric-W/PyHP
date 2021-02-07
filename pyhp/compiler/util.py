@@ -50,14 +50,18 @@ class Compiler(Generic[P, B]):
         """get a code builder who is not used by other threads"""
         return self.base_builder.copy()
 
-    def compile_str(self, source: str, origin: str = "<string>", loader: Optional[Loader] = None) -> Code:
-        """compile a source string into a code object"""
+    def compile_raw(self, source: str, spec: ModuleSpec) -> Code:
+        """compile a source string with a spec into a code object"""
         builder = self.builder()
         if source.startswith("#!"):     # shebang, remove first line
             self.parser.build(source.partition("\n")[2], builder, 1)
         else:
             self.parser.build(source, builder)
-        return builder.code(ModuleSpec("__main__", loader, origin=origin, is_package=False))
+        return builder.code(spec)
+
+    def compile_str(self, source: str, origin: str = "<string>", loader: Optional[Loader] = None) -> Code:
+        """compile a source string into a code object"""
+        return self.compile_raw(source, ModuleSpec("__main__", loader, origin=origin, is_package=False))
 
     def compile_file(self, file: TextIO, loader: Optional[Loader] = None) -> Code:
         """compile a text stream into a code object"""

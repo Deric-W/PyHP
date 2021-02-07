@@ -21,6 +21,16 @@ class TestCompiler(unittest.TestCase):
         """test if the builder is independent from the compiler"""
         self.assertFalse(self.compiler.builder() is self.compiler.base_builder)
 
+    def test_raw(self) -> None:
+        """test Compiler.compile_raw"""
+        source = "text1<?pyhp code1 ?>text2<?pyhp code2 ?>"
+        spec = ModuleSpec("__main__", None, origin="Test", is_package=False)
+        code = self.compiler.compile_raw(source, spec)
+        builder = self.compiler.builder()
+        self.compiler.parser.build(source, builder)
+        code2 = builder.code(spec)
+        self.assertEqual(code, code2)
+
     def test_string(self) -> None:
         """test the compilation of strings"""
         source = "text1<?pyhp code1 ?>text2<?pyhp code2 ?>"
