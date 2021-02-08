@@ -79,7 +79,8 @@ class TestFileSource(unittest.TestCase):
         """test FileSource.source"""
         with open("tests/embedding/syntax.pyhp", "r") as fd, \
                 FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler) as source:
-            self.assertEqual(fd.read(), source.source())
+            # workaround git automatic newlines
+            self.assertEqual(fd.read(), source.source().replace(os.linesep, "\n"))
 
     def test_size(self) -> None:
         """test FileSource.size"""
@@ -98,7 +99,7 @@ class TestFileSource(unittest.TestCase):
             )
             spec.has_location = True
             self.assertEqual(
-                source.source(),
+                source.source().replace(os.linesep, "\n"),  # workaround git automatic newlines
                 inspect.getsource(importlib.util.module_from_spec(spec))
             )
         with self.assertRaises(ImportError):
