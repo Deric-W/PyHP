@@ -109,7 +109,7 @@ class TestFileSource(unittest.TestCase):
     def test_timestamps(self) -> None:
         """test FileSource timestamps"""
         # allow parallel execution of file reading tests
-        with FileSource(io.FileIO(os.devnull, "r"), compiler) as source:
+        with FileSource(io.FileIO("tests/__init__.py", "r"), compiler) as source:
             info = source.info()
             self.assertEqual(
                 info,
@@ -119,8 +119,8 @@ class TestFileSource(unittest.TestCase):
                     source.atime()
                 )
             )
-            stat = os.stat(os.devnull)
-            self.assertEqual(   # might fail if atime gets recorded for devnull
+            stat = os.stat("tests/__init__.py")
+            self.assertEqual(   # might fail if atime gets recorded for __init__.py
                 info,
                 (
                     stat.st_mtime_ns,
