@@ -66,7 +66,7 @@ class TestFileSource(unittest.TestCase):
 
     def test_code(self) -> None:
         """test FileSource.code"""
-        with open("tests/embedding/syntax.pyhp", "r") as fd, \
+        with open("tests/embedding/syntax.pyhp", "r", newline="") as fd, \
                 FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler) as source:
             loader = SourceFileLoader("__main__", "tests/embedding/syntax.pyhp")
             code = compiler.compile_file(fd, loader)
@@ -170,7 +170,7 @@ class TestDirectoryContainer(unittest.TestCase):
         for name, source in self.container.items():
             with source:
                 path = os.path.join(self.container.path, name)
-                with open(path, "r") as fd:
+                with open(path, "r", newline="") as fd:
                     self.assertEqual(
                         source.code(),
                         compiler.compile_file(fd, SourceFileLoader("__main__", path))
