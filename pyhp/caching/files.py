@@ -45,15 +45,15 @@ class SourceFileLoader(FileLoader):
 
     def get_code(self, fullname: str) -> Optional[CodeType]:
         """return None because pyhp files have no regular code object"""
-        if fullname == self.name:
-            return None
-        raise ImportError("module not handled by this loader")
+        if fullname != self.name:
+            raise ImportError(f"loader for '{self.name}' cannot handle '{fullname}'")
+        return None
 
     def get_source(self, fullname: str) -> str:
-        if fullname == self.name:
-            with open(self.path, "r") as fd:
-                return fd.read()
-        raise ImportError("module not handled by this loader")
+        if fullname != self.name:
+            raise ImportError(f"loader for '{self.name}' cannot handle '{fullname}'")
+        with open(self.path, "r") as fd:
+            return fd.read()
 
 
 class FileSource(TimestampedCodeSource, DirectCodeSource):
