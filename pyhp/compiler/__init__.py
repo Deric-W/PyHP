@@ -34,7 +34,7 @@ B = TypeVar("B", bound="CodeBuilder")
 
 class Code(metaclass=ABCMeta):
     """abstract base class for code objects"""
-    __slots__ = ()
+    __slots__ = ("__weakref__",)
 
     @abstractmethod
     def __eq__(self, other: object) -> bool:
@@ -48,7 +48,7 @@ class Code(metaclass=ABCMeta):
 
 class CodeBuilder(metaclass=ABCMeta):
     """abstract base class for all code builders"""
-    __slots__ = ()
+    __slots__ = ("__weakref__",)
 
     def __deepcopy__(self, memo: MutableMapping[int, Any]) -> CodeBuilder:
         builder = self.copy()
@@ -97,7 +97,7 @@ class CodeBuilderDecorator(Generic[B], CodeBuilder):
 
 class Parser(metaclass=ABCMeta):
     """abstract base class for parsers"""
-    __slots__ = ()
+    __slots__ = ("__weakref__",)
 
     @abstractmethod
     def parse(self, source: str, line_offset: int = 0) -> Iterator[Tuple[str, int, bool]]:

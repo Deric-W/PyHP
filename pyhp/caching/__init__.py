@@ -71,7 +71,7 @@ class NotCachedException(CacheException):
 
 class CodeSource(metaclass=ABCMeta):
     """abc for representing a code object inside a storage"""
-    __slots__ = ()
+    __slots__ = ("__weakref__",)
 
     def __enter__(self: S) -> S:
         return self
@@ -182,7 +182,7 @@ class CacheSource(CodeSourceDecorator[S]):
 
 class CodeSourceContainer(Mapping[str, S]):
     """abc for representing a storage of code sources"""
-    __slots__ = ()
+    __slots__ = ("__weakref__",)
 
     def __enter__(self: C) -> C:
         return self

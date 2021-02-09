@@ -30,7 +30,7 @@ B = TypeVar("B", bound=CodeBuilder)
 
 class Compiler(Generic[P, B]):
     """Facade to the compiler subsystem"""
-    __slots__ = ("parser", "base_builder")
+    __slots__ = ("parser", "base_builder", "__weakref__")
 
     parser: P
 
@@ -78,7 +78,6 @@ class Compiler(Generic[P, B]):
 
 class StartingIndentationError(IndentationError):
     """Exception raised when a line does not start with the starting indentation"""
-    __slots__ = ()
 
 
 class Dedenter(CodeBuilderDecorator[B]):
