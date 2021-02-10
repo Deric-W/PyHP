@@ -11,7 +11,7 @@ import os.path
 import inspect
 import importlib.util
 import importlib.machinery
-from pyhp.caching.files import FileSource, Directory, SourceFileLoader
+from pyhp.caching.files import FileSource, Directory, SourceFileLoader, LeavesDirectoryError
 from pyhp.compiler.parsers import RegexParser
 from pyhp.compiler.generic import GenericCodeBuilder
 from pyhp.compiler.util import Compiler, Dedenter
@@ -135,6 +135,11 @@ class TestDirectoryContainer(unittest.TestCase):
     """test Directory"""
 
     container = Directory(
+        "tests/embedding",
+        compiler
+    )
+
+    abs_container = Directory(
         os.path.abspath("tests/embedding"),
         compiler
     )
@@ -145,7 +150,7 @@ class TestDirectoryContainer(unittest.TestCase):
             self.container,
             Directory.from_config(
                 {
-                    "path": os.path.abspath("tests/embedding")
+                    "path": "tests/embedding"
                 },
                 compiler
             )
@@ -160,7 +165,7 @@ class TestDirectoryContainer(unittest.TestCase):
         with self.assertRaises(ValueError):
             Directory.from_config(
                 {
-                    "path": os.path.abspath("tests/embedding")
+                    "path": "tests/embedding"
                 },
                 self.container
             )
@@ -169,21 +174,45 @@ class TestDirectoryContainer(unittest.TestCase):
         """test Directory code retrieval"""
         for name, source in self.container.items():
             with source:
-                path = os.path.join(self.container.path, name)
+                path = os.path.join("tests/embedding", name)
                 with open(path, "r", newline="") as fd:
                     self.assertEqual(
                         source.code(),
                         compiler.compile_file(fd, SourceFileLoader("__main__", path))
                     )
 
+    def test_traversal(self) -> None:
+        """test resistance against path traversal"""
+        for name in ("../test1", "a/../../test3", "../testsX"):  # would leave the directory
+            with self.assertRaises(LeavesDirectoryError):
+                self.container[name].close()
+            with self.assertRaises(LeavesDirectoryError):
+                self.abs_container[name].close()
+        with self.assertRaises(ValueError):     # would leave directory on cwd change
+            self.container[os.path.abspath("test/embedding/syntax.pyhp")].close()
+        # would not leave directory on cwd change
+        self.abs_container[os.path.abspath("tests/embedding/syntax.pyhp")].close()
+        for name in ("syntax.pyhp", "../embedding/syntax.pyhp", "./syntax.pyhp"):   # inside path
+            self.container[name].close()
+            self.abs_container[name].close()
+
     def test_iter(self) -> None:
         """test iter(Directory)"""
-        files = []  # type: list[str]
-        for dirname, _, filenames in os.walk(self.container.path):
-            files.extend(os.path.join(dirname, filename) for filename in filenames)
+        files = {   # set -> no order
+            "syntax.pyhp",
+            "syntax.output",
+            "indentation.pyhp",
+            "indentation.output",
+            "shebang.pyhp",
+            "shebang.output"
+        }
         self.assertEqual(
             files,
-            list(self.container.keys())
+            self.container.keys()
+        )
+        self.assertEqual(
+            files,
+            self.abs_container.keys()
         )
 
     def test_eq(self) -> None:
@@ -197,7 +226,8 @@ class TestDirectoryContainer(unittest.TestCase):
             Directory(
                 self.container.path,
                 compiler2
-            )
+            ),
+            self.abs_container
         ]
         self.assertEqual(
             [self.container],

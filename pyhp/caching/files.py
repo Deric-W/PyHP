@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-"""Module containing implementation for files"""
+"""Module containing file implementations"""
 # The caching.files module is part of PyHP (https://github.com/Deric-W/PyHP)
 # Copyright (C) 2021  Eric Wolf
 
@@ -33,6 +33,7 @@ from ..compiler.util import Compiler
 
 __all__ = (
     "FileSource",
+    "LeavesDirectoryError",
     "Directory"
 )
 
@@ -126,6 +127,10 @@ class FileSource(TimestampedCodeSource, DirectCodeSource):
         self.fd.close()
 
 
+class LeavesDirectoryError(ValueError):
+    """Exception raised when a path would reference something outside the directory"""
+
+
 class Directory(CodeSourceContainer[FileSource]):
     """container of FileSources pinned to a directory"""
     __slots__ = ("path", "compiler")
@@ -135,7 +140,8 @@ class Directory(CodeSourceContainer[FileSource]):
     compiler: Compiler
 
     def __init__(self, path: str, compiler: Compiler) -> None:
-        self.path = path
+        """create an instance with the path of the directory and a compiler"""
+        self.path = os.path.normpath(path)
         self.compiler = compiler
 
     @classmethod
@@ -155,15 +161,26 @@ class Directory(CodeSourceContainer[FileSource]):
         return NotImplemented
 
     def __getitem__(self, name: str) -> FileSource:
-        """get FileSource instance by path which is absolute or relative to the directory path"""
+        """get FileSource instance by path which does not leave the directory"""
+        path = os.path.normpath(    # resolve ../
+            os.path.join(
+                self.path,
+                name
+            )
+        )
+        if os.path.commonpath((self.path, path)) != self.path:  # not commonprefix: /test != /testX
+            raise LeavesDirectoryError(f"path {name} would leave directory {self.path}")
         return FileSource(
-            io.FileIO(os.path.join(self.path, name), "r"),
+            io.FileIO(path, "r"),
             self.compiler
         )
 
     def __iter__(self) -> Iterator[str]:
+        """yield all files as paths relative to the directory"""
         for dirpath, _, filenames in os.walk(self.path, followlinks=True):
-            yield from (os.path.join(dirpath, filename) for filename in filenames)
+            yield from (
+                os.path.relpath(os.path.join(dirpath, filename), self.path) for filename in filenames
+            )
 
     def __len__(self) -> int:
         files = 0
