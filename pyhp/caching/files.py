@@ -150,7 +150,7 @@ class Directory(CodeSourceContainer[FileSource]):
         if isinstance(before, Compiler):
             path = config["path"]
             if isinstance(path, str):
-                return cls(path, before)
+                return cls(os.path.expanduser(path), before)
             raise ValueError("expected value of key 'path' to be a str representing a path")
         raise ValueError(f"{cls.__name__} does not support decorating another CodeSourceContainer")
 

@@ -155,6 +155,15 @@ class TestDirectoryContainer(unittest.TestCase):
                 compiler
             )
         )
+        self.assertEqual(
+            Directory.from_config(
+                {
+                    "path": "~/test"
+                },
+                compiler
+            ).path,
+            os.path.normpath(os.path.expanduser("~/test"))
+        )
         with self.assertRaises(ValueError):
             Directory.from_config(
                 {
