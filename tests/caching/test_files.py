@@ -11,7 +11,12 @@ import os.path
 import inspect
 import importlib.util
 import importlib.machinery
-from pyhp.caching.files import FileSource, Directory, SourceFileLoader, LeavesDirectoryError
+from pyhp.caching.files import (
+    FileSource, Directory,
+    SourceFileLoader,
+    LeavesDirectoryError,
+    StrictDirectory
+)
 from pyhp.compiler.parsers import RegexParser
 from pyhp.compiler.generic import GenericCodeBuilder
 from pyhp.compiler.util import Compiler, Dedenter
@@ -192,21 +197,6 @@ class TestDirectoryContainer(unittest.TestCase):
                         compiler.compile_file(fd, SourceFileLoader("__main__", path))
                     )
 
-    def test_traversal(self) -> None:
-        """test resistance against path traversal"""
-        for name in ("../test1", "a/../../test3", "../testsX"):  # would leave the directory
-            with self.assertRaises(LeavesDirectoryError):
-                self.container[name].close()
-            with self.assertRaises(LeavesDirectoryError):
-                self.abs_container[name].close()
-        with self.assertRaises(ValueError):     # would leave directory on cwd change
-            self.container[os.path.abspath("test/embedding/syntax.pyhp")].close()
-        # would not leave directory on cwd change
-        self.abs_container[os.path.abspath("tests/embedding/syntax.pyhp")].close()
-        for name in ("syntax.pyhp", "../embedding/syntax.pyhp", "./syntax.pyhp"):   # inside path
-            self.container[name].close()
-            self.abs_container[name].close()
-
     def test_iter(self) -> None:
         """test iter(Directory)"""
         files = {   # set -> no order
@@ -244,3 +234,32 @@ class TestDirectoryContainer(unittest.TestCase):
             [self.container],
             [directory for directory in directories if directory == self.container]
         )
+
+
+class TestStrictDirectory(unittest.TestCase):
+    """test StrictDirectory"""
+
+    container = StrictDirectory(
+        "tests/embedding",
+        compiler
+    )
+
+    abs_container = StrictDirectory(
+        os.path.abspath("tests/embedding"),
+        compiler
+    )
+
+    def test_traversal(self) -> None:
+        """test resistance against path traversal"""
+        for name in ("../test1", "a/../../test3", "../testsX"):  # would leave the directory
+            with self.assertRaises(LeavesDirectoryError):
+                self.container[name].close()
+            with self.assertRaises(LeavesDirectoryError):
+                self.abs_container[name].close()
+        with self.assertRaises(ValueError):     # would leave directory on cwd change
+            self.container[os.path.abspath("test/embedding/syntax.pyhp")].close()
+        # would not leave directory on cwd change
+        self.abs_container[os.path.abspath("tests/embedding/syntax.pyhp")].close()
+        for name in ("syntax.pyhp", "../embedding/syntax.pyhp", "./syntax.pyhp"):   # inside path
+            self.container[name].close()
+            self.abs_container[name].close()

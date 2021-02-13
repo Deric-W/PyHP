@@ -34,7 +34,8 @@ from ..compiler.util import Compiler
 __all__ = (
     "FileSource",
     "LeavesDirectoryError",
-    "Directory"
+    "Directory",
+    "StrictDirectory"
 )
 
 ENCODING = getpreferredencoding(False)
@@ -132,7 +133,7 @@ class LeavesDirectoryError(ValueError):
 
 
 class Directory(CodeSourceContainer[FileSource]):
-    """container of FileSources pinned to a directory"""
+    """container of FileSources pointing to a directory"""
     __slots__ = ("path", "compiler")
 
     path: str
@@ -141,7 +142,7 @@ class Directory(CodeSourceContainer[FileSource]):
 
     def __init__(self, path: str, compiler: Compiler) -> None:
         """create an instance with the path of the directory and a compiler"""
-        self.path = os.path.normpath(path)
+        self.path = path
         self.compiler = compiler
 
     @classmethod
@@ -161,8 +162,37 @@ class Directory(CodeSourceContainer[FileSource]):
         return NotImplemented
 
     def __getitem__(self, name: str) -> FileSource:
+        """get FileSource instance by path (absolute or relative to the directory)"""
+        return FileSource(
+            io.FileIO(os.path.join(self.path, name), "r"),
+            self.compiler
+        )
+
+    def __iter__(self) -> Iterator[str]:
+        """yield all files as paths relative to the directory"""
+        for dirpath, _, filenames in os.walk(self.path, followlinks=True):
+            for filename in filenames:
+                yield os.path.relpath(os.path.join(dirpath, filename), self.path)
+
+    def __len__(self) -> int:
+        files = 0
+        for _, _, filenames in os.walk(self.path, followlinks=True):
+            files += len(filenames)
+        return files
+
+
+class StrictDirectory(Directory):
+    """container of FileSources pinned to a directory"""
+    __slots__ = ()
+
+    def __init__(self, path: str, compiler: Compiler) -> None:
+        """create an instance with the path of the directory and a compiler"""
+        self.path = os.path.normpath(path)  # prevent .. from conflicting with the commonpath check
+        self.compiler = compiler
+
+    def __getitem__(self, name: str) -> FileSource:
         """get FileSource instance by path which does not leave the directory"""
-        path = os.path.normpath(    # resolve ../
+        path = os.path.normpath(    # resolve ..
             os.path.join(
                 self.path,
                 name
@@ -174,16 +204,3 @@ class Directory(CodeSourceContainer[FileSource]):
             io.FileIO(path, "r"),
             self.compiler
         )
-
-    def __iter__(self) -> Iterator[str]:
-        """yield all files as paths relative to the directory"""
-        for dirpath, _, filenames in os.walk(self.path, followlinks=True):
-            yield from (
-                os.path.relpath(os.path.join(dirpath, filename), self.path) for filename in filenames
-            )
-
-    def __len__(self) -> int:
-        files = 0
-        for _, _, filenames in os.walk(self.path, followlinks=True):
-            files += len(filenames)
-        return files
