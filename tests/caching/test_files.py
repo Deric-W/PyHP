@@ -167,7 +167,7 @@ class TestDirectoryContainer(unittest.TestCase):
                 },
                 compiler
             ).path,
-            os.path.normpath(os.path.expanduser("~/test"))
+            os.path.expanduser("~/test")
         )
         with self.assertRaises(ValueError):
             Directory.from_config(
@@ -188,9 +188,7 @@ class TestDirectoryContainer(unittest.TestCase):
         """test Directory code retrieval"""
         for name, source in self.container.items():
             with source:
-                path = os.path.normpath(    # replace slashes on windows
-                    os.path.join("tests/embedding", name)
-                )
+                path = os.path.join("tests/embedding", name)
                 with open(path, "r", newline="") as fd:
                     self.assertEqual(
                         source.code(),
