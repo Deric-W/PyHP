@@ -40,7 +40,7 @@ jobs:
       run: python setup.py bdist_wheel
 
     - name: Install wheel
-      run: python -m pip install ./dist/*.whl
+      run: python -m pip install ./dist/*.whl[CONFIG]
       shell: bash
 
     - name: run tests
