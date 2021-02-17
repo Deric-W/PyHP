@@ -6,7 +6,7 @@ import sys
 import os
 import unittest
 import subprocess
-from tempfile import NamedTemporaryFile
+import toml
 from pyhp import main
 
 
@@ -16,19 +16,7 @@ class TestCli(unittest.TestCase):
         """test reading from stdin"""
         self.assertEqual(
             subprocess.run(         # nosec -> inmutable input
-                [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf"],
-                input=b"Test",
-                check=True,
-                stdout=subprocess.PIPE
-            ).stdout,
-            "Status: 200 OK{0}Content-Type: text/html{0}{0}Test".format(os.linesep).encode()
-        )
-
-    def test_empty_config(self) -> None:
-        """test empty config file"""
-        self.assertEqual(
-            subprocess.run(         # nosec -> imutable input
-                [sys.executable, "-m", "pyhp", "--config", os.devnull],
+                [sys.executable, "-m", "pyhp", "--config", "./pyhp.toml"],
                 input=b"Test",
                 check=True,
                 stdout=subprocess.PIPE
@@ -40,11 +28,31 @@ class TestCli(unittest.TestCase):
         """test failure on invalid file path"""
         with self.assertRaises(subprocess.CalledProcessError):
             subprocess.run(         # nosec -> imutable input
-                [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "azhdawihd1ihudhai5iwzgbdua"],
+                [sys.executable, "-m", "pyhp", "--config", "./pyhp.toml", "azhdawihd1ihudhai5iwzgbdua"],
                 check=True,
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
             )
+
+    def test_stdout(self) -> None:
+        """test stdout cleanup"""
+        stdout = sys.stdout
+        main.main(os.devnull, toml.load("pyhp.toml"))
+        self.assertIs(sys.stdout, stdout)
+
+    def test_config_location(self) -> None:
+        """test config file location"""
+        with self.assertRaises(RuntimeError):   # no config
+            main.load_config()
+        os.environ["PYHPCONFIG"] = "pyhp.toml"  # env var
+        try:
+            main.load_config()
+        finally:
+            del os.environ["PYHPCONFIG"]
+        self.assertEqual(                       # search path
+            main.load_config(("test1", "test2", "pyhp.toml")),
+            toml.load("pyhp.toml")
+        )
 
 
 class TestOutput(unittest.TestCase):
@@ -54,7 +62,7 @@ class TestOutput(unittest.TestCase):
         with open("./tests/embedding/syntax.output", "rb") as fd:
             self.assertEqual(
                 subprocess.run(     # nosec -> imutable input
-                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "./tests/embedding/syntax.pyhp"],
+                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.toml", "./tests/embedding/syntax.pyhp"],
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
@@ -66,7 +74,7 @@ class TestOutput(unittest.TestCase):
         with open("./tests/embedding/shebang.output", "rb") as fd:
             self.assertEqual(
                 subprocess.run(     # nosec -> imutable input
-                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "./tests/embedding/shebang.pyhp"],
+                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.toml", "./tests/embedding/shebang.pyhp"],
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
@@ -78,7 +86,7 @@ class TestOutput(unittest.TestCase):
         with open("./tests/embedding/indentation.output", "rb") as fd:
             self.assertEqual(
                 subprocess.run(     # nosec -> imutable input
-                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "./tests/embedding/indentation.pyhp"],
+                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.toml", "./tests/embedding/indentation.pyhp"],
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
@@ -90,7 +98,7 @@ class TestOutput(unittest.TestCase):
         with open("./tests/header/header.output", "rb") as fd:
             self.assertEqual(
                 subprocess.run(     # nosec -> imutable input
-                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "./tests/header/header.pyhp"],
+                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.toml", "./tests/header/header.pyhp"],
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
@@ -102,7 +110,7 @@ class TestOutput(unittest.TestCase):
         with open("./tests/header/headers_list.output", "rb") as fd:
             self.assertEqual(
                 subprocess.run(     # nosec -> imutable input
-                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "./tests/header/headers_list.pyhp"],
+                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.toml", "./tests/header/headers_list.pyhp"],
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
@@ -114,7 +122,7 @@ class TestOutput(unittest.TestCase):
         with open("./tests/header/header_remove.output", "rb") as fd:
             self.assertEqual(
                 subprocess.run(     # nosec -> imutable input
-                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "./tests/header/header_remove.pyhp"],
+                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.toml", "./tests/header/header_remove.pyhp"],
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
@@ -126,7 +134,7 @@ class TestOutput(unittest.TestCase):
         with open("./tests/header/headers_sent.output", "rb") as fd:
             self.assertEqual(
                 subprocess.run(     # nosec -> imutable input
-                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "./tests/header/headers_sent.pyhp"],
+                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.toml", "./tests/header/headers_sent.pyhp"],
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
@@ -138,7 +146,7 @@ class TestOutput(unittest.TestCase):
         with open("./tests/header/header_register_callback.output", "rb") as fd:
             self.assertEqual(
                 subprocess.run(     # nosec -> imutable input
-                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "./tests/header/header_register_callback.pyhp"],
+                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.toml", "./tests/header/header_register_callback.pyhp"],
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
@@ -150,7 +158,7 @@ class TestOutput(unittest.TestCase):
         with open("./tests/cookie/setcookie.output", "rb") as fd:
             self.assertEqual(
                 subprocess.run(     # nosec -> imutable input
-                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "./tests/cookie/setcookie.pyhp"],
+                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.toml", "./tests/cookie/setcookie.pyhp"],
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
@@ -162,7 +170,7 @@ class TestOutput(unittest.TestCase):
         with open("./tests/cookie/setrawcookie.output", "rb") as fd:
             self.assertEqual(
                 subprocess.run(     # nosec -> imutable input
-                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "./tests/cookie/setrawcookie.pyhp"],
+                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.toml", "./tests/cookie/setrawcookie.pyhp"],
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
@@ -177,7 +185,7 @@ class TestOutput(unittest.TestCase):
             with open("./tests/request/methods.output", "rb") as fd:
                 self.assertEqual(
                     subprocess.run(     # nosec -> imutable input
-                        [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "./tests/request/methods.pyhp"],
+                        [sys.executable, "-m", "pyhp", "--config", "./pyhp.toml", "./tests/request/methods.pyhp"],
                         check=True,
                         stdout=subprocess.PIPE
                     ).stdout,
@@ -195,7 +203,7 @@ class TestOutput(unittest.TestCase):
             with open("./tests/request/request-order.output", "rb") as fd:
                 self.assertEqual(
                     subprocess.run(     # nosec -> imutable input
-                        [sys.executable, "-m", "pyhp", "--config", "./tests/request/request-order.conf", "./tests/request/request-order.pyhp"],
+                        [sys.executable, "-m", "pyhp", "--config", "./tests/request/request-order.toml", "./tests/request/request-order.pyhp"],
                         check=True,
                         stdout=subprocess.PIPE
                     ).stdout,
@@ -210,42 +218,9 @@ class TestOutput(unittest.TestCase):
         with open("./tests/shutdown_functions/register_shutdown_function.output", "rb") as fd:
             self.assertEqual(
                 subprocess.run(     # nosec -> imutable input
-                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.conf", "./tests/shutdown_functions/register_shutdown_function.pyhp"],
+                    [sys.executable, "-m", "pyhp", "--config", "./pyhp.toml", "./tests/shutdown_functions/register_shutdown_function.pyhp"],
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
                 fd.read(),
             )
-
-
-class CheckInternals(unittest.TestCase):
-    """check internal functions"""
-    def test_check_caching(self) -> None:
-        """test the caching detection"""
-        with open(os.devnull, "r") as fd:
-            self.assertTrue(main.check_if_caching(fd, True, True, True))
-            self.assertTrue(main.check_if_caching(fd, True, True, False))
-            self.assertTrue(main.check_if_caching(fd, False, True, True))
-            self.assertTrue(main.check_if_caching(fd, True, True, False))
-            self.assertFalse(main.check_if_caching(sys.stdin, True, True, True))
-            self.assertFalse(main.check_if_caching(sys.stdin, True, True, False))
-            self.assertFalse(main.check_if_caching(sys.stdin, False, True, True))
-            self.assertFalse(main.check_if_caching(sys.stdin, True, True, False))
-            self.assertFalse(main.check_if_caching(fd, True, False, True))
-            self.assertFalse(main.check_if_caching(fd, True, False, False))
-            self.assertFalse(main.check_if_caching(fd, False, False, True))
-            self.assertFalse(main.check_if_caching(fd, False, True, False))
-
-    def test_import_path(self) -> None:
-        """test the importing of files"""
-        original_path = sys.path.copy()
-
-        file = NamedTemporaryFile("w", suffix=".py", delete=False)
-        try:
-            file.write("works = True")
-            file.close()
-            self.assertTrue(main.import_path(file.name).works)
-        finally:
-            os.unlink(file.name)
-
-        self.assertEqual(original_path, sys.path)

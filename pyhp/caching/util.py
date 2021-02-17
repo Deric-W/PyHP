@@ -16,7 +16,7 @@ from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 import importlib
 import importlib.util
-from typing import List, Mapping, Type, TypeVar, Any
+from typing import List, Sequence, Mapping, Type, TypeVar, Any
 from . import CodeSourceContainer, CodeSource
 from ..compiler.util import Compiler
 
@@ -57,7 +57,7 @@ class HierarchyBuilder:
             self.containers.append(container.from_config(config, self.compiler))
 
     def hierarchy(self) -> CodeSourceContainer[CodeSource]:
-        """retireve the hierarchy"""
+        """retrieve the hierarchy"""
         return self.containers[-1]
 
     def pop(self) -> CodeSourceContainer:
@@ -76,13 +76,18 @@ class ConfigHierarchyBuilder(HierarchyBuilder, metaclass=ABCMeta):
     """Hierarchy builder used to build hierarchies from config files"""
     __slots__ = ()
 
-    def add_config(self, config: Mapping[str, Any]) -> None:
+    def add_config(self, containers: Sequence[Mapping[str, Any]]) -> None:
         """add containers defined in parsed config data"""
-        for key, value in config.items():
-            if isinstance(value, Mapping):
-                self.add_name(key, value)
+        for container in containers:
+            name = container["name"]
+            if isinstance(name, str):
+                config = container["config"]
+                if isinstance(config, Mapping):
+                    self.add_name(name, config)
+                else:
+                    raise ValueError("value of key 'config' expected to be a Mapping")
             else:
-                raise ValueError(f"value of key '{key}' expected to be a Mapping")
+                raise ValueError("value of key 'name' expected to be a str")
 
     @abstractmethod
     def add_name(self, name: str, config: Mapping[str, Any]) -> None:

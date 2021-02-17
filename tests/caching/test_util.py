@@ -71,20 +71,36 @@ class TestConfigHierarchyBuilder(unittest.TestCase):
     """tests for ConfigHierarchyBuilder"""
     def test_add_config(self) -> None:
         """test ConfigHierarchyBuilder.add_config"""
-        config = {
-            "test1": {},
-            "test2": {"a": 1, "b": 2}
-        }
+        config = [
+            {
+                "name": "test1",
+                "config": {}
+            },
+            {
+                "name": "test2",
+                "config": {"a": 1, "b": 2}
+            }
+        ]
         builder = DummyConfigBuilder(compiler)
         builder.add_config(config)
         builder.add_name.assert_has_calls([
-            unittest.mock.call("test1", config["test1"]),
-            unittest.mock.call("test2", config["test2"])
+            unittest.mock.call("test1", config[0]["config"]),
+            unittest.mock.call("test2", config[1]["config"])
         ])
         with self.assertRaises(ValueError):
-            builder.add_config({
-                "test3": 9001
-            })
+            builder.add_config([
+                {
+                    "name": 9001,
+                    "config": {}
+                }
+            ])
+        with self.assertRaises(ValueError):
+            builder.add_config([
+                {
+                    "name": "test4",
+                    "config": 9001
+                }
+            ])
 
 
 class TestModuleHierarchyBuilder(unittest.TestCase):

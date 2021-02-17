@@ -21,7 +21,9 @@ from typing import (
     NamedTuple,
     Type,
     Mapping,
-    Any, Union,
+    Any,
+    Union,
+    Optional,
     Iterator,
     Pattern,
     Tuple
@@ -76,7 +78,7 @@ class CodeSource(metaclass=ABCMeta):
     def __enter__(self: S) -> S:
         return self
 
-    def __exit__(self, type: Type[BaseException], value: BaseException, traceback: TracebackType) -> bool:  # type: ignore
+    def __exit__(self, type: Optional[Type[BaseException]], value: Optional[BaseException], traceback: Optional[TracebackType]) -> Optional[bool]:  # type: ignore
         self.close()
         return False    # dont swallow exceptions
 
@@ -187,7 +189,7 @@ class CodeSourceContainer(Mapping[str, S]):
     def __enter__(self: C) -> C:
         return self
 
-    def __exit__(self, type: Type[BaseException], value: BaseException, traceback: TracebackType) -> bool:  # type: ignore
+    def __exit__(self, type: Optional[Type[BaseException]], value: Optional[BaseException], traceback: Optional[TracebackType]) -> Optional[bool]:  # type: ignore
         self.close()
         return False    # dont swallow exceptions
 
