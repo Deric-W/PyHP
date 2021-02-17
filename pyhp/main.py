@@ -102,9 +102,11 @@ def main(name: str, config: Mapping[str, Any]) -> int:
         # prepare the PyHP Object
         PyHP = get_pyhp(name, config["request"])
 
+        exit_stack.push(reset_stdout)
+        # prevent universal newlines from messing with text sections
+        sys.stdout.reconfigure(newline="\n")    # type: ignore
         # wrap stdout
         sys.stdout.write = PyHP.make_header_wrapper(sys.stdout.write)   # type: ignore
-        exit_stack.push(reset_stdout)
         try:
             for text in code.execute({"PyHP": PyHP}):
                 sys.stdout.write(text)
@@ -157,6 +159,7 @@ def get_pyhp(name: str, request_config: Mapping[str, Any]) -> libpyhp.PyHP:
 
 
 def reset_stdout(*_args: Any) -> bool:
-    """reset a header wrapper"""
+    """reset stdout"""
     sys.stdout = sys.__stdout__
+    sys.stdout.reconfigure(newline=None)    # type: ignore
     return False    # dont swallow exceptions

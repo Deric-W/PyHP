@@ -6,6 +6,7 @@ import sys
 import os
 import unittest
 import subprocess
+from tempfile import NamedTemporaryFile
 import toml
 from pyhp import main
 
@@ -37,7 +38,12 @@ class TestCli(unittest.TestCase):
     def test_stdout(self) -> None:
         """test stdout cleanup"""
         stdout = sys.stdout
-        main.main(os.devnull, toml.load("pyhp.toml"))
+        with NamedTemporaryFile("w", delete=False) as fd:
+            path = fd.name
+        try:
+            main.main(path, toml.load("pyhp.toml"))
+        finally:
+            os.unlink(path)
         self.assertIs(sys.stdout, stdout)
 
     def test_config_location(self) -> None:
