@@ -72,7 +72,7 @@ class TestOutput(unittest.TestCase):
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
-                fd.read(),
+                fd.read()
             )
 
     def test_shebang(self) -> None:
@@ -84,7 +84,7 @@ class TestOutput(unittest.TestCase):
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
-                fd.read(),
+                fd.read()
             )
 
     def test_indentation(self) -> None:
@@ -96,7 +96,7 @@ class TestOutput(unittest.TestCase):
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
-                fd.read(),
+                fd.read()
             )
 
     def test_header(self) -> None:
@@ -108,7 +108,7 @@ class TestOutput(unittest.TestCase):
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
-                fd.read(),
+                fd.read()
             )
 
     def test_header_list(self) -> None:
@@ -120,7 +120,7 @@ class TestOutput(unittest.TestCase):
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
-                fd.read(),
+                fd.read()
             )
 
     def test_header_remove(self) -> None:
@@ -132,7 +132,7 @@ class TestOutput(unittest.TestCase):
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
-                fd.read(),
+                fd.read()
             )
 
     def test_header_sent(self) -> None:
@@ -144,7 +144,7 @@ class TestOutput(unittest.TestCase):
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
-                fd.read(),
+                fd.read()
             )
 
     def test_header_callbacks(self) -> None:
@@ -156,7 +156,7 @@ class TestOutput(unittest.TestCase):
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
-                fd.read(),
+                fd.read()
             )
 
     def test_setcookie(self) -> None:
@@ -168,7 +168,7 @@ class TestOutput(unittest.TestCase):
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
-                fd.read(),
+                fd.read()
             )
 
     def test_setrawcookie(self) -> None:
@@ -180,7 +180,7 @@ class TestOutput(unittest.TestCase):
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
-                fd.read(),
+                fd.read()
             )
 
     def test_request_methods(self) -> None:
@@ -195,7 +195,7 @@ class TestOutput(unittest.TestCase):
                         check=True,
                         stdout=subprocess.PIPE
                     ).stdout,
-                    fd.read(),
+                    fd.read()
                 )
         finally:
             del os.environ["QUERY_STRING"]
@@ -213,7 +213,7 @@ class TestOutput(unittest.TestCase):
                         check=True,
                         stdout=subprocess.PIPE
                     ).stdout,
-                    fd.read(),
+                    fd.read()
                 )
         finally:
             del os.environ["QUERY_STRING"]
@@ -228,5 +228,5 @@ class TestOutput(unittest.TestCase):
                     check=True,
                     stdout=subprocess.PIPE
                 ).stdout,
-                fd.read(),
+                fd.read()
             )
