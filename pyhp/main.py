@@ -160,6 +160,5 @@ def get_pyhp(name: str, request_config: Mapping[str, Any]) -> libpyhp.PyHP:
 
 def reset_stdout(*_args: Any) -> bool:
     """reset stdout"""
-    sys.stdout = sys.__stdout__
     sys.stdout.reconfigure(newline=None)    # type: ignore
     return False    # dont swallow exceptions

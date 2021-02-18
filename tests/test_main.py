@@ -18,11 +18,11 @@ class TestCli(unittest.TestCase):
         self.assertEqual(
             subprocess.run(         # nosec -> inmutable input
                 [sys.executable, "-m", "pyhp", "--config", "./pyhp.toml"],
-                input=b"Test",
+                input=b"Test\nTest1",
                 check=True,
                 stdout=subprocess.PIPE
             ).stdout,
-            "Status: 200 OK{0}Content-Type: text/html{0}{0}Test".format(os.linesep).encode()
+            b"Status: 200 OK\r\nContent-Type: text/html\r\n\r\nTest\nTest1"
         )
 
     def test_invalid_path(self) -> None:
