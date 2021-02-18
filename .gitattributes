@@ -1,3 +1,2 @@
 # disable automatic eol conversions
-* text=false
-* binary
+* -text
