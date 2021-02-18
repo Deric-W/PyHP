@@ -84,13 +84,21 @@ class FileSource(TimestampedCodeSource, DirectCodeSource):
 
     def code(self) -> Code:
         """load and compile the code object from the file"""
-        spec = ModuleSpec(
-            "__main__",
-            self.loader,
-            origin=self.fd.name if isinstance(self.fd.name, str) else f"<fd {self.fd.name}>",
-            is_package=False
-        )
-        spec.has_location = True
+        if isinstance(self.fd.name, str):
+            spec = ModuleSpec(
+                "__main__",
+                self.loader,
+                origin=self.fd.name,
+                is_package=False
+            )
+            spec.has_location = True
+        else:
+            spec = ModuleSpec(
+                "__main__",
+                None,
+                origin=f"<fd {self.fd.name}>",
+                is_package=False
+            )
         return self.compiler.compile_raw(self.source(), spec)
 
     def source(self) -> str:

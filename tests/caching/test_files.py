@@ -80,6 +80,20 @@ class TestFileSource(unittest.TestCase):
             self.assertEqual(code, code2)
             self.assertEqual(code2, code3)
 
+    def test_spec(self) -> None:
+        """test code spec"""
+        with FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler) as source:
+            spec1 = source.code().spec  # type: ignore
+            spec2 = FileSource(         # type: ignore
+                io.FileIO(source.fd.fileno(), "r", closefd=False),
+                compiler
+            ).code().spec
+        self.assertEqual(spec1.name, "__main__")
+        self.assertEqual(spec1.origin, "tests/embedding/syntax.pyhp")
+        self.assertTrue(spec1.has_location)
+        self.assertEqual(spec2.name, "__main__")
+        self.assertFalse(spec2.has_location)
+
     def test_source(self) -> None:
         """test FileSource.source"""
         with open("tests/embedding/syntax.pyhp", "r") as fd, \
