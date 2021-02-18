@@ -38,7 +38,7 @@ class TestCli(unittest.TestCase):
     def test_stdout(self) -> None:
         """test stdout cleanup"""
         stdout = sys.stdout
-        with NamedTemporaryFile("w", delete=False) as fd:
+        with NamedTemporaryFile("w", dir=".", delete=False) as fd:
             path = fd.name
         try:
             main.main(path, toml.load("pyhp.toml"))
