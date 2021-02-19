@@ -60,21 +60,32 @@ class SourceFileLoader(FileLoader):
 
 class FileSource(TimestampedCodeSource, DirectCodeSource):
     """source for accessing files"""
-    __slots__ = ("fd", "compiler", "loader")
+    __slots__ = ("fd", "compiler", "spec")
 
     fd: io.FileIO
 
     compiler: Compiler
 
-    loader: Optional[SourceFileLoader]
+    spec: ModuleSpec
 
     def __init__(self, fd: io.FileIO, compiler: Compiler) -> None:
         self.fd = fd
         self.compiler = compiler
         if isinstance(self.fd.name, str):
-            self.loader = SourceFileLoader("__main__", self.fd.name)
+            self.spec = ModuleSpec(
+                "__main__",
+                SourceFileLoader("__main__", self.fd.name),
+                origin=self.fd.name,
+                is_package=False
+            )
+            self.spec.has_location = True
         else:
-            self.loader = None
+            self.spec = ModuleSpec(
+                "__main__",
+                None,
+                origin=f"<fd {self.fd.name}>",
+                is_package=False
+            )
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, FileSource):
@@ -84,22 +95,7 @@ class FileSource(TimestampedCodeSource, DirectCodeSource):
 
     def code(self) -> Code:
         """load and compile the code object from the file"""
-        if isinstance(self.fd.name, str):
-            spec = ModuleSpec(
-                "__main__",
-                self.loader,
-                origin=self.fd.name,
-                is_package=False
-            )
-            spec.has_location = True
-        else:
-            spec = ModuleSpec(
-                "__main__",
-                None,
-                origin=f"<fd {self.fd.name}>",
-                is_package=False
-            )
-        return self.compiler.compile_raw(self.source(), spec)
+        return self.compiler.compile_raw(self.source(), self.spec)
 
     def source(self) -> str:
         """retrieve the source code"""
