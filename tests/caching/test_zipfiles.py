@@ -10,6 +10,7 @@ import zipfile
 import inspect
 import importlib.util
 from importlib.machinery import ModuleSpec
+from datetime import datetime
 from pyhp.compiler import parsers, util, generic
 from pyhp.caching import zipfiles
 
@@ -133,7 +134,7 @@ class TestZIPSource(unittest.TestCase):
         with zipfile.ZipFile("tests/embedding.zip") as file, \
                 zipfiles.ZIPSource(file, file.getinfo("syntax.pyhp"), compiler) as source:
             mtime_ns = source.mtime()
-            self.assertEqual(mtime_ns, 1613673628000000000)
+            self.assertEqual(mtime_ns, int(datetime(2021, 2, 18, 19, 40, 28).timestamp() * 1e+9))
             self.assertEqual(source.info(), (mtime_ns, 0, 0))
 
 
