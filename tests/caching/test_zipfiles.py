@@ -74,7 +74,7 @@ class TestZIPSource(unittest.TestCase):
             spec = ModuleSpec(
                 "__main__",
                 zipfiles.ZIPLoader("__main__", file, file.getinfo("syntax.pyhp")),
-                origin="tests/embedding.zip/syntax.pyhp",
+                origin=os.path.join("tests/embedding.zip", "syntax.pyhp"),
                 is_package=False
             )
             spec.has_location = True
@@ -96,7 +96,7 @@ class TestZIPSource(unittest.TestCase):
             spec1 = source1.code().spec  # type: ignore
             spec2 = source2.code().spec  # type: ignore
         self.assertEqual(spec1.name, "__main__")
-        self.assertEqual(spec1.origin, "tests/embedding.zip/syntax.pyhp")
+        self.assertEqual(spec1.origin, os.path.join("tests/embedding.zip", "syntax.pyhp"))
         self.assertTrue(spec1.has_location)
         self.assertEqual(spec2.name, "__main__")
         self.assertFalse(spec2.has_location)
