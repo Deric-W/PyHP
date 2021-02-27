@@ -8,14 +8,18 @@ import re
 import io
 import os
 import os.path
+import time
 import inspect
+import tempfile
 import importlib.util
 import importlib.machinery
+from pyhp.caching import NotCachedException
 from pyhp.caching.files import (
     FileSource, Directory,
     SourceFileLoader,
     LeavesDirectoryError,
-    StrictDirectory
+    StrictDirectory,
+    FileCacheSource
 )
 from pyhp.compiler.parsers import RegexParser
 from pyhp.compiler.generic import GenericCodeBuilder
@@ -275,3 +279,84 @@ class TestStrictDirectory(unittest.TestCase):
         for name in ("syntax.pyhp", "../embedding/syntax.pyhp", "./syntax.pyhp"):   # inside path
             self.container[name].close()
             self.abs_container[name].close()
+
+
+class TestFileCacheSource(unittest.TestCase):
+    """test FileCacheSource"""
+    def test_eq(self) -> None:
+        """test FileSource.__eq__"""
+        sources = [
+            FileCacheSource(
+                FileSource(
+                    io.FileIO("tests/embedding/syntax.pyhp", "r"),
+                    compiler
+                ),
+                "./tmp.cache"
+            ),
+            FileCacheSource(
+                FileSource(
+                    io.FileIO("tests/embedding/syntax.pyhp", "r"),
+                    compiler
+                ),
+                "./tmp.cache2"
+            ),
+            FileCacheSource(
+                FileSource(
+                    io.FileIO("tests/embedding/syntax.pyhp", "r"),
+                    compiler2
+                ),
+                "./tmp.cache"
+            )
+        ]
+        try:
+            for source in sources:
+                self.assertEqual(
+                    [source],
+                    [s for s in sources if s == source]
+                )
+        finally:
+            for source in sources:
+                source.close()
+
+    def test_code(self) -> None:
+        """test FileCacheSource.code"""
+        with tempfile.TemporaryDirectory(".") as directory:
+            path = os.path.join(directory, "tmp.cache")
+            with FileCacheSource(FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler), path) as source:
+                code1 = source.code_source.code()
+                self.assertFalse(os.path.exists(path))
+                self.assertEqual(code1, source.code())
+                self.assertTrue(os.path.exists(path))
+                self.assertEqual(code1, source.code())   # check if source can be read multiple times
+                os.unlink(path)
+                open(path + ".new", "wb").close()
+                try:
+                    self.assertEqual(code1, source.code())
+                    self.assertFalse(os.path.exists(path))
+                finally:
+                    os.unlink(path + ".new")
+
+    def test_cached(self) -> None:
+        """test FileCacheSource.cached"""
+        with tempfile.TemporaryDirectory(".") as directory:
+            path = os.path.join(directory, "tmp.cache")
+            with FileCacheSource(FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler), path, int(3e9)) as source:
+                self.assertFalse(source.cached())
+                source.fetch()
+                self.assertTrue(source.cached())
+                time.sleep(4)
+                self.assertFalse(source.cached())
+                source.fetch()
+                os.utime(path, ns=(0, 0))
+                self.assertFalse(source.cached())
+
+    def test_clear(self) -> None:
+        """test FileCacheSource.clear"""
+        with tempfile.TemporaryDirectory(".") as directory:
+            path = os.path.join(directory, "tmp.cache")
+            with FileCacheSource(FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler), path, int(3e9)) as source:
+                with self.assertRaises(NotCachedException):
+                    source.clear()
+                source.fetch()
+                source.clear()
+                self.assertFalse(os.path.exists(path))

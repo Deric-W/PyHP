@@ -16,27 +16,34 @@ from __future__ import annotations
 import os
 import os.path
 import io
+import time
+import pickle
 from locale import getpreferredencoding
 from types import CodeType
-from typing import Optional, Iterator, Mapping, Any, Union
+from typing import Optional, Iterator, Mapping, Any, Union, TypeVar
 from importlib.abc import FileLoader
 from importlib.machinery import ModuleSpec
 from . import (
     SourceInfo,
     TimestampedCodeSource,
     DirectCodeSource,
-    CodeSourceContainer
+    CodeSourceContainer,
+    CacheSource,
+    NotCachedException
 )
 from ..compiler import Code
 from ..compiler.util import Compiler
 
 
 __all__ = (
+    "ENCODING",
     "FileSource",
     "LeavesDirectoryError",
     "Directory",
     "StrictDirectory"
 )
+
+S = TypeVar("S", bound=TimestampedCodeSource)
 
 ENCODING = getpreferredencoding(False)
 
@@ -208,3 +215,79 @@ class StrictDirectory(Directory):
             io.FileIO(path, "r"),
             self.compiler
         )
+
+
+class FileCacheSource(CacheSource[S]):
+    """source which caches a TimestampedCodeSource on disk"""
+    __slots__ = ("path", "ttl")
+
+    path: str
+
+    ttl: int
+
+    def __init__(self, code_source: S, path: str, ttl: int = 0) -> None:
+        self.code_source = code_source
+        self.path = path
+        self.ttl = ttl
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, FileCacheSource):
+            return self.code_source == other.code_source \
+                and self.path == other.path
+        return NotImplemented
+
+    def code(self) -> Code:
+        """retrieve the represented code object"""
+        try:
+            fd = os.open(self.path, os.O_RDONLY)    # in case the cache file gets cleared before we open it
+        except FileNotFoundError:                   # not cached
+            code = self.code_source.code()
+            self.update(code)
+            return code
+        try:
+            if self.check_mtime(os.fstat(fd).st_mtime_ns):  # up to date
+                return pickle.load(os.fdopen(fd, "rb", closefd=False))
+            code = self.code_source.code()                  # outdated
+            self.update(code)
+            return code
+        finally:
+            os.close(fd)
+
+    def update(self, code: Code) -> None:
+        """update the cache file"""
+        tmp_path = self.path + ".new"   # prevent potential readers from reading parts of the old AND new cache
+        try:
+            with open(tmp_path, "xb") as fd:
+                pickle.dump(code, fd)
+            os.replace(tmp_path, self.path)  # atomic, old readers will continue reading the old cache
+        except FileExistsError:  # cache is currently being renewed by another process
+            pass
+        except BaseException:   # something else happend, clean up tmp_path
+            try:
+                os.unlink(tmp_path)
+            except FileNotFoundError:
+                pass
+            raise   # dont hide the error
+
+    def cached(self) -> bool:
+        """check if the cache file exists and is up to date"""
+        try:
+            cache_mtime = os.stat(self.path).st_mtime_ns
+        except FileNotFoundError:   # no cached
+            return False
+        return self.check_mtime(cache_mtime)
+
+    def check_mtime(self, mtime: int) -> bool:
+        """check if the timestamp is valid"""
+        if mtime < self.code_source.mtime():  # outdated
+            return False
+        if self.ttl > 0:    # up to date, check ttl
+            return self.ttl > (time.time_ns() - mtime)
+        return True         # up to date
+
+    def clear(self) -> None:
+        """unlink the cache file"""
+        try:
+            os.unlink(self.path)
+        except FileNotFoundError as e:
+            raise NotCachedException from e
