@@ -247,11 +247,11 @@ class FileCacheSource(CacheSource[S]):
         try:
             if self.check_mtime(os.fstat(fd).st_mtime_ns):  # up to date
                 return pickle.load(os.fdopen(fd, "rb", closefd=False))
-            code = self.code_source.code()                  # outdated
-            self.update(code)
-            return code
         finally:
-            os.close(fd)
+            os.close(fd)    # close before self.write to prevent errors on windows
+        code = self.code_source.code()  # outdated
+        self.update(code)
+        return code
 
     def update(self, code: Code) -> None:
         """update the cache file"""
