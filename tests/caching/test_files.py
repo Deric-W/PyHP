@@ -322,12 +322,14 @@ class TestFileCacheSource(unittest.TestCase):
         """test FileCacheSource.code"""
         with tempfile.TemporaryDirectory(".") as directory:
             path = os.path.join(directory, "tmp.cache")
-            with FileCacheSource(FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler), path) as source:
+            with FileCacheSource(FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler), path, int(1e9)) as source:
                 code1 = source.code_source.code()
                 self.assertFalse(os.path.exists(path))
                 self.assertEqual(code1, source.code())
                 self.assertTrue(os.path.exists(path))
                 self.assertEqual(code1, source.code())   # check if source can be read multiple times
+                time.sleep(1.5)
+                self.assertEqual(code1, source.code())
                 os.unlink(path)
                 open(path + ".new", "wb").close()
                 try:
@@ -340,11 +342,11 @@ class TestFileCacheSource(unittest.TestCase):
         """test FileCacheSource.cached"""
         with tempfile.TemporaryDirectory(".") as directory:
             path = os.path.join(directory, "tmp.cache")
-            with FileCacheSource(FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler), path, int(3e9)) as source:
+            with FileCacheSource(FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler), path, int(1e9)) as source:
                 self.assertFalse(source.cached())
                 source.fetch()
                 self.assertTrue(source.cached())
-                time.sleep(4)
+                time.sleep(1.5)
                 self.assertFalse(source.cached())
                 source.fetch()
                 os.utime(path, ns=(0, 0))

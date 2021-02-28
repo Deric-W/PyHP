@@ -16,7 +16,7 @@ from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 import importlib
 import importlib.util
-from typing import List, Sequence, Mapping, Type, TypeVar, Any
+from typing import List, Sequence, Mapping, Type, TypeVar, Any, Union
 from . import CodeSourceContainer, CodeSource
 from ..compiler.util import Compiler
 
@@ -51,10 +51,11 @@ class HierarchyBuilder:
 
     def add_container(self, container: Type[CodeSourceContainer], config: Mapping[str, Any]) -> None:
         """add a CodeSourceContainer to the hierarchy"""
-        if self.containers:     # decorator
-            self.containers.append(container.from_config(config, self.containers[-1]))
-        else:                   # first container
-            self.containers.append(container.from_config(config, self.compiler))
+        try:    # decorator
+            before = self.containers[-1]    # type: Union[CodeSourceContainer, Compiler]
+        except IndexError:  # first container
+            before = self.compiler
+        self.containers.append(container.from_config(config, before))
 
     def hierarchy(self) -> CodeSourceContainer[CodeSource]:
         """retrieve the hierarchy"""

@@ -40,7 +40,8 @@ __all__ = (
     "FileSource",
     "LeavesDirectoryError",
     "Directory",
-    "StrictDirectory"
+    "StrictDirectory",
+    "FileCacheSource"
 )
 
 S = TypeVar("S", bound=TimestampedCodeSource)
@@ -236,6 +237,11 @@ class FileCacheSource(CacheSource[S]):
                 and self.path == other.path
         return NotImplemented
 
+    def fetch(self) -> None:
+        """load the represented code object in the cache"""
+        if not self.cached():       # we dont need to load the cache
+            self.update(self.code_source.code())
+
     def code(self) -> Code:
         """retrieve the represented code object"""
         try:
@@ -290,4 +296,4 @@ class FileCacheSource(CacheSource[S]):
         try:
             os.unlink(self.path)
         except FileNotFoundError as e:
-            raise NotCachedException from e
+            raise NotCachedException("cache already clear") from e

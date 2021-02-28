@@ -145,17 +145,15 @@ class TestCacheSourceContainer(unittest.TestCase, CacheSourceContainer[TestSourc
     def __getitem__(self, key: str) -> TestCacheSource:
         return self.sources[key]
 
-    def __iter__(self) -> Iterator[str]:
-        return iter(self.sources)
-
-    def __len__(self) -> int:
-        return len(self.sources)
-
     def cached(self) -> Mapping[str, TestCacheSource]:
         return {
             "a": self["a"],
             "c": self["c"]
         }
+
+    def test_len(self) -> None:
+        """test CacheSourceContainer.__len__"""
+        self.assertEqual(len(self), len(self.source_container))
 
     def test_gc(self) -> None:
         """test CacheSourceContainer.gc"""

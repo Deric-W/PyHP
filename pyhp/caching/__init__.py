@@ -216,6 +216,18 @@ class CodeSourceContainerDecorator(CodeSourceContainer[S], Generic[C, S]):
 
     source_container: C
 
+    def __getitem__(self, name: str) -> S:
+        """delegate to decorated container"""
+        return self.source_container[name]
+
+    def __iter__(self) -> Iterator[str]:
+        """delegate to decorated container"""
+        return iter(self.source_container)
+
+    def __len__(self) -> int:
+        """delegate to decorated container"""
+        return len(self.source_container)
+
     def detach(self) -> C:
         """return the decorated code source container, leaving the decorator in an undefined state"""
         return self.source_container
