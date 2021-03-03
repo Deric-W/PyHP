@@ -228,6 +228,10 @@ class CodeSourceContainerDecorator(CodeSourceContainer[S], Generic[C, S]):
         """delegate to decorated container"""
         return len(self.source_container)
 
+    def __contains__(self, name: object) -> bool:
+        """delegate to decorated container"""
+        return name in self.source_container
+
     def detach(self) -> C:
         """return the decorated code source container, leaving the decorator in an undefined state"""
         return self.source_container

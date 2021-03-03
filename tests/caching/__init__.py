@@ -155,6 +155,11 @@ class TestCacheSourceContainer(unittest.TestCase, CacheSourceContainer[TestSourc
         """test CacheSourceContainer.__len__"""
         self.assertEqual(len(self), len(self.source_container))
 
+    def test_contains(self) -> None:
+        """test CacheSourceContainer.__contains__"""
+        for name in self.keys():
+            self.assertIn(name, self)
+
     def test_gc(self) -> None:
         """test CacheSourceContainer.gc"""
         self.assertEqual(self.gc(), 3)

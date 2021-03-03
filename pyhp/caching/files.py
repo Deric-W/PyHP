@@ -146,15 +146,15 @@ class LeavesDirectoryError(ValueError):
 
 class Directory(CodeSourceContainer[FileSource]):
     """container of FileSources pointing to a directory"""
-    __slots__ = ("path", "compiler")
+    __slots__ = ("directory_path", "compiler")
 
-    path: str
+    directory_path: str
 
     compiler: Compiler
 
-    def __init__(self, path: str, compiler: Compiler) -> None:
+    def __init__(self, directory_path: str, compiler: Compiler) -> None:
         """create an instance with the path of the directory and a compiler"""
-        self.path = path
+        self.directory_path = directory_path
         self.compiler = compiler
 
     @classmethod
@@ -169,53 +169,70 @@ class Directory(CodeSourceContainer[FileSource]):
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, Directory):
-            return self.path == other.path \
+            return self.directory_path == other.directory_path \
                 and self.compiler == other.compiler
         return NotImplemented
 
     def __getitem__(self, name: str) -> FileSource:
         """get FileSource instance by path (absolute or relative to the directory)"""
         return FileSource(
-            io.FileIO(os.path.join(self.path, name), "r"),
+            io.FileIO(self.path(name), "r"),
             self.compiler
         )
 
+    def __contains__(self, name: object) -> bool:   # prevent fd leakage
+        if isinstance(name, str):
+            return os.path.exists(self.path(name))
+        raise TypeError(f"name as to be a str, got '{type(name)}'")
+
     def __iter__(self) -> Iterator[str]:
         """yield all files as paths relative to the directory"""
-        for dirpath, _, filenames in os.walk(self.path, followlinks=True):
+        for dirpath, _, filenames in os.walk(self.directory_path, followlinks=True):
             for filename in filenames:
-                yield os.path.relpath(os.path.join(dirpath, filename), self.path)
+                yield os.path.relpath(os.path.join(dirpath, filename), self.directory_path)
 
     def __len__(self) -> int:
         files = 0
-        for _, _, filenames in os.walk(self.path, followlinks=True):
+        for _, _, filenames in os.walk(self.directory_path, followlinks=True):
             files += len(filenames)
         return files
+
+    def path(self, name: str) -> str:
+        """calculate the path for name"""
+        return os.path.join(self.directory_path, name)
 
 
 class StrictDirectory(Directory):
     """container of FileSources pinned to a directory"""
     __slots__ = ()
 
-    def __init__(self, path: str, compiler: Compiler) -> None:
+    def __init__(self, directory_path: str, compiler: Compiler) -> None:
         """create an instance with the path of the directory and a compiler"""
-        self.path = os.path.normpath(path)  # prevent .. from conflicting with the commonpath check
+        # prevent .. from conflicting with the commonpath check
+        self.directory_path = os.path.normpath(directory_path)
         self.compiler = compiler
 
-    def __getitem__(self, name: str) -> FileSource:
-        """get FileSource instance by path which does not leave the directory"""
+    def __contains__(self, name: object) -> bool:
+        if isinstance(name, str):
+            try:
+                path = self.path(name)
+            except ValueError:  # leaves the directory
+                return False
+            return os.path.exists(path)
+        raise TypeError(f"name as to be a str, got '{type(name)}'")
+
+    def path(self, name: str) -> str:
+        """calculate the path for name which does not leave the directory"""
         path = os.path.normpath(    # resolve ..
             os.path.join(
-                self.path,
+                self.directory_path,
                 name
             )
         )
-        if os.path.commonpath((self.path, path)) != self.path:  # not commonprefix: /test != /testX
-            raise LeavesDirectoryError(f"path {name} would leave directory {self.path}")
-        return FileSource(
-            io.FileIO(path, "r"),
-            self.compiler
-        )
+        # not commonprefix: /test != /testX
+        if os.path.commonpath((self.directory_path, path)) != self.directory_path:
+            raise LeavesDirectoryError(f"path {name} would leave directory {self.directory_path}")
+        return path
 
 
 class FileCacheSource(CacheSource[S]):

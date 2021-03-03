@@ -154,7 +154,7 @@ class TestFileSource(unittest.TestCase):
             )
 
 
-class TestDirectoryContainer(unittest.TestCase):
+class TestDirectory(unittest.TestCase):
     """test Directory"""
 
     container = Directory(
@@ -184,7 +184,7 @@ class TestDirectoryContainer(unittest.TestCase):
                     "path": "~/test"
                 },
                 compiler
-            ).path,
+            ).directory_path,
             os.path.expanduser("~/test")
         )
         with self.assertRaises(ValueError):
@@ -241,7 +241,7 @@ class TestDirectoryContainer(unittest.TestCase):
                 compiler
             ),
             Directory(
-                self.container.path,
+                self.container.directory_path,
                 compiler2
             ),
             self.abs_container
@@ -250,6 +250,12 @@ class TestDirectoryContainer(unittest.TestCase):
             [self.container],
             [directory for directory in directories if directory == self.container]
         )
+
+    def test_contains(self) -> None:
+        """test Directory.__contains__"""
+        for name in self.container.keys():
+            self.assertIn(name, self.container)
+        self.assertNotIn("abc", self.container)
 
 
 class TestStrictDirectory(unittest.TestCase):
@@ -279,6 +285,13 @@ class TestStrictDirectory(unittest.TestCase):
         for name in ("syntax.pyhp", "../embedding/syntax.pyhp", "./syntax.pyhp"):   # inside path
             self.container[name].close()
             self.abs_container[name].close()
+
+    def test_contains(self) -> None:
+        """test Directory.__contains__"""
+        for name in self.container.keys():
+            self.assertIn(name, self.container)
+        self.assertNotIn("abc", self.container)
+        self.assertNotIn("../../../../abc", self.container)
 
 
 class TestFileCacheSource(unittest.TestCase):
