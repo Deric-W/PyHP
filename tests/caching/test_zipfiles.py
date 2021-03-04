@@ -208,6 +208,13 @@ class TestZIPFileContainer(unittest.TestCase):
                         compiler.compile_raw(fd.read(), source.spec)
                     )
 
+    def test_contains(self) -> None:
+        """test ZIPFile.__contains__"""
+        self.assertIn("syntax.pyhp", self.container)
+        self.assertNotIn("abc", self.container)
+        with self.assertRaises(TypeError):
+            1 in self.container
+
     def test_iter(self) -> None:
         """test iter(ZIPFile)"""
         files = {   # set -> no order

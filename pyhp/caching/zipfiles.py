@@ -190,6 +190,15 @@ class ZIPFile(CodeSourceContainer[ZIPSource]):
             self.compiler
         )
 
+    def __contains__(self, name: object) -> bool:
+        if isinstance(name, str):
+            try:
+                self.file.getinfo(name)
+            except KeyError:
+                return False
+            return True
+        raise TypeError(f"name expected to be str, not '{type(name)}'")
+
     def __iter__(self) -> Iterator[str]:
         return iter(self.file.namelist())
 
