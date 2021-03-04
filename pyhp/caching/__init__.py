@@ -21,6 +21,8 @@ from typing import (
     NamedTuple,
     Type,
     Mapping,
+    ValuesView,
+    ItemsView,
     Any,
     Union,
     Optional,
@@ -39,6 +41,8 @@ __all__ = (
     "TimestampedCodeSource",
     "CodeSourceDecorator",
     "CacheSource",
+    "ContainerValuesView",
+    "ContainerItemsView",
     "CodeSourceContainer",
     "CodeSourceContainerDecorator",
     "CacheSourceContainer",
@@ -182,6 +186,42 @@ class CacheSource(CodeSourceDecorator[S]):
         raise NotImplementedError
 
 
+class ContainerValuesView(ValuesView[S]):
+    """ValuesView for Mappings of context managers"""
+    __slots__ = ()
+
+    _mapping: Mapping[str, S]
+
+    def __contains__(self, value: object) -> bool:
+        """custom contains implementation which closes the retrieved source"""
+        for key in self._mapping:
+            with self._mapping[key] as source:
+                if source is value or source == value:
+                    return True
+        return False
+
+
+class ContainerItemsView(ItemsView[str, S]):
+    """ItemsView for Mapping of context managers"""
+    __slots__ = ()
+
+    _mapping: Mapping[str, S]
+
+    def __contains__(self, item: object) -> bool:
+        """custom contains implementation which closes the retrieved source"""
+        key: object
+        value: object
+        key, value = item   # type: ignore
+        if isinstance(key, str):
+            try:
+                source = self._mapping[key]
+            except KeyError:
+                return False
+            with source:
+                return source is value or source == value
+        raise TypeError(f"first value is expected to be a str, not '{type(key)}'")
+
+
 class CodeSourceContainer(Mapping[str, S]):
     """abc for representing a storage of code sources"""
     __slots__ = ("__weakref__",)
@@ -193,11 +233,30 @@ class CodeSourceContainer(Mapping[str, S]):
         self.close()
         return False    # dont swallow exceptions
 
+    def __contains__(self, name: object) -> bool:
+        """custom contains implementation which closes the retrieved source"""
+        if isinstance(name, str):
+            try:
+                source = self[name]
+            except KeyError:
+                return False
+            source.close()
+            return True
+        raise TypeError(f"name is expected to be a str, not '{type(name)}'")
+
     @classmethod
     @abstractmethod
     def from_config(cls, config: Mapping[str, Any], before: Union[Compiler, CodeSourceContainer]) -> CodeSourceContainer[S]:
         """create a instance from configuration data"""
         raise NotImplementedError
+
+    def values(self) -> ValuesView[S]:
+        """custom ValueView which closes retrieved sources"""
+        return ContainerValuesView(self)
+
+    def items(self) -> ItemsView[str, S]:
+        """custom ItemsView which closes retrieved sources"""
+        return ContainerItemsView(self)
 
     def search(self, pattern: Pattern[str]) -> Iterator[Tuple[str, S]]:
         """yield all sources with names which match the pattern"""

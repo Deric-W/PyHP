@@ -4,9 +4,11 @@
 
 import re
 import unittest
+import unittest.mock
 from typing import Iterator, Mapping
 from pyhp.caching import (
     SourceInfo,
+    CodeSource,
     DirectCodeSource,
     TimestampedCodeSource,
     CacheSource,
@@ -52,123 +54,135 @@ class TestSource(unittest.TestCase, DirectCodeSource, TimestampedCodeSource):
     def code(self) -> Code:
         raise RuntimeError
 
-    def close(self) -> None:
-        raise RuntimeError
 
-
-class TestCacheSource(unittest.TestCase, CacheSource[TestSource]):
+class TestCacheSource(unittest.TestCase):
     """test the cache source abc methods"""
-    code_source = TestSource()
-
-    is_cached: bool = False
-
-    is_clear: bool = False
-
-    def cached(self) -> bool:
-        return self.is_cached
-
-    def clear(self) -> None:
-        if self.is_clear:
-            raise NotCachedException
-
     def test_gc(self) -> None:
         """test CacheSource.gc"""
-        self.is_cached = False
-        self.is_clear = True
-        self.assertEqual(self.gc(), False)
-        self.is_clear = False
-        self.assertEqual(self.gc(), True)
-        self.is_cached = True
-        self.is_clear = False
-        self.assertEqual(self.gc(), False)
+        source = unittest.mock.Mock(spec_set=CacheSource)
+        source.cached.configure_mock(side_effect=(False, False, True))
+        source.clear.configure_mock(side_effect=(NotCachedException, None, None))
+        self.assertEqual(CacheSource.gc(source), False)
+        self.assertEqual(CacheSource.gc(source), True)
+        self.assertEqual(CacheSource.gc(source), False)
 
     def test_close(self) -> None:
         """test CodeSourceDecorator.close"""
-        with self.assertRaises(RuntimeError):
-            self.close()
+        source = unittest.mock.Mock(spec_set=CacheSource)
+        source.detach.configure_mock(side_effect=(source.code_source,))
+        CacheSource.close(source)
+        source.detach.assert_called()
+        source.code_source.close.assert_called()
 
     def test_code(self) -> None:
         """test CodeSourceDecorator.code"""
-        with self.assertRaises(RuntimeError):
-            self.code()
+        source = unittest.mock.Mock(spec_set=CacheSource)
+        CacheSource.code(source)
+        source.code_source.code.assert_called()
 
 
-class TestSourceContainer(unittest.TestCase, CodeSourceContainer[TestSource]):
+class TestSourceContainer(unittest.TestCase):
     """test the code source container abc"""
-    sources = {
-        "a": TestSource(),
-        "b": TestSource(),
-        "c": TestSource()
-    }
-
-    @classmethod
-    def from_config(cls, config, before):
-        raise NotImplementedError
-
-    def __getitem__(self, key: str) -> TestSource:
-        return self.sources[key]
-
-    def __iter__(self) -> Iterator[str]:
-        return iter(self.sources)
-
-    def __len__(self) -> int:
-        return len(self.sources)
+    def test_contains(self) -> None:
+        """test CodeSourceContainer.__contains__"""
+        source = unittest.mock.Mock(spec_set=CodeSource)
+        container = unittest.mock.MagicMock(spec_set=CodeSourceContainer)
+        container.__getitem__.configure_mock(side_effect=(source, KeyError))
+        self.assertTrue(CodeSourceContainer.__contains__(container, "Test"))
+        source.close.assert_called()
+        self.assertFalse(CodeSourceContainer.__contains__(container, "Test"))
+        with self.assertRaises(TypeError):
+            CodeSourceContainer.__contains__(container, 99)
 
     def test_search(self) -> None:
         """test CodeSourceContainer.search"""
         self.assertEqual(
-            list(self.search(PATTERN)),
-            [
-                ("a", self.sources["a"]),
-                ("b", self.sources["b"])
-            ]
+            list(CodeSourceContainer.search({"a": 1, "b": 2, "c": 3}, PATTERN)),
+            [("a", 1), ("b", 2)]
         )
 
-    def close(self) -> None:
-        raise RuntimeError
-
-
-class TestCacheSourceContainer(unittest.TestCase, CacheSourceContainer[TestSourceContainer, TestCacheSource]):
-    """test the cache source container abc"""
-    sources = {
-        "a": TestCacheSource(),
-        "b": TestCacheSource(),
-        "c": TestCacheSource()
-    }
-
-    source_container = TestSourceContainer()
-
-    @classmethod
-    def from_config(cls, config, before):
-        raise NotImplementedError
-
-    def __getitem__(self, key: str) -> TestCacheSource:
-        return self.sources[key]
-
-    def cached(self) -> Mapping[str, TestCacheSource]:
-        return {
-            "a": self["a"],
-            "c": self["c"]
+    def test_values(self) -> None:
+        """test CodeSourceContainer.values"""
+        sources = {
+            "a": unittest.mock.MagicMock(spec_set=CodeSource),
+            "b": unittest.mock.MagicMock(spec_set=CodeSource),
+            "c": unittest.mock.MagicMock(spec_set=CodeSource)
         }
+        values = CodeSourceContainer.values(sources)
+        for value in sources.values():
+            value.__enter__ = lambda x: x
+            value.__exit__ = lambda x, *args: x.close()
+            self.assertIn(value, values)
+            value.close.assert_called()
+        self.assertNotIn(1, values)
 
-    def test_len(self) -> None:
-        """test CacheSourceContainer.__len__"""
-        self.assertEqual(len(self), len(self.source_container))
+    def test_items(self) -> None:
+        """test CodeSourceContainer.items"""
+        sources = {
+            "a": unittest.mock.MagicMock(spec_set=CodeSource),
+            "b": unittest.mock.MagicMock(spec_set=CodeSource),
+            "c": unittest.mock.MagicMock(spec_set=CodeSource)
+        }
+        items = CodeSourceContainer.items(sources)
+        for name, source in sources.items():
+            source.__enter__ = lambda x: x
+            source.__exit__ = lambda x, *args: x.close()
+            self.assertIn((name, source), items)
+            source.close.assert_called()
+        self.assertNotIn(("a", 1), items)
+        self.assertNotIn(("abc", 1), items)
+        with self.assertRaises(TypeError):
+            1 in items
+        with self.assertRaises(TypeError):
+            (1, 2) in items
 
-    def test_contains(self) -> None:
-        """test CacheSourceContainer.__contains__"""
-        for name in self.keys():
-            self.assertIn(name, self)
+
+class TestCacheSourceContainer(unittest.TestCase):
+    """test CacheSourceContainer"""
+    def test_magic_methods(self) -> None:
+        """test __contains__, __iter__, __getitem__ and __len__"""
+        container = unittest.mock.MagicMock(spec_set=CacheSourceContainer)
+        CacheSourceContainer.__contains__(container, 1)
+        container.source_container.__contains__.assert_called()
+        CacheSourceContainer.__iter__(container)
+        container.source_container.__iter__.assert_called()
+        CacheSourceContainer.__getitem__(container, 1)
+        container.source_container.__getitem__.assert_called()
+        CacheSourceContainer.__len__(container)
+        container.source_container.__len__.assert_called()
 
     def test_gc(self) -> None:
         """test CacheSourceContainer.gc"""
-        self.assertEqual(self.gc(), 3)
+        sources = {
+            "a": unittest.mock.Mock(spec_set=CacheSource),
+            "b": unittest.mock.Mock(spec_set=CacheSource),
+            "c": unittest.mock.Mock(spec_set=CacheSource)
+        }
+        sources["a"].gc.configure_mock(side_effect=(True, True))
+        sources["b"].gc.configure_mock(side_effect=(True, False))
+        sources["c"].gc.configure_mock(side_effect=(True, True))
+        self.assertEqual(CacheSourceContainer.gc(sources), 3)
+        for source in sources.values():
+            source.gc.assert_called()
+        self.assertEqual(CacheSourceContainer.gc(sources), 2)
 
     def test_clear(self) -> None:
         """test CacheSourceContainer.clear"""
-        self.clear()    # should not raise any exceptions
+        cached = {
+            "a": unittest.mock.Mock(spec_set=CacheSource),
+            "b": unittest.mock.Mock(spec_set=CacheSource)
+        }
+        cached["b"].clear.configure_mock(side_effect=(NotCachedException,))
+        container = unittest.mock.Mock(spec_set=CacheSourceContainer)
+        container.cached.configure_mock(side_effect=(cached,))
+        CacheSourceContainer.clear(container)
+        for source in cached.values():
+            source.clear.assert_called()
 
     def test_close(self) -> None:
         """test CodeSourceContainerDecorator.close"""
-        with self.assertRaises(RuntimeError):
-            self.close()
+        container = unittest.mock.Mock(spec_set=CacheSourceContainer)
+        container.detach.configure_mock(side_effect=(container.source_container,))
+        CacheSourceContainer.close(container)
+        container.detach.assert_called()
+        container.source_container.close.assert_called()
