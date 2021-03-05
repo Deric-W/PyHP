@@ -13,9 +13,10 @@ import inspect
 import tempfile
 import importlib.util
 import importlib.machinery
-from pyhp.caching import NotCachedException
+from pyhp.caching import SourceInfo, NotCachedException
 from pyhp.caching.files import (
-    FileSource, Directory,
+    FileSource,
+    Directory,
     SourceFileLoader,
     LeavesDirectoryError,
     StrictDirectory,
@@ -256,6 +257,39 @@ class TestDirectory(unittest.TestCase):
         for name in self.container.keys():
             self.assertIn(name, self.container)
         self.assertNotIn("abc", self.container)
+
+    def test_mtime(self) -> None:
+        """test Directory.mtime"""
+        self.assertEqual(
+            self.container.mtime("syntax.pyhp"),
+            os.stat("tests/embedding/syntax.pyhp").st_mtime_ns
+        )
+
+    def test_ctime(self) -> None:
+        """test Directory.ctime"""
+        self.assertEqual(
+            self.container.ctime("syntax.pyhp"),
+            os.stat("tests/embedding/syntax.pyhp").st_ctime_ns
+        )
+
+    def test_atime(self) -> None:
+        """test Directory.atime"""
+        self.assertEqual(
+            self.container.atime("syntax.pyhp"),
+            os.stat("tests/embedding/syntax.pyhp").st_atime_ns
+        )
+
+    def test_info(self) -> None:
+        """test Directory.info"""
+        stat = os.stat("tests/embedding/syntax.pyhp")
+        self.assertEqual(
+            self.container.info("syntax.pyhp"),
+            SourceInfo(
+                stat.st_mtime_ns,
+                stat.st_ctime_ns,
+                stat.st_atime_ns
+            )
+        )
 
 
 class TestStrictDirectory(unittest.TestCase):

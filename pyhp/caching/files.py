@@ -28,6 +28,7 @@ from . import (
     TimestampedCodeSource,
     DirectCodeSource,
     CodeSourceContainer,
+    TimestampedCodeSourceContainer,
     CacheSource,
     NotCachedException
 )
@@ -144,7 +145,7 @@ class LeavesDirectoryError(ValueError):
     """Exception raised when a path would reference something outside the directory"""
 
 
-class Directory(CodeSourceContainer[FileSource]):
+class Directory(TimestampedCodeSourceContainer[FileSource]):
     """container of FileSources pointing to a directory"""
     __slots__ = ("directory_path", "compiler")
 
@@ -196,6 +197,28 @@ class Directory(CodeSourceContainer[FileSource]):
         for _, _, filenames in os.walk(self.directory_path, followlinks=True):
             files += len(filenames)
         return files
+
+    # more performant than the standart implementations
+    def mtime(self, name: str) -> int:
+        """retrieve the modification timestamp of name"""
+        return os.stat(self.path(name)).st_mtime_ns
+
+    def ctime(self, name: str) -> int:
+        """retrieve the creation timestamp of name"""
+        return os.stat(self.path(name)).st_ctime_ns
+
+    def atime(self, name: str) -> int:
+        """retrieve the access timestamp of name"""
+        return os.stat(self.path(name)).st_atime_ns
+
+    def info(self, name: str) -> SourceInfo:
+        """retireve the info about name"""
+        stat = os.stat(self.path(name))
+        return SourceInfo(
+            stat.st_mtime_ns,
+            stat.st_ctime_ns,
+            stat.st_atime_ns
+        )
 
     def path(self, name: str) -> str:
         """calculate the path for name"""

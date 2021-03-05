@@ -21,11 +21,13 @@ from importlib.abc import InspectLoader
 from importlib.machinery import ModuleSpec
 from locale import getpreferredencoding
 from types import CodeType
-from typing import IO, Union, Mapping, Any, Iterator, Optional
+from typing import IO, Union, Mapping, Any, Iterator, Optional, Tuple
 from . import (
+    SourceInfo,
     TimestampedCodeSource,
     DirectCodeSource,
-    CodeSourceContainer
+    CodeSourceContainer,
+    TimestampedCodeSourceContainer
 )
 from ..compiler import Code
 from ..compiler.util import Compiler
@@ -38,6 +40,11 @@ __all__ = (
 )
 
 ENCODING = getpreferredencoding(False)
+
+
+def datetime_to_ns(date_time: Tuple[int, int, int, int, int, int]) -> int:
+    """convert ZipInfo.date_time to a ns timestamp"""
+    return int(datetime(*date_time).timestamp() * 1e+9)
 
 
 class ZIPLoader(InspectLoader):
@@ -126,7 +133,7 @@ class ZIPSource(TimestampedCodeSource, DirectCodeSource):
 
     def mtime(self) -> int:
         """retrieve the modification timestamp in ns"""
-        return int(datetime(*self.entry.date_time).timestamp() * 1e+9)
+        return datetime_to_ns(self.entry.date_time)
 
     def ctime(self) -> int:
         """retireve the creation timestmp in ns"""
@@ -141,7 +148,7 @@ class ZIPSource(TimestampedCodeSource, DirectCodeSource):
         self.reader.close()
 
 
-class ZIPFile(CodeSourceContainer[ZIPSource]):
+class ZIPFile(TimestampedCodeSourceContainer[ZIPSource]):
     """CodeSourceContainer wrapping zipfile.ZipFile"""
     __slots__ = ("file", "compiler")
 
@@ -204,6 +211,27 @@ class ZIPFile(CodeSourceContainer[ZIPSource]):
 
     def __len__(self) -> int:
         return len(self.file.infolist())
+
+    # more performant than the standart implementation
+    def mtime(self, name: str) -> int:
+        """retrieve the modification timestamp of name"""
+        return datetime_to_ns(self.file.getinfo(name).date_time)
+
+    def ctime(self, name: str) -> int:
+        """retrieve the creation timestamp of name"""
+        return 0
+
+    def atime(self, name: str) -> int:
+        """retrieve the access timestamp of name"""
+        return 0
+
+    def info(self, name: str) -> SourceInfo:
+        """retireve the info about name"""
+        return SourceInfo(
+            self.mtime(name),
+            0,
+            0
+        )
 
     def close(self) -> None:
         """close the wrapped ZipFile"""

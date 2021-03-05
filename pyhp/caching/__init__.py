@@ -52,9 +52,9 @@ __all__ = (
     "util"
 )
 
-T = TypeVar("T")
 
 S = TypeVar("S", bound="CodeSource")
+T = TypeVar("T", bound="TimestampedCodeSource")
 CS = TypeVar("CS", bound="CacheSource")
 
 C = TypeVar("C", bound="CodeSourceContainer")
@@ -267,6 +267,32 @@ class CodeSourceContainer(Mapping[str, S]):
     def close(self) -> None:
         """perform cleanup actions"""
         pass
+
+
+class TimestampedCodeSourceContainer(CodeSourceContainer[T]):
+    """abc for containers of TimestampedCodeSources"""
+    __slots__ = ()
+
+    # these methods allow for performance optimizations
+    def mtime(self, name: str) -> int:
+        """retrieve the modification timestamp of name"""
+        with self[name] as source:
+            return source.mtime()
+
+    def ctime(self, name: str) -> int:
+        """retrieve the creation timestamp of name"""
+        with self[name] as source:
+            return source.ctime()
+
+    def atime(self, name: str) -> int:
+        """retrieve the access timestamp of name"""
+        with self[name] as source:
+            return source.atime()
+
+    def info(self, name: str) -> SourceInfo:
+        """retireve the info about name"""
+        with self[name] as source:
+            return source.info()
 
 
 class CodeSourceContainerDecorator(CodeSourceContainer[S], Generic[C, S]):

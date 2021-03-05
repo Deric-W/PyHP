@@ -14,6 +14,7 @@ from pyhp.caching import (
     CacheSource,
     NotCachedException,
     CodeSourceContainer,
+    TimestampedCodeSourceContainer,
     CacheSourceContainer,
 )
 from pyhp.compiler import Code
@@ -135,6 +136,62 @@ class TestSourceContainer(unittest.TestCase):
             1 in items
         with self.assertRaises(TypeError):
             (1, 2) in items
+
+
+class TestTimestampedCodeSourceContainer(unittest.TestCase):
+    """test TimestampedCodeSourceContainer"""
+    def test_mtime(self) -> None:
+        """test TimestampedCodeSourceContainer.mtime"""
+        container = {
+            "a": unittest.mock.MagicMock(spec_set=TimestampedCodeSource)
+        }
+        container["a"].__enter__ = lambda x: x
+        container["a"].__exit__ = lambda x, *args: x.close()
+        container["a"].mtime.configure_mock(side_effect=(9,))
+        self.assertEqual(TimestampedCodeSourceContainer.mtime(container, "a"), 9)
+        container["a"].close.assert_called()
+        with self.assertRaises(KeyError):
+            TimestampedCodeSourceContainer.mtime(container, "b")
+
+    def test_ctime(self) -> None:
+        """test TimestampedCodeSourceContainer.ctime"""
+        container = {
+            "a": unittest.mock.MagicMock(spec_set=TimestampedCodeSource)
+        }
+        container["a"].__enter__ = lambda x: x
+        container["a"].__exit__ = lambda x, *args: x.close()
+        container["a"].ctime.configure_mock(side_effect=(9,))
+        self.assertEqual(TimestampedCodeSourceContainer.ctime(container, "a"), 9)
+        container["a"].close.assert_called()
+        with self.assertRaises(KeyError):
+            TimestampedCodeSourceContainer.ctime(container, "b")
+
+    def test_atime(self) -> None:
+        """test TimestampedCodeSourceContainer.atime"""
+        container = {
+            "a": unittest.mock.MagicMock(spec_set=TimestampedCodeSource)
+        }
+        container["a"].__enter__ = lambda x: x
+        container["a"].__exit__ = lambda x, *args: x.close()
+        container["a"].atime.configure_mock(side_effect=(9,))
+        self.assertEqual(TimestampedCodeSourceContainer.atime(container, "a"), 9)
+        container["a"].close.assert_called()
+        with self.assertRaises(KeyError):
+            TimestampedCodeSourceContainer.atime(container, "b")
+
+    def test_info(self) -> None:
+        """test TimestampedCodeSourceContainer.info"""
+        info = SourceInfo(1, 2, 3)
+        container = {
+            "a": unittest.mock.MagicMock(spec_set=TimestampedCodeSource)
+        }
+        container["a"].__enter__ = lambda x: x
+        container["a"].__exit__ = lambda x, *args: x.close()
+        container["a"].info.configure_mock(side_effect=(info,))
+        self.assertEqual(TimestampedCodeSourceContainer.info(container, "a"), info)
+        container["a"].close.assert_called()
+        with self.assertRaises(KeyError):
+            TimestampedCodeSourceContainer.info(container, "b")
 
 
 class TestCacheSourceContainer(unittest.TestCase):

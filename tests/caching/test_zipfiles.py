@@ -251,3 +251,27 @@ class TestZIPFileContainer(unittest.TestCase):
                 )
             finally:
                 containers[-1].close()
+
+    def test_mtime(self) -> None:
+        """test ZIPFile.mtime"""
+        with self.container["syntax.pyhp"] as source:
+            self.assertEqual(
+                self.container.mtime("syntax.pyhp"),
+                source.mtime()
+            )
+
+    def test_ctime(self) -> None:
+        """test ZIPFile.ctime"""
+        self.assertEqual(self.container.ctime("syntax.pyhp"), 0)
+
+    def test_atime(self) -> None:
+        """test ZIPFile.atime"""
+        self.assertEqual(self.container.atime("syntax.pyhp"), 0)
+
+    def test_info(self) -> None:
+        """test ZIPFile.info"""
+        with self.container["syntax.pyhp"] as source:
+            self.assertEqual(
+                self.container.info("syntax.pyhp"),
+                source.info()
+            )
