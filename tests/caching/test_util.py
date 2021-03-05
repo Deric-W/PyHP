@@ -5,7 +5,7 @@
 import re
 import unittest
 import unittest.mock
-from pyhp.caching import util, memory
+from pyhp.caching import util, memory, files
 from pyhp.compiler.parsers import RegexParser
 from pyhp.compiler.generic import GenericCodeBuilder
 from pyhp.compiler.util import Compiler
@@ -50,7 +50,7 @@ class TestHierarchyBuilder(unittest.TestCase):
         builder = util.HierarchyBuilder(compiler)
         builder.add_container(memory.MemorySourceContainer, {})
         with self.assertRaises(ValueError):
-            builder.add_container(memory.MemorySourceContainer, {})
+            builder.add_container(files.Directory, {"path": "test"})
         hierarchy = builder.hierarchy()
         self.assertIsInstance(hierarchy, memory.MemorySourceContainer)
         self.assertEqual(hierarchy, builder.pop())

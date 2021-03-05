@@ -40,11 +40,13 @@ class TestMemorySourceContainer(unittest.TestCase):
                 {"a": 9},
                 compiler
             )
-        with self.assertRaises(ValueError):
+        self.assertEqual(
+            self.container,
             MemorySourceContainer.from_config(
                 {},
                 self.container
             )
+        )
 
     def test_access(self) -> None:
         """test MemorySourceContainer code retrieval"""

@@ -54,8 +54,8 @@ class MemorySourceContainer(Dict[str, MemorySource], CodeSourceContainer[MemoryS
     @classmethod
     def from_config(cls, config: Mapping[str, Any], before: Union[Compiler, CodeSourceContainer]) -> MemorySourceContainer:
         """create a instance from configuration data"""
+        container = cls()
         if isinstance(before, Compiler):
-            container = cls()
             for name, code in config.items():   # config consists of multiple 'name = source code'
                 if isinstance(code, str):
                     container[name] = MemorySource(before.compile_str(code))
@@ -63,5 +63,8 @@ class MemorySourceContainer(Dict[str, MemorySource], CodeSourceContainer[MemoryS
                     raise ValueError(
                         f"expected value of key '{name}' to be a string to compile"
                     )
-            return container
-        raise ValueError(f"{cls.__name__} does not support decorating another CodeSourceContainer")
+        else:
+            for name, source in before.items():
+                with source:
+                    container[name] = MemorySource(source.code())
+        return container
