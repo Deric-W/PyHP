@@ -41,11 +41,13 @@ __all__ = (
     "TimestampedCodeSource",
     "CodeSourceDecorator",
     "CacheSource",
-    "ContainerValuesView",
-    "ContainerItemsView",
+    "ClosingValuesView",
+    "ClosingItemsView",
     "CodeSourceContainer",
+    "TimestampedCodeSourceContainer",
     "CodeSourceContainerDecorator",
     "CacheSourceContainer",
+    "CachedMapping",
     "memory",
     "files",
     "zipfiles",
@@ -186,7 +188,7 @@ class CacheSource(CodeSourceDecorator[S]):
         raise NotImplementedError
 
 
-class ContainerValuesView(ValuesView[S]):
+class ClosingValuesView(ValuesView[S]):
     """ValuesView for Mappings of context managers"""
     __slots__ = ()
 
@@ -194,14 +196,14 @@ class ContainerValuesView(ValuesView[S]):
 
     def __contains__(self, value: object) -> bool:
         """custom contains implementation which closes the retrieved source"""
-        for key in self._mapping:
-            with self._mapping[key] as source:
+        for source in self:
+            with source:
                 if source is value or source == value:
                     return True
         return False
 
 
-class ContainerItemsView(ItemsView[str, S]):
+class ClosingItemsView(ItemsView[str, S]):
     """ItemsView for Mapping of context managers"""
     __slots__ = ()
 
@@ -219,7 +221,7 @@ class ContainerItemsView(ItemsView[str, S]):
                 return False
             with source:
                 return source is value or source == value
-        raise TypeError(f"first value is expected to be a str, not '{type(key)}'")
+        return False
 
 
 class CodeSourceContainer(Mapping[str, S]):
@@ -242,7 +244,7 @@ class CodeSourceContainer(Mapping[str, S]):
                 return False
             source.close()
             return True
-        raise TypeError(f"name is expected to be a str, not '{type(name)}'")
+        return False
 
     @classmethod
     @abstractmethod
@@ -252,11 +254,11 @@ class CodeSourceContainer(Mapping[str, S]):
 
     def values(self) -> ValuesView[S]:
         """custom ValueView which closes retrieved sources"""
-        return ContainerValuesView(self)
+        return ClosingValuesView(self)
 
     def items(self) -> ItemsView[str, S]:
         """custom ItemsView which closes retrieved sources"""
-        return ContainerItemsView(self)
+        return ClosingItemsView(self)
 
     def search(self, pattern: Pattern[str]) -> Iterator[Tuple[str, S]]:
         """yield all sources with names which match the pattern"""
@@ -330,10 +332,9 @@ class CacheSourceContainer(CodeSourceContainerDecorator[C, CS]):
     """abc for containers of cache sources"""
     __slots__ = ()
 
-    @abstractmethod
     def cached(self) -> Mapping[str, CS]:
         """return a mapping of cached sources"""
-        raise NotImplementedError
+        return CachedMapping(self)
 
     def gc(self) -> int:
         """garbage collect all cached sources and return the number removed"""
@@ -350,3 +351,102 @@ class CacheSourceContainer(CodeSourceContainerDecorator[C, CS]):
                 source.clear()
             except NotCachedException:  # already removed
                 pass
+
+
+class CachedValuesView(ClosingValuesView[CS]):
+    """ValuesView for CachedMapping"""
+    __slots__ = ()
+
+    _mapping: CachedMapping[CS]
+
+    def __iter__(self) -> Iterator[CS]:
+        """optimized version of ValuesView.__iter__"""
+        for source in self._mapping.container.values():
+            try:
+                cached = source.cached()
+            except Exception:
+                source.close()
+                raise
+            if cached:
+                yield source
+            else:
+                source.close()
+
+
+class CachedItemsView(ClosingItemsView[CS]):
+    """ItemsView for CachedMapping"""
+    __slots__ = ()
+
+    _mapping: CachedMapping[CS]
+
+    def __iter__(self) -> Iterator[Tuple[str, CS]]:
+        """optimized version of ItemsView.__iter__"""
+        for name, source in self._mapping.container.items():
+            try:
+                cached = source.cached()
+            except Exception:
+                source.close()
+                raise
+            if cached:
+                yield (name, source)
+            else:
+                source.close()
+
+
+class CachedMapping(Mapping[str, CS]):
+    """Mapping of cache sources currently cached"""
+    __slots__ = ("container",)
+
+    container: CacheSourceContainer[Any, CS]
+
+    def __init__(self, container: CacheSourceContainer[Any, CS]) -> None:
+        self.container = container
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, CachedMapping):
+            return self.container == other.container
+        return NotImplemented
+
+    def __getitem__(self, name: str) -> CS:
+        source = self.container[name]
+        try:
+            cached = source.cached()
+        except Exception:
+            source.close()
+            raise
+        if cached:
+            return source
+        source.close()
+        raise KeyError(f"source for '{name}' exists but is not cached")
+
+    def __iter__(self) -> Iterator[str]:
+        for name, source in self.container.items():
+            try:
+                if source.cached():
+                    yield name
+            finally:
+                source.close()
+
+    def __len__(self) -> int:
+        x = 0
+        for _ in self:
+            x += 1
+        return x
+
+    def __contains__(self, name: object) -> bool:
+        if isinstance(name, str):
+            try:
+                source = self.container[name]
+            except KeyError:
+                return False
+            with source:
+                return source.cached()
+        return False
+
+    def values(self) -> ValuesView[CS]:
+        """custom ClosingValuesView with optimizations"""
+        return CachedValuesView(self)
+
+    def items(self) -> ItemsView[str, CS]:
+        """custom ClosingItemsView with optimizations"""
+        return CachedItemsView(self)

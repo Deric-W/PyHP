@@ -5,7 +5,7 @@
 import re
 import unittest
 import unittest.mock
-from typing import Iterator, Mapping
+from typing import Mapping, Any
 from pyhp.caching import (
     SourceInfo,
     CodeSource,
@@ -16,6 +16,7 @@ from pyhp.caching import (
     CodeSourceContainer,
     TimestampedCodeSourceContainer,
     CacheSourceContainer,
+    CachedMapping
 )
 from pyhp.compiler import Code
 
@@ -92,8 +93,7 @@ class TestSourceContainer(unittest.TestCase):
         self.assertTrue(CodeSourceContainer.__contains__(container, "Test"))
         source.close.assert_called()
         self.assertFalse(CodeSourceContainer.__contains__(container, "Test"))
-        with self.assertRaises(TypeError):
-            CodeSourceContainer.__contains__(container, 99)
+        self.assertNotIn(99, container)
 
     def test_search(self) -> None:
         """test CodeSourceContainer.search"""
@@ -112,7 +112,7 @@ class TestSourceContainer(unittest.TestCase):
         values = CodeSourceContainer.values(sources)
         for value in sources.values():
             value.__enter__ = lambda x: x
-            value.__exit__ = lambda x, *args: x.close()
+            value.__exit__ = context_manager_exit
             self.assertIn(value, values)
             value.close.assert_called()
         self.assertNotIn(1, values)
@@ -127,15 +127,12 @@ class TestSourceContainer(unittest.TestCase):
         items = CodeSourceContainer.items(sources)
         for name, source in sources.items():
             source.__enter__ = lambda x: x
-            source.__exit__ = lambda x, *args: x.close()
+            source.__exit__ = context_manager_exit
             self.assertIn((name, source), items)
             source.close.assert_called()
         self.assertNotIn(("a", 1), items)
         self.assertNotIn(("abc", 1), items)
-        with self.assertRaises(TypeError):
-            1 in items
-        with self.assertRaises(TypeError):
-            (1, 2) in items
+        self.assertNotIn((1, 2), items)
 
 
 class TestTimestampedCodeSourceContainer(unittest.TestCase):
@@ -146,7 +143,7 @@ class TestTimestampedCodeSourceContainer(unittest.TestCase):
             "a": unittest.mock.MagicMock(spec_set=TimestampedCodeSource)
         }
         container["a"].__enter__ = lambda x: x
-        container["a"].__exit__ = lambda x, *args: x.close()
+        container["a"].__exit__ = context_manager_exit
         container["a"].mtime.configure_mock(side_effect=(9,))
         self.assertEqual(TimestampedCodeSourceContainer.mtime(container, "a"), 9)
         container["a"].close.assert_called()
@@ -159,7 +156,7 @@ class TestTimestampedCodeSourceContainer(unittest.TestCase):
             "a": unittest.mock.MagicMock(spec_set=TimestampedCodeSource)
         }
         container["a"].__enter__ = lambda x: x
-        container["a"].__exit__ = lambda x, *args: x.close()
+        container["a"].__exit__ = context_manager_exit
         container["a"].ctime.configure_mock(side_effect=(9,))
         self.assertEqual(TimestampedCodeSourceContainer.ctime(container, "a"), 9)
         container["a"].close.assert_called()
@@ -172,7 +169,7 @@ class TestTimestampedCodeSourceContainer(unittest.TestCase):
             "a": unittest.mock.MagicMock(spec_set=TimestampedCodeSource)
         }
         container["a"].__enter__ = lambda x: x
-        container["a"].__exit__ = lambda x, *args: x.close()
+        container["a"].__exit__ = context_manager_exit
         container["a"].atime.configure_mock(side_effect=(9,))
         self.assertEqual(TimestampedCodeSourceContainer.atime(container, "a"), 9)
         container["a"].close.assert_called()
@@ -186,7 +183,7 @@ class TestTimestampedCodeSourceContainer(unittest.TestCase):
             "a": unittest.mock.MagicMock(spec_set=TimestampedCodeSource)
         }
         container["a"].__enter__ = lambda x: x
-        container["a"].__exit__ = lambda x, *args: x.close()
+        container["a"].__exit__ = context_manager_exit
         container["a"].info.configure_mock(side_effect=(info,))
         self.assertEqual(TimestampedCodeSourceContainer.info(container, "a"), info)
         container["a"].close.assert_called()
@@ -243,3 +240,137 @@ class TestCacheSourceContainer(unittest.TestCase):
         CacheSourceContainer.close(container)
         container.detach.assert_called()
         container.source_container.close.assert_called()
+
+    def test_cached(self) -> None:
+        """test CacheSourceContainer.cached"""
+        self.assertIsInstance(CacheSourceContainer.cached({}), Mapping)
+
+
+class TestCachedMapping(unittest.TestCase):
+    """test CachedMapping"""
+    def test_getitem(self) -> None:
+        """test CachedMapping.__getitem__"""
+        container = {
+            "a": unittest.mock.Mock(spec_set=CacheSource),
+            "b": unittest.mock.Mock(spec_set=CacheSource),
+            "c": unittest.mock.Mock(spec_set=CacheSource)
+        }
+        container["a"].cached.configure_mock(side_effect=(True,))
+        container["b"].cached.configure_mock(side_effect=(False,))
+        container["c"].cached.configure_mock(side_effect=(RuntimeError,))
+        mapping = CachedMapping(container)
+        self.assertEqual(mapping["a"], container["a"])
+        with self.assertRaises(KeyError):
+            mapping["b"]
+        container["b"].close.assert_called()
+        with self.assertRaises(RuntimeError):
+            mapping["c"]
+        container["c"].close.assert_called()
+
+    def test_iter(self) -> None:
+        """test CachedMapping.__iter__"""
+        container = {
+            "a": unittest.mock.Mock(spec_set=CacheSource),
+            "b": unittest.mock.Mock(spec_set=CacheSource),
+            "c": unittest.mock.Mock(spec_set=CacheSource)
+        }
+        container["a"].cached.configure_mock(side_effect=(True,))
+        container["b"].cached.configure_mock(side_effect=(False,))
+        container["c"].cached.configure_mock(side_effect=(RuntimeError,))
+        iterator = iter(CachedMapping(container))
+        names = []
+        while True:
+            try:
+                names.append(next(iterator))
+            except RuntimeError:
+                pass
+            except StopIteration:
+                break
+        self.assertEqual(names, ["a"])
+        for mock in container.values():
+            mock.close.assert_called()
+
+    def test_len(self) -> None:
+        """test CachedMapping.__len__"""
+        container = {
+            "a": unittest.mock.Mock(spec_set=CacheSource),
+            "b": unittest.mock.Mock(spec_set=CacheSource),
+            "c": unittest.mock.Mock(spec_set=CacheSource)
+        }
+        container["a"].cached.configure_mock(side_effect=(True,))
+        container["b"].cached.configure_mock(side_effect=(False,))
+        container["c"].cached.configure_mock(side_effect=(True,))
+        self.assertEqual(len(CachedMapping(container)), 2)
+
+    def test_contains(self) -> None:
+        """test CachedMapping.__contains__"""
+        container = {
+            "a": unittest.mock.MagicMock(spec_set=CacheSource),
+            "b": unittest.mock.MagicMock(spec_set=CacheSource),
+            "c": unittest.mock.MagicMock(spec_set=CacheSource)
+        }
+        container["a"].cached.configure_mock(side_effect=(True,))
+        container["b"].cached.configure_mock(side_effect=(False,))
+        container["c"].cached.configure_mock(side_effect=(RuntimeError,))
+        for mock in container.values():
+            mock.__enter__ = lambda x: x
+            mock.__exit__ = context_manager_exit
+        mapping = CachedMapping(container)
+        self.assertIn("a", mapping)
+        self.assertNotIn("b", mapping)
+        with self.assertRaises(RuntimeError):
+            "c" in mapping
+        self.assertNotIn("d", mapping)
+        self.assertNotIn(9, mapping)
+        for mock in container.values():
+            mock.close.assert_called()
+
+    def test_values(self) -> None:
+        """test CachedMapping.values"""
+        container = {
+            "a": unittest.mock.Mock(spec_set=CacheSource),
+            "b": unittest.mock.Mock(spec_set=CacheSource),
+            "c": unittest.mock.Mock(spec_set=CacheSource)
+        }
+        container["a"].cached.configure_mock(side_effect=(True,))
+        container["b"].cached.configure_mock(side_effect=(False,))
+        container["c"].cached.configure_mock(side_effect=(RuntimeError,))
+        iterator = iter(CachedMapping(container).values())
+        values = []
+        while True:
+            try:
+                values.append(next(iterator))
+            except RuntimeError:
+                pass
+            except StopIteration:
+                break
+        self.assertEqual(values, [container["a"]])
+        container["b"].close.assert_called()
+        container["c"].close.assert_called()
+
+    def test_items(self) -> None:
+        """test CachedMapping.items"""
+        container = {
+            "a": unittest.mock.Mock(spec_set=CacheSource),
+            "b": unittest.mock.Mock(spec_set=CacheSource),
+            "c": unittest.mock.Mock(spec_set=CacheSource)
+        }
+        container["a"].cached.configure_mock(side_effect=(True,))
+        container["b"].cached.configure_mock(side_effect=(False,))
+        container["c"].cached.configure_mock(side_effect=(RuntimeError,))
+        iterator = iter(CachedMapping(container).items())
+        items = []
+        while True:
+            try:
+                items.append(next(iterator))
+            except RuntimeError:
+                pass
+            except StopIteration:
+                break
+        self.assertEqual(items, [("a", container["a"])])
+        container["b"].close.assert_called()
+        container["c"].close.assert_called()
+
+
+def context_manager_exit(self: Any, *_args: Any) -> None:
+    self.close()
