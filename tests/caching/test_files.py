@@ -449,7 +449,10 @@ class TestFileCache(unittest.TestCase):
                 cache["syntax.pyhp"] as source:
             self.assertTrue(source.path.startswith("tmp"))
             self.assertEqual(source.ttl, 0)
-            self.assertEqual(source.code_source.fd.name, "tests/embedding/syntax.pyhp")
+            self.assertEqual(
+                os.path.normpath(source.code_source.fd.name),
+                os.path.normpath("tests/embedding/syntax.pyhp")
+            )
 
     def test_eq(self) -> None:
         """test FileCache.__eq__"""
