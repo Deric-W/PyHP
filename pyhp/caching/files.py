@@ -370,7 +370,7 @@ class FileCache(CacheSourceContainer[TimestampedCodeSourceContainer[S], FileCach
         )
 
     @classmethod
-    def from_config(cls, config: Mapping[str, Any], before: Union[Compiler, CodeSourceContainer]) -> CentralFileCache:
+    def from_config(cls, config: Mapping[str, Any], before: Union[Compiler, CodeSourceContainer]) -> FileCache:
         """create a instance from configuration data"""
         if isinstance(before, TimestampedCodeSourceContainer):
             directory_name = config["directory_name"]
