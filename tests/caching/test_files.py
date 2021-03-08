@@ -464,6 +464,21 @@ class TestFileCache(unittest.TestCase):
             self.assertNotEqual(cache2, cache3)
             self.assertNotEqual(1, cache1)
 
+    def test_gc_clear(self) -> None:
+        """test FileCache.gc and FileCache.clear"""
+        with tempfile.TemporaryDirectory() as directory, \
+                FileCache(Directory("tests/embedding", compiler), directory) as cache:
+            with cache["syntax.pyhp"] as source:
+                source.fetch()
+            with cache["shebang.pyhp"] as source:
+                source.fetch()
+            os.utime(cache.path("shebang.pyhp"), (0, 0))
+            self.assertEqual(cache.gc(), 1)
+            self.assertTrue(os.path.exists(cache.path("syntax.pyhp")))
+            self.assertFalse(os.path.exists(cache.path("shebang.pyhp")))
+            cache.clear()
+            self.assertFalse(os.path.exists(cache.path("syntax.pyhp")))
+
     def test_path(self) -> None:
         """test FileCache.path"""
         with FileCache(Directory("tests/embedding", compiler), "tmp") as cache:

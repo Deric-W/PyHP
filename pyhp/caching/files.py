@@ -261,6 +261,15 @@ class StrictDirectory(Directory):
         return path
 
 
+def check_mtime(s_mtime: int, c_mtime: int, ttl: int = 0) -> bool:
+    """check if a timestamp is valid"""
+    if c_mtime < s_mtime:  # outdated
+        return False
+    if ttl > 0:    # up to date, check ttl
+        return ttl > (time.time_ns() - c_mtime)
+    return True    # up to date
+
+
 class FileCacheSource(CacheSource[S]):
     """source which caches a TimestampedCodeSource on disk"""
     __slots__ = ("path", "ttl")
@@ -294,7 +303,7 @@ class FileCacheSource(CacheSource[S]):
             self.update(code)
             return code
         try:
-            if self.check_mtime(os.fstat(fd).st_mtime_ns):  # up to date
+            if check_mtime(self.code_source.mtime(), os.fstat(fd).st_mtime_ns, self.ttl):
                 return pickle.load(os.fdopen(fd, "rb", closefd=False))
         finally:
             os.close(fd)    # close before self.write to prevent errors on windows
@@ -324,15 +333,7 @@ class FileCacheSource(CacheSource[S]):
             cache_mtime = os.stat(self.path).st_mtime_ns
         except FileNotFoundError:   # no cached
             return False
-        return self.check_mtime(cache_mtime)
-
-    def check_mtime(self, mtime: int) -> bool:
-        """check if the timestamp is valid"""
-        if mtime < self.code_source.mtime():  # outdated
-            return False
-        if self.ttl > 0:    # up to date, check ttl
-            return self.ttl > (time.time_ns() - mtime)
-        return True         # up to date
+        return check_mtime(self.code_source.mtime(), cache_mtime, self.ttl)
 
     def clear(self) -> None:
         """unlink the cache file"""
@@ -340,6 +341,12 @@ class FileCacheSource(CacheSource[S]):
             os.unlink(self.path)
         except FileNotFoundError as e:
             raise NotCachedException("cache already clear") from e
+
+
+def reconstruct_name(path: str) -> str:
+    """reconstruct the name from a file cache path"""
+    name, _, _ = os.path.basename(path).rpartition(".")
+    return base64.b32decode(name.encode("utf8"), casefold=True).decode("utf8")
 
 
 class FileCache(CacheSourceContainer[TimestampedCodeSourceContainer[S], FileCacheSource[S]]):
@@ -386,9 +393,38 @@ class FileCache(CacheSourceContainer[TimestampedCodeSourceContainer[S], FileCach
             raise ValueError("expected value of key 'directory_name' to be a str")
         raise ValueError(f"{cls.__name__} has to decorate another TimestampedCodeSourceContainer")
 
+    def gc(self) -> int:
+        """garbage collect all cached sources and return the number removed"""
+        removed = 0
+        for path in self.paths():
+            name = reconstruct_name(path)
+            cache_mtime = os.stat(path).st_mtime_ns
+            if not check_mtime(self.source_container.mtime(name), cache_mtime, self.ttl):
+                try:
+                    os.unlink(path)
+                except FileNotFoundError:   # file was already removed
+                    pass
+                removed += 1
+        return removed
+
+    def clear(self) -> None:
+        """remove all sources from the cache"""
+        for path in self.paths():
+            try:
+                os.unlink(path)
+            except FileNotFoundError:   # file was already removed
+                pass
+
     def path(self, name: str) -> str:
         """return directory_name/<base32 encoded name>.pickle"""
         return os.path.join(
             self.directory_name,
             base64.b32encode(name.encode("utf8")).decode("utf8") + ".pickle"
         )   # use base32 because of case-insensitive file systems and forbidden characters
+
+    def paths(self) -> Iterator[str]:
+        """return a iterator yielding all paths currently in use (including outdated ones)"""
+        with os.scandir(self.directory_name) as directory:
+            for entry in directory:
+                if entry.name.endswith(".pickle") and entry.is_file():
+                    yield entry.path
