@@ -20,7 +20,8 @@ from pyhp.caching.files import (
     SourceFileLoader,
     LeavesDirectoryError,
     StrictDirectory,
-    FileCacheSource
+    FileCacheSource,
+    FileCache
 )
 from pyhp.compiler.parsers import RegexParser
 from pyhp.compiler.generic import GenericCodeBuilder
@@ -409,3 +410,60 @@ class TestFileCacheSource(unittest.TestCase):
                 source.fetch()
                 source.clear()
                 self.assertFalse(os.path.exists(path))
+
+
+class TestFileCache(unittest.TestCase):
+    """test FileCache"""
+
+    def test_from_config(self) -> None:
+        """test FileCache.from_config"""
+        container = Directory("tests/embedding", compiler)
+        with FileCache.from_config(
+            {
+                "directory_name": "~"
+            },
+            container
+        ) as cache:
+            self.assertEqual(cache.directory_name, os.path.expanduser("~"))
+            self.assertEqual(cache.ttl, 0)
+        with FileCache.from_config(
+            {
+                "directory_name": "~",
+                "ttl": 9
+            },
+            container
+        ) as cache:
+            self.assertEqual(cache.ttl, 9e9)
+        with self.assertRaises(KeyError):
+            FileCache.from_config({}, container)
+        with self.assertRaises(ValueError):
+            FileCache.from_config({"directory_name": 9}, container)
+        with self.assertRaises(ValueError):
+            FileCache.from_config({"directory_name": "~", "ttl": "a"}, container)
+        with self.assertRaises(ValueError):
+            FileCache.from_config({"directory_name": "~"}, compiler)
+
+    def test_access(self) -> None:
+        """test FileCache.__getitem__"""
+        with FileCache(Directory("tests/embedding", compiler), "tmp") as cache, \
+                cache["syntax.pyhp"] as source:
+            self.assertTrue(source.path.startswith("tmp"))
+            self.assertEqual(source.ttl, 0)
+            self.assertEqual(source.code_source.fd.name, "tests/embedding/syntax.pyhp")
+
+    def test_eq(self) -> None:
+        """test FileCache.__eq__"""
+        with FileCache(Directory("tests/embedding", compiler), "tmp") as cache1, \
+                FileCache(Directory("tests/embedding", compiler2), "tmp") as cache2, \
+                FileCache(Directory("tests/embedding", compiler), "tmp2") as cache3:
+            self.assertEqual(cache1, cache1)
+            self.assertNotEqual(cache1, cache2)
+            self.assertNotEqual(cache2, cache3)
+            self.assertNotEqual(1, cache1)
+
+    def test_path(self) -> None:
+        """test FileCache.path"""
+        with FileCache(Directory("tests/embedding", compiler), "tmp") as cache:
+            self.assertTrue(cache.path("test").startswith("tmp"))
+            self.assertNotEqual(cache.path("test"), cache.path("test2"))
+            self.assertNotIn("|", cache.path("|"))

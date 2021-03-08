@@ -17,6 +17,7 @@ import os
 import os.path
 import io
 import time
+import base64
 import pickle
 from locale import getpreferredencoding
 from types import CodeType
@@ -30,6 +31,7 @@ from . import (
     CodeSourceContainer,
     TimestampedCodeSourceContainer,
     CacheSource,
+    CacheSourceContainer,
     NotCachedException
 )
 from ..compiler import Code
@@ -42,7 +44,8 @@ __all__ = (
     "LeavesDirectoryError",
     "Directory",
     "StrictDirectory",
-    "FileCacheSource"
+    "FileCacheSource",
+    "FileCache"
 )
 
 S = TypeVar("S", bound=TimestampedCodeSource)
@@ -337,3 +340,55 @@ class FileCacheSource(CacheSource[S]):
             os.unlink(self.path)
         except FileNotFoundError as e:
             raise NotCachedException("cache already clear") from e
+
+
+class FileCache(CacheSourceContainer[TimestampedCodeSourceContainer[S], FileCacheSource[S]]):
+    """file cache which stores all cache files inside a central directory"""
+    __slots__ = ("directory_name", "ttl")
+
+    directory_name: str
+
+    ttl: int
+
+    def __init__(self, source_container: TimestampedCodeSourceContainer[S], directory_name: str, ttl: int = 0) -> None:
+        self.source_container = source_container
+        self.directory_name = directory_name
+        self.ttl = ttl
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, FileCache):
+            return self.source_container == other.source_container \
+                and self.directory_name == other.directory_name
+        return NotImplemented
+
+    def __getitem__(self, name: str) -> FileCacheSource[S]:
+        """get FileCacheSource with path as returned by .path()"""
+        return FileCacheSource(
+            self.source_container[name],
+            self.path(name),
+            self.ttl
+        )
+
+    @classmethod
+    def from_config(cls, config: Mapping[str, Any], before: Union[Compiler, CodeSourceContainer]) -> CentralFileCache:
+        """create a instance from configuration data"""
+        if isinstance(before, TimestampedCodeSourceContainer):
+            directory_name = config["directory_name"]
+            if isinstance(directory_name, str):
+                ttl = config.get("ttl", 0)
+                if isinstance(ttl, (int, float)):
+                    return cls(
+                        before,
+                        os.path.expanduser(directory_name),
+                        int(ttl * 1e9)  # convert from s to ns
+                    )
+                raise ValueError("expected value of key 'ttl' to be a int or float")
+            raise ValueError("expected value of key 'directory_name' to be a str")
+        raise ValueError(f"{cls.__name__} has to decorate another TimestampedCodeSourceContainer")
+
+    def path(self, name: str) -> str:
+        """return directory_name/<base32 encoded name>.pickle"""
+        return os.path.join(
+            self.directory_name,
+            base64.b32encode(name.encode("utf8")).decode("utf8") + ".pickle"
+        )   # use base32 because of case-insensitive file systems and forbidden characters
