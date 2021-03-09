@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-"""Tests for pyhp.caching.files"""
+"""Tests for pyhp.backends.caching.timestamped.files"""
 
 import unittest
 import re
