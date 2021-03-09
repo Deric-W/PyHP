@@ -21,8 +21,8 @@ from typing import Any, Mapping, Iterable, MutableMapping
 import toml
 from . import __version__, libpyhp
 from .compiler import util, generic, parsers
-from .caching import CodeSourceContainer
-from .caching.util import ModuleHierarchyBuilder, PathHierarchyBuilder
+from .backends import CodeSourceContainer
+from .backends.util import ModuleHierarchyBuilder, PathHierarchyBuilder
 
 
 __all__ = (
@@ -95,7 +95,7 @@ def main(name: str, config: Mapping[str, Any]) -> int:
             code = compiler.compile_file(sys.stdin)
         else:
             container = exit_stack.enter_context(
-                get_container(compiler, config["caching"])
+                get_container(compiler, config["backend"])
             )
             code = exit_stack.enter_context(container[name]).code()
 
@@ -133,16 +133,16 @@ def load_config(search_paths: Iterable[str] = CONFIG_LOCATIONS) -> MutableMappin
     raise RuntimeError("failed to locate the config file")
 
 
-def get_container(compiler: util.Compiler, caching_config: Mapping[str, Any]) -> CodeSourceContainer:
+def get_container(compiler: util.Compiler, backend_config: Mapping[str, Any]) -> CodeSourceContainer:
     """create a code source container from config data"""
-    resolve = caching_config["resolve"]
+    resolve = backend_config["resolve"]
     if resolve == "module":
         hierarchy_builder = ModuleHierarchyBuilder(compiler)
     elif resolve == "path":
         hierarchy_builder = PathHierarchyBuilder(compiler)  # type: ignore
     else:
         raise ValueError(f"value '{resolve}' of key 'resolve' is unknown")
-    hierarchy_builder.add_config(caching_config["containers"])
+    hierarchy_builder.add_config(backend_config["containers"])
     return hierarchy_builder.hierarchy()
 
 

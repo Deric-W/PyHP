@@ -1,11 +1,11 @@
 #!/usr/bin/python3
 
-"""Tests for pyhp.caching.util"""
+"""Tests for pyhp.backends.util"""
 
 import re
 import unittest
 import unittest.mock
-from pyhp.caching import util, memory, files
+from pyhp.backends import util, memory, files
 from pyhp.compiler.parsers import RegexParser
 from pyhp.compiler.generic import GenericCodeBuilder
 from pyhp.compiler.util import Compiler
@@ -39,7 +39,7 @@ class TestHierarchyBuilder(unittest.TestCase):
         builder1 = util.HierarchyBuilder(compiler)
         builder2 = util.HierarchyBuilder(compiler2)
         builder3 = util.HierarchyBuilder(compiler2)
-        builder3.add_container(memory.MemorySourceContainer, {})
+        builder3.add_container(memory.HashMap, {})
         self.assertEqual(
             [builder1],
             [b for b in (builder1, builder2, builder3) if b == builder1]
@@ -48,11 +48,11 @@ class TestHierarchyBuilder(unittest.TestCase):
     def test_building(self) -> None:
         """test building a hierarchy"""
         builder = util.HierarchyBuilder(compiler)
-        builder.add_container(memory.MemorySourceContainer, {})
+        builder.add_container(memory.HashMap, {})
         with self.assertRaises(ValueError):
             builder.add_container(files.Directory, {"path": "test"})
         hierarchy = builder.hierarchy()
-        self.assertIsInstance(hierarchy, memory.MemorySourceContainer)
+        self.assertIsInstance(hierarchy, memory.HashMap)
         self.assertEqual(hierarchy, builder.pop())
         with self.assertRaises(IndexError):
             builder.pop()
@@ -62,7 +62,7 @@ class TestHierarchyBuilder(unittest.TestCase):
         builder = util.HierarchyBuilder(compiler)
         builder2 = builder.copy()
         self.assertEqual(builder, builder2)
-        builder.add_container(memory.MemorySourceContainer, {})
+        builder.add_container(memory.HashMap, {})
         self.assertNotEqual(builder, builder2)
         self.assertEqual(builder, builder.copy())
 
@@ -109,8 +109,8 @@ class TestModuleHierarchyBuilder(unittest.TestCase):
         """test ModuleHierarchyBuilder.add_name"""
         builder = util.ModuleHierarchyBuilder(compiler)
         builder2 = util.HierarchyBuilder(compiler)
-        builder.add_name("pyhp.caching.memory.MemorySourceContainer", {})
-        builder2.add_container(memory.MemorySourceContainer, {})
+        builder.add_name("pyhp.backends.memory.HashMap", {})
+        builder2.add_container(memory.HashMap, {})
         self.assertEqual(builder, builder2)
 
 
@@ -120,6 +120,6 @@ class TestPathHierarchyBuilder(unittest.TestCase):
         """test PathHierarchyBuilder.add_name"""
         builder = util.PathHierarchyBuilder(compiler)
         builder2 = util.HierarchyBuilder(compiler)
-        builder.add_name("tests/caching/dummy.py:MemorySourceContainer", {})
-        builder2.add_container(memory.MemorySourceContainer, {})
+        builder.add_name("tests/backends/dummy.py:HashMap", {})
+        builder2.add_container(memory.HashMap, {})
         self.assertEqual(builder, builder2)

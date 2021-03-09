@@ -6,6 +6,6 @@ import sys
 
 sys.path.append("../../")
 try:
-    from pyhp.caching.memory import MemorySourceContainer
+    from pyhp.backends.memory import HashMap
 finally:
     sys.path.pop()

@@ -18,7 +18,7 @@ dedent = true
 optimization_level = -1
 
 
-[caching]
+[backend]
 # how container names should be resolved to objects
 # module: the name is a module with a dot and the container name appended to it
 #         module.submodule.name
@@ -27,9 +27,9 @@ optimization_level = -1
 resolve = "module"
 
 # array of containers to build a hierarchy
-[[caching.containers]]
+[[backend.containers]]
 # the name of the container
-name = "pyhp.caching.files.Directory"
+name = "pyhp.backends.files.Directory"
 
 # configuration options for the container
 config.path = "."

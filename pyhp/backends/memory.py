@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-"""Module containing memory implementations"""
+"""Module containing memory backends"""
 # The caching.memory module is part of PyHP (https://github.com/Deric-W/PyHP)
 # Copyright (C) 2021  Eric Wolf
 
@@ -13,8 +13,9 @@
 # SPDX-License-Identifier: GPL-3.0-only
 
 from __future__ import annotations
-from typing import Dict, Mapping, Any, Union
+from typing import Dict, Mapping, Any
 from . import (
+    ConfigHierarchy,
     CodeSource,
     CodeSourceContainer
 )
@@ -24,7 +25,7 @@ from ..compiler.util import Compiler
 
 __all__ = (
     "MemorySource",
-    "MemorySourceContainer",
+    "HashMap"
 )
 
 
@@ -47,12 +48,12 @@ class MemorySource(CodeSource):
         return self.code_obj
 
 
-class MemorySourceContainer(Dict[str, MemorySource], CodeSourceContainer[MemorySource]):
-    """in-memory code storage"""
+class HashMap(Dict[str, MemorySource], CodeSourceContainer[MemorySource]):
+    """in-memory code storage implemented with a dict"""
     __slots__ = ()
 
     @classmethod
-    def from_config(cls, config: Mapping[str, Any], before: Union[Compiler, CodeSourceContainer]) -> MemorySourceContainer:
+    def from_config(cls, config: Mapping[str, Any], before: ConfigHierarchy) -> HashMap:
         """create a instance from configuration data"""
         container = cls()
         if isinstance(before, Compiler):

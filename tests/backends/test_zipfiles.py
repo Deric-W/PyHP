@@ -12,7 +12,7 @@ import importlib.util
 from importlib.machinery import ModuleSpec
 from datetime import datetime
 from pyhp.compiler import parsers, util, generic
-from pyhp.caching import zipfiles
+from pyhp.backends import zipfiles
 
 compiler = util.Compiler(
     parsers.RegexParser(
@@ -212,8 +212,7 @@ class TestZIPFileContainer(unittest.TestCase):
         """test ZIPFile.__contains__"""
         self.assertIn("syntax.pyhp", self.container)
         self.assertNotIn("abc", self.container)
-        with self.assertRaises(TypeError):
-            1 in self.container
+        self.assertNotIn(1, self.container)
 
     def test_iter(self) -> None:
         """test iter(ZIPFile)"""
@@ -251,6 +250,7 @@ class TestZIPFileContainer(unittest.TestCase):
                 )
             finally:
                 containers[-1].close()
+        self.assertNotEqual(self.container, 1)
 
     def test_mtime(self) -> None:
         """test ZIPFile.mtime"""

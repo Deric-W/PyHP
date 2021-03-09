@@ -1,6 +1,6 @@
 #!/usr/bin/python3
 
-"""Module containing zipfile implementations"""
+"""Module containing zipfile backends"""
 # The caching.zipfiles module is part of PyHP (https://github.com/Deric-W/PyHP)
 # Copyright (C) 2021  Eric Wolf
 
@@ -204,7 +204,7 @@ class ZIPFile(TimestampedCodeSourceContainer[ZIPSource]):
             except KeyError:
                 return False
             return True
-        raise TypeError(f"name expected to be str, not '{type(name)}'")
+        return False
 
     def __iter__(self) -> Iterator[str]:
         return iter(self.file.namelist())
