@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 """Package containing memory implementations of timestamp-based caches"""
-# The backends.caches.timestamped.memory package is part of PyHP (https://github.com/Deric-W/PyHP)
+# The backends.caches.timestamped.memory module is part of PyHP (https://github.com/Deric-W/PyHP)
 # Copyright (C) 2021  Eric Wolf
 
 # This program is free software: you can redistribute it and/or modify

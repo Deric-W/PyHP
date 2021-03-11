@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 """Module containing utilities"""
-# The caching.util module is part of PyHP (https://github.com/Deric-W/PyHP)
+# The backends.util module is part of PyHP (https://github.com/Deric-W/PyHP)
 # Copyright (C) 2021  Eric Wolf
 
 # This program is free software: you can redistribute it and/or modify

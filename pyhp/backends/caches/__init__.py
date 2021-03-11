@@ -1,7 +1,7 @@
 #!/usr/bin/python3
 
 """Package containing caches to decorate backends"""
-# The caching package is part of PyHP (https://github.com/Deric-W/PyHP)
+# The backends.caches package is part of PyHP (https://github.com/Deric-W/PyHP)
 # Copyright (C) 2021  Eric Wolf
 
 # This program is free software: you can redistribute it and/or modify
