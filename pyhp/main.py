@@ -59,7 +59,7 @@ argparser.add_argument(
 argparser.add_argument(
     "name",
     type=str,
-    help="name to be loaded from the caching hierarchy (omit for reading from stdin)",
+    help="name to be loaded from the backend (omit for reading from stdin)",
     nargs="?",
     default="-"
 )

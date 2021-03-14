@@ -18,35 +18,33 @@ then read -p "pip executeable: " pip
 else pip=$3
 fi
 
-package="pyhp_"$version"_all"
+package="pyhp_${version}_all"
 
 mkdir "$package"
 
-# place config file, cache handlers and "executable"
-mkdir -p "$package/lib/pyhp/cache_handlers"
-cp ../cache_handlers/* "$package/lib/pyhp/cache_handlers"
-
-mkdir "$package/etc"
-cp ../pyhp.conf "$package/etc"
-
-mkdir -p "$package/usr/bin"
-cp pyhp "$package/usr/bin"
-chmod +x "$package/usr/bin/pyhp"
-
 # place pyhp-core files
-mkdir -p "$package/usr/lib/python3/dist-packages"
-$pip install --target "$package/usr/lib/python3/dist-packages" --ignore-installed $wheel
+mkdir -p "${package}/usr/lib/python3/dist-packages"
+$pip install --target "${package}/usr/lib/python3/dist-packages" --ignore-installed --no-compile "$wheel"
+
+# place config file and "executable"
+mkdir "${package}/etc"
+cp ../pyhp.toml "${package}/etc"
+
+mkdir -p "${package}/usr/bin"
+mv "${package}/usr/lib/python3/dist-packages/bin/pyhp" "${package}/usr/bin"
+rmdir "${package}/usr/lib/python3/dist-packages/bin"
+chmod +x "${package}/usr/bin/pyhp"
 
 # place metadata files
 mkdir "$package/DEBIAN"
 # calculate installed size
-cat control | python3 format.py "$version" $(du -sk --apparent-size --exclude "DEBIAN" "$package" 2>/dev/null | cut -f1) > "$package/DEBIAN/control"
+cat control | python3 format.py "${version}" $(du -sk --apparent-size --exclude "DEBIAN" "${package}" 2>/dev/null | cut -f1) > "${package}/DEBIAN/control"
 cp conffiles "$package/DEBIAN"
 
-mkdir -p "$package/usr/share/doc/pyhp"
-cp copyright "$package/usr/share/doc/pyhp"
-cp changelog "$package/usr/share/doc/pyhp/changelog.Debian"
-gzip -n --best "$package/usr/share/doc/pyhp/changelog.Debian"
+mkdir -p "${package}/usr/share/doc/pyhp"
+cp copyright "${package}/usr/share/doc/pyhp"
+cp changelog "${package}/usr/share/doc/pyhp/changelog.Debian"
+gzip -n --best "${package}/usr/share/doc/pyhp/changelog.Debian"
 
 # generate md5sums file
 chdir "$package"
@@ -67,3 +65,5 @@ dpkg-deb --build "$package"
 rm -r "$package"
 
 echo "Done"
+
+exit 0
