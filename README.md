@@ -67,6 +67,6 @@ A script is called either by the configuration of the web server or a shebang an
 
   ### Manually
   1. install the *pyhp-core* python package
-  2. copy *pyhp.toml* to on of the config file locations
+  2. copy *pyhp.toml* to one of the config file locations
   3. Done! You can now use the `pyhp` command
 
