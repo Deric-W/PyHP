@@ -1,0 +1,59 @@
+# Configuration for PyHP (https://github.com/Deric-W/PyHP)
+# This file uses the TOML syntax
+
+[parser]
+# regular expression matching the start of a code section
+start = '<\?pyhp\s'
+
+# regular expression matching the end of a code section
+end = '\s\?>'
+
+
+[compiler]
+# if python code should be stripped of a starting indentation
+dedent = true
+
+# optimization level to be used with the builtin compile() function
+# all levels: https://docs.python.org/3/library/functions.html#compile
+optimization_level = -1
+
+
+[backend]
+# how container names should be resolved to objects
+# module: the name is a module with a dot and the container name appended to it
+#         module.submodule.name
+# path: the name is a file path with a double colon and the container name appended to it
+#       /path/to/file.py:name
+resolve = "module"
+
+# array of containers to build a hierarchy
+[[backend.containers]]
+# the name of the container
+name = "pyhp.backends.files.Directory"
+
+# configuration options for the container
+config.path = "."
+
+
+[request]
+# order to fill up REQUEST, values already present in REQUEST get overwritten
+# unknown methods are skipped
+request_order = [
+    "GET",
+    "POST",
+    "COOKIE"
+]
+
+# if arameters with no or blank values should be kept
+keep_blank_values = true
+
+# fallback value if a parameter is not in REQUEST / GET / POST / COOKIE
+# comment out if a KeyError should be raised instead
+fallback_value = ""
+
+# if stdin should not be consumed
+# this results in POST not being populated
+enable_post_data_reading = false
+
+# fallback value of the Content-Type header
+default_mimetype = "text/html"

@@ -30,7 +30,7 @@ B = TypeVar("B", bound=CodeBuilder)
 
 class Compiler(Generic[P, B]):
     """Facade to the compiler subsystem"""
-    __slots__ = ("parser", "base_builder")
+    __slots__ = ("parser", "base_builder", "__weakref__")
 
     parser: P
 
@@ -41,15 +41,27 @@ class Compiler(Generic[P, B]):
         self.parser = parser
         self.base_builder = builder
 
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Compiler):
+            return self.parser == other.parser and self.base_builder == other.base_builder
+        return NotImplemented
+
     def builder(self) -> B:
         """get a code builder who is not used by other threads"""
         return self.base_builder.copy()
 
+    def compile_raw(self, source: str, spec: ModuleSpec) -> Code:
+        """compile a source string with a spec into a code object"""
+        builder = self.builder()
+        if source.startswith("#!"):     # shebang, remove first line
+            self.parser.build(source.partition("\n")[2], builder, 1)
+        else:
+            self.parser.build(source, builder)
+        return builder.code(spec)
+
     def compile_str(self, source: str, origin: str = "<string>", loader: Optional[Loader] = None) -> Code:
         """compile a source string into a code object"""
-        builder = self.builder()
-        self.parser.build(source, builder)
-        return builder.code(ModuleSpec("__main__", loader, origin=origin, is_package=False))
+        return self.compile_raw(source, ModuleSpec("__main__", loader, origin=origin, is_package=False))
 
     def compile_file(self, file: TextIO, loader: Optional[Loader] = None) -> Code:
         """compile a text stream into a code object"""
@@ -66,7 +78,6 @@ class Compiler(Generic[P, B]):
 
 class StartingIndentationError(IndentationError):
     """Exception raised when a line does not start with the starting indentation"""
-    __slots__ = ()
 
 
 class Dedenter(CodeBuilderDecorator[B]):
@@ -76,6 +87,11 @@ class Dedenter(CodeBuilderDecorator[B]):
     def __init__(self, builder: B) -> None:
         """construct a instance with the builder to decorate"""
         self.builder = builder
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, Dedenter):
+            return self.builder == other.builder
+        return NotImplemented
 
     @staticmethod
     def get_indentation(line: str) -> str:

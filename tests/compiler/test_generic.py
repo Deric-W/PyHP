@@ -180,3 +180,19 @@ class TestBuilder(unittest.TestCase):
             self.assertEqual(e.lineno, 100)
         else:
             raise RuntimeError("bad syntax compiled without error")
+
+    def test_eq(self) -> None:
+        """test GenericCodeBuilder.__eq__"""
+        builders = [
+            generic.GenericCodeBuilder(-1),
+            generic.GenericCodeBuilder(0),
+            generic.GenericCodeBuilder(-1),
+            generic.GenericCodeBuilder(-1)
+        ]
+        builders[2].add_text("test", 0)
+        builders[3].add_text("abc", 0)
+        for index, builder in enumerate(builders):
+            self.assertEqual(
+                [builder],
+                [b for b in builders if b == builder]
+            )

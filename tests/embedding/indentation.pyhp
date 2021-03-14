@@ -5,8 +5,8 @@
     </head>
     <body>
         <?pyhp
-print("Normal python code would start with an indentation of 0 (like this).")
-print("But it looks a bit odd inside of an HTML document.")
+print("Normal python code would start with an indentation of 0 (like this),")
+print("but it looks a bit odd inside of an HTML document.")
         ?>
         <?pyhp
  # comments and empthy lines are ignored by this feature

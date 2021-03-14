@@ -6,8 +6,8 @@ Content-Type: text/html
         <title>Indentation</title>
     </head>
     <body>
-        Normal python code would start with an indentation of 0 (like this).
-But it looks a bit odd inside of an HTML document.
+        Normal python code would start with an indentation of 0 (like this),
+but it looks a bit odd inside of an HTML document.
 
         Because of this, PyHP will calculate the starting indentation of each section
 and remove it from all lines of it (12 spaces in this case)

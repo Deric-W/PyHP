@@ -1,3 +1,14 @@
+pyhp (2.2-1) stable; urgency=low
+
+  * sixth release
+  * replace cache handlers with backends submodule
+  * add unbounded version of memory cache
+  * add files, zipfiles and memory backend
+  * fix race condition in file cache
+  * change config format to TOML
+
+ -- Eric Wolf <robo-eric@gmx.de>  Sun, 14 Mar 2021 19:00:00 +0100
+
 pyhp (2.1-1) stable; urgency=low
 
   * fifth release

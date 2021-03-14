@@ -1,2 +1,2 @@
 # disable automatic eol conversions
-* text=false
+* -text

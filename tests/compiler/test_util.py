@@ -21,6 +21,16 @@ class TestCompiler(unittest.TestCase):
         """test if the builder is independent from the compiler"""
         self.assertFalse(self.compiler.builder() is self.compiler.base_builder)
 
+    def test_raw(self) -> None:
+        """test Compiler.compile_raw"""
+        source = "text1<?pyhp code1 ?>text2<?pyhp code2 ?>"
+        spec = ModuleSpec("__main__", None, origin="Test", is_package=False)
+        code = self.compiler.compile_raw(source, spec)
+        builder = self.compiler.builder()
+        self.compiler.parser.build(source, builder)
+        code2 = builder.code(spec)
+        self.assertEqual(code, code2)
+
     def test_string(self) -> None:
         """test the compilation of strings"""
         source = "text1<?pyhp code1 ?>text2<?pyhp code2 ?>"
@@ -46,8 +56,8 @@ class TestCompiler(unittest.TestCase):
             builder.code(spec)
         )
 
-    def test_shebang(self) -> None:
-        """test the handling of shebangs"""
+    def test_file_shebang(self) -> None:
+        """test the handling of shebangs in files"""
         path = "./tests/embedding/shebang.pyhp"
         with open(path, "r") as file:
             code = self.compiler.compile_file(file)
@@ -61,6 +71,15 @@ class TestCompiler(unittest.TestCase):
             code,
             builder.code(spec)
         )
+
+    def test_string_shebang(self) -> None:
+        """test the handling of shebangs in strings"""
+        source = "#!test\ntext1<?pyhp code1 ?>text2<?pyhp code2 ?>"
+        code = self.compiler.compile_str(source, "Test")
+        builder = self.compiler.builder()
+        self.compiler.parser.build("text1<?pyhp code1 ?>text2<?pyhp code2 ?>", builder, 1)
+        code2 = builder.code(ModuleSpec("__main__", None, origin="Test", is_package=False))
+        self.assertEqual(code, code2)
 
 
 class TestDedenter(unittest.TestCase):
@@ -118,3 +137,15 @@ class TestDedenter(unittest.TestCase):
         self.assertFalse(util.Dedenter.is_code("  #test"))
         self.assertFalse(util.Dedenter.is_code(""))
         self.assertFalse(util.Dedenter.is_code("\t\t  \n"))
+
+    def test_eq(self) -> None:
+        """test Dedenter.__eq__"""
+        builder = generic.GenericCodeBuilder(-1)
+        self.assertEqual(
+            util.Dedenter(builder),
+            util.Dedenter(builder)
+        )
+        self.assertNotEqual(
+            util.Dedenter(builder),
+            util.Dedenter(generic.GenericCodeBuilder(2))
+        )

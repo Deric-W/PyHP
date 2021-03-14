@@ -13,7 +13,7 @@
 
 # package metadata
 # needs to be defined before .main is imported
-__version__ = "2.1"
+__version__ = "2.2"
 __author__ = "Eric Wolf"
 __maintainer__ = "Eric Wolf"
 __license__ = "GPLv3"
@@ -22,6 +22,7 @@ __contact__ = "https://github.com/Deric-W/PyHP"
 
 __all__ = (
     "compiler",
+    "backends",
     "libpyhp",
     "main"
 )

@@ -159,10 +159,10 @@ class PyHP:
     def send_headers(self):
         self.header_sent = True     # prevent recursion if callback prints output
         self.header_callback()      # execute callback
-        print("Status:", self.response_code, HTTPStatus(self.response_code).phrase)
+        print("Status:", self.response_code, HTTPStatus(self.response_code).phrase, end="\r\n")     # rfc line endings
         for header in self.headers:
-            print(": ".join(header))
-        print()                     # end of headers
+            print(": ".join(header), end="\r\n")    # rfc line endings
+        print("", end="\r\n")                       # end of headers
 
     # make wrapper for target function to call send_headers if wrapped function is used, like print
     # use like print = PyHP.make_header_wrapper(print)
