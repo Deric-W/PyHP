@@ -29,7 +29,7 @@ T = TypeVar("T")
 
 class WSGIInterface(metaclass=ABCMeta):
     """base class for all Interfaces"""
-    __slots__ = ("environ", "start_response")
+    __slots__ = ("environ", "start_response", "__weakref__")
 
     environ: Environ
 
@@ -60,10 +60,10 @@ class WSGIInterface(metaclass=ABCMeta):
 
 class WSGIInterfaceFactory(metaclass=ABCMeta):
     """base class for interface factories"""
-    __slots__ = ()
+    __slots__ = ("__weakref__",)
 
-    @abstractmethod
     @classmethod
+    @abstractmethod
     def from_config(cls: Type[T], config: Mapping[str, Any], cache: CacheSourceContainer) -> T:
         """create an instance from config data and a cache"""
         raise NotImplementedError

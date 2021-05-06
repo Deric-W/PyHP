@@ -214,6 +214,7 @@ class TestDirectory(unittest.TestCase):
     def test_iter(self) -> None:
         """test iter(Directory)"""
         files = {   # set -> no order
+            "empty.pyhp",
             "syntax.pyhp",
             "syntax.output",
             "indentation.pyhp",
