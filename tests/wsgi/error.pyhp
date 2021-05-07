@@ -1,0 +1,10 @@
+#!/usr/bin/pyhp
+<?pyhp raise RuntimeError ?>
+<html>
+    <head>
+        <title>Error</title>
+    </head>
+    <body>
+        <p>Error test</p>
+    </body>
+</html>

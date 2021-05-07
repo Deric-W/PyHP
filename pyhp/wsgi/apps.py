@@ -16,9 +16,9 @@ from abc import ABCMeta, abstractmethod
 from contextlib import redirect_stdout
 from io import StringIO
 from types import TracebackType
-from typing import Iterable, ContextManager, TypeVar, Optional, Type
+from typing import Iterable, Iterator, ContextManager, TypeVar, Optional, Type, Generator
 from . import Environ, StartResponse
-from .interfaces import WSGIInterfaceFactory
+from .interfaces import WSGIInterfaceFactory, WSGIInterface
 from ..backends import CodeSource
 
 __all__ = (
@@ -50,38 +50,64 @@ class WSGIApp(metaclass=ABCMeta):
 
     def __call__(self, environ: Environ, start_response: StartResponse) -> Iterable[bytes]:
         """execute the app"""
-        stopped = False     # dont yield if Generator.close() was called
         code = self.code_source().code()
+        buffer = StringIO()
         interface = self.interface_factory.interface(environ, start_response)
         try:
             iterator = code.execute({"PyHP": interface})
-            try:                    # call .end_headers() for yielding the first time
-                with self.redirect_stdout(StringIO()) as buffer:
-                    text = next(iterator)
-            except StopIteration:   # there was only a code section, yield its output
-                interface.end_headers()
-                yield buffer.getvalue().encode("utf8")
-                return
-            # there are more sections, continue
+            with self.redirect_stdout(buffer):
+                buffer.write(next(iterator))
+        except StopIteration:   # no more sections, return
+            yield from self.stop_request(interface, buffer)
+            return
+        except BaseException:   # an error happend, reraise
+            yield from self.stop_request(interface, buffer)
+            raise
+        # send headers and continue
+        try:
             interface.end_headers()
+        except BaseException:
+            with self.redirect_stdout(buffer):
+                interface.close()
+            raise
+        yield from self.finish_request(interface, iterator, buffer)
+
+    def finish_request(self, interface: WSGIInterface, iterator: Iterator[str], buffer: StringIO) -> Generator[bytes, None, None]:
+        """finish a request with headers already sent"""
+        stopped = False     # dont yield if Generator.close() was called
+        try:
             yield buffer.getvalue().encode("utf8")
-            yield text.encode("utf8")
             while True:
+                buffer = StringIO()
                 try:
-                    with self.redirect_stdout(StringIO()) as buffer:
-                        text = next(iterator)
+                    with self.redirect_stdout(buffer) as buffer:
+                        buffer.write(next(iterator))
                 except StopIteration:
                     yield buffer.getvalue().encode("utf8")
                     break
                 yield buffer.getvalue().encode("utf8")
-                yield text.encode("utf8")
         except GeneratorExit:
             stopped = True
-        finally:                # interface.close may produce output
+        finally:    # .end_headers has already been called
             with self.redirect_stdout(StringIO()) as buffer:
                 interface.close()
             if not stopped:
-                yield buffer.getvalue().encode("utf8")  # .end_headers() has already been called
+                yield buffer.getvalue().encode("utf8")
+        
+    def stop_request(self, interface: WSGIInterface, buffer: StringIO) -> Generator[bytes, None, None]:
+        """stop a request with no headers already sent"""
+        try:
+            interface.end_headers()
+        except BaseException:   # error, can not send output
+            with self.redirect_stdout(buffer):
+                interface.close()
+            raise
+        # success, can send output
+        try:
+            with self.redirect_stdout(buffer):
+                interface.close()
+        finally:    # safe because we dont yield in the try block
+            yield buffer.getvalue().encode("utf8")
 
     @abstractmethod
     def redirect_stdout(self, buffer: StringIO) -> ContextManager[StringIO]:
