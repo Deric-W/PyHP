@@ -1,0 +1,10 @@
+#!/usr/bin/pyhp
+<?pyhp import sys; sys.exit(1) ?>
+<html>
+    <head>
+        <title>Exit</title>
+    </head>
+    <body>
+        <p>Exit test</p>
+    </body>
+</html>

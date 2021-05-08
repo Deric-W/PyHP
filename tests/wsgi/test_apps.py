@@ -133,6 +133,30 @@ class TestSimpleWSGIApp(unittest.TestCase):
                 next(iterator)
             interface.close.assert_called()
 
+        # test SystemExit handling
+        interface.end_headers.reset_mock()
+        interface.close.reset_mock()
+        with SimpleWSGIApp(container["wsgi/exit1.pyhp"], factory) as app:
+            self.assertEqual(b"".join(app({}, start_response)), b"shutdown\n")
+            interface.end_headers.assert_called()
+            interface.close.assert_called()
+        interface.end_headers.reset_mock()
+        interface.close.reset_mock()
+        with SimpleWSGIApp(container["wsgi/exit2.pyhp"], factory) as app:
+            self.assertEqual(
+                b"".join(app({}, start_response)),
+                b"\n".join((
+                    b"",
+                    b"<html>",
+                    b"    <head>",
+                    b"        <title>Exit</title>",
+                    b"    </head>",
+                    b"    <body>",
+                    b"        <p>Exit test</p>",
+                    b"        shutdown\n"
+                ))
+            )
+
         # test .end_headers() error handling
         factory = BrokenFactory()
         interface = factory.mock

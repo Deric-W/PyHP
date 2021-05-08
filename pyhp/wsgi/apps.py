@@ -57,7 +57,7 @@ class WSGIApp(metaclass=ABCMeta):
             iterator = code.execute({"PyHP": interface})
             with self.redirect_stdout(buffer):
                 buffer.write(next(iterator))
-        except StopIteration:   # no more sections, return
+        except (StopIteration, SystemExit):   # no more sections, return
             yield from self.stop_request(interface, buffer)
             return
         except BaseException:   # an error happend, reraise
@@ -82,7 +82,7 @@ class WSGIApp(metaclass=ABCMeta):
                 try:
                     with self.redirect_stdout(buffer) as buffer:
                         buffer.write(next(iterator))
-                except StopIteration:
+                except (StopIteration, SystemExit):     # no more sections, return
                     yield buffer.getvalue().encode("utf8")
                     break
                 yield buffer.getvalue().encode("utf8")
@@ -93,7 +93,7 @@ class WSGIApp(metaclass=ABCMeta):
                 interface.close()
             if not stopped:
                 yield buffer.getvalue().encode("utf8")
-        
+
     def stop_request(self, interface: WSGIInterface, buffer: StringIO) -> Generator[bytes, None, None]:
         """stop a request with no headers already sent"""
         try:
@@ -126,7 +126,7 @@ class WSGIApp(metaclass=ABCMeta):
 
 class SimpleWSGIApp(WSGIApp):
     """implementation for single threaded environments"""
-    __slots__ = ("source")
+    __slots__ = ("source",)
 
     source: CodeSource
 
