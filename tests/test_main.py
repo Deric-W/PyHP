@@ -2,13 +2,29 @@
 
 """Unit tests for the PyHP cli"""
 
+import re
 import sys
 import os
 import unittest
+import unittest.mock
 import subprocess
 from tempfile import NamedTemporaryFile
 import toml
 from pyhp import main
+from pyhp.compiler import util, generic, parsers
+from pyhp.backends import CodeSourceContainer
+
+
+compiler = util.Compiler(
+    parsers.RegexParser(
+        re.compile(r"\<\?pyhp\s"),
+        re.compile(r"\s\?\>")
+    ),
+    generic.GenericCodeBuilder(-1)
+)
+
+dummy = unittest.mock.Mock(spec=CodeSourceContainer)
+dummy.from_config.configure_mock(side_effect=lambda c, b: dummy)
 
 
 class TestCli(unittest.TestCase):
@@ -59,6 +75,23 @@ class TestCli(unittest.TestCase):
             main.load_config(("test1", "test2", "pyhp.toml")),
             toml.load("pyhp.toml")
         )
+
+    def test_get_container(self) -> None:
+        """test main.get_container"""
+        config = toml.load("pyhp.toml")["backend"]
+        with main.get_container(compiler, config) as container:
+            self.assertIsInstance(container, CodeSourceContainer)
+        config["containers"] = [
+            {"name": "tests.test_main.dummy"},
+            {"name": "broken.name"}
+        ]
+        with self.assertRaises(ImportError):
+            main.get_container(compiler, config)
+        dummy.close.assert_called()
+        dummy.close.reset_mock()
+        del config["containers"][0]     # test handling of IndexError
+        with self.assertRaises(ImportError):
+            main.get_container(compiler, config)
 
 
 class TestOutput(unittest.TestCase):

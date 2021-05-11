@@ -142,7 +142,16 @@ def get_container(compiler: util.Compiler, backend_config: Mapping[str, Any]) ->
         hierarchy_builder = PathHierarchyBuilder(compiler)  # type: ignore
     else:
         raise ValueError(f"value '{resolve}' of key 'resolve' is unknown")
-    hierarchy_builder.add_config(backend_config["containers"])
+    try:
+        hierarchy_builder.add_config(backend_config["containers"])
+    except BaseException:   # close already constructed containers
+        try:
+            hierarchy = hierarchy_builder.hierarchy()
+        except IndexError:
+            pass
+        else:
+            hierarchy.close()
+        raise   # dont hide the error
     return hierarchy_builder.hierarchy()
 
 
