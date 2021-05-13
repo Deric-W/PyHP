@@ -120,18 +120,32 @@ class TestSimpleWSGIInterfaceFactory(unittest.TestCase):
             SimpleWSGIInterfaceFactory.from_config({"default_status": []}, None)
         with self.assertRaises(ValueError):
             SimpleWSGIInterfaceFactory.from_config({"default_headers": 42}, None)
+        with self.assertRaises(ValueError):
+            SimpleWSGIInterfaceFactory.from_config({"default_headers": {"a": 42}}, None)
+        with self.assertRaises(ValueError):
+            SimpleWSGIInterfaceFactory.from_config({"default_headers": {"a": ["b", 42]}}, None)
         factory = SimpleWSGIInterfaceFactory.from_config({}, None)
         self.assertEqual(factory.default_headers, [("Content-Type", 'text/html; charset="UTF-8"')])
         self.assertEqual(factory.default_status, "200 OK")
         factory = SimpleWSGIInterfaceFactory.from_config(
             {
                 "default_status": "400 Bad Request",
-                "default_headers": []
+                "default_headers": {}
             },
             None
         )
         self.assertEqual(factory.default_headers, [])
         self.assertEqual(factory.default_status, "400 Bad Request")
+        factory = SimpleWSGIInterfaceFactory.from_config(
+            {
+                "default_headers": {
+                    "foo": ["a"],
+                    "bar": ["baz", "foobar"]
+                }
+            },
+            None
+        )
+        self.assertEqual(factory.default_headers, [("foo", "a"), ("bar", "baz"), ("bar", "foobar")])
 
     def test_interface(self) -> None:
         """test SimpleWSGIInterfaceFactory.interface"""

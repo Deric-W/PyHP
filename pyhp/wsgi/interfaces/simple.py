@@ -15,7 +15,7 @@
 from __future__ import annotations
 from wsgiref.headers import Headers
 from http import HTTPStatus
-from typing import Type, Mapping, Any, List, Tuple
+from typing import Type, Mapping, Any, List, Tuple, Sequence
 from . import WSGIInterface, WSGIInterfaceFactory
 from .. import Environ, StartResponse
 from ...backends.caches import CacheSourceContainer
@@ -104,11 +104,25 @@ class SimpleWSGIInterfaceFactory(WSGIInterfaceFactory):
         except KeyError:
             status = "200 OK"
         try:
-            headers = config["default_headers"]
-            if not isinstance(headers, list):
-                raise ValueError("value of key 'default_headers' expected to be a list")
+            header_table = config["default_headers"]
         except KeyError:
             headers = [("Content-Type", 'text/html; charset="UTF-8"')]
+        else:
+            if isinstance(header_table, Mapping):
+                headers = []
+                for key, values in header_table.items():
+                    if isinstance(values, Sequence):
+                        for value in values:
+                            if isinstance(value, str):
+                                headers.append((key, value))
+                            else:
+                                raise ValueError(
+                                    f"value of key {key} expected to be a Sequence of strings"
+                                )
+                    else:
+                        raise ValueError(f"value of key {key} expected to be a Sequence")
+            else:
+                raise ValueError("value of key 'default_headers' expected to be a Mapping")
         return cls(status, headers, cache)
 
     def interface(self, environ: Environ, start_response: StartResponse) -> SimpleWSGIInterface:
