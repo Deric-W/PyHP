@@ -21,7 +21,10 @@ from ...backends.caches import CacheSourceContainer
 
 __all__ = (
     "WSGIInterface",
-    "WSGIInterfaceFactory"
+    "WSGIInterfaceFactory",
+    "simple",
+    "php",
+    "phputils"
 )
 
 T = TypeVar("T")
