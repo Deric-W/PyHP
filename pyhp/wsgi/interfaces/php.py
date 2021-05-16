@@ -18,6 +18,7 @@ from __future__ import annotations
 import os
 import time
 import urllib.parse
+from tempfile import gettempdir
 from http import HTTPStatus
 from wsgiref.headers import Headers
 from typing import (
@@ -29,7 +30,8 @@ from typing import (
     Optional,
     Tuple,
     Union,
-    Mapping
+    Mapping,
+    Sequence
 )
 import werkzeug.http
 from werkzeug.exceptions import RequestEntityTooLarge
@@ -43,12 +45,15 @@ from .phputils import (
     SimpleCallbackQueue,
     ArgumentCallbackQueue,
     FilesType,
-    StreamFactory
+    StreamFactory,
+    UploadStreamFactory,
+    NullStreamFactory
 )
 
 __all__ = (
     "close_files",
-    "PHPWSGIInterface"
+    "PHPWSGIInterface",
+    "PHPWSGIInterfaceFactory"
 )
 
 
@@ -382,3 +387,146 @@ class PHPWSGIInterface(WSGIInterface):
             pass
         finally:
             close_files(map(lambda item: item[1], self.FILES.items(multi=True)))
+
+
+class PHPWSGIInterfaceFactory(WSGIInterfaceFactory):
+    """factory for PHPWSGIInterfaces"""
+    __slots__ = (
+        "default_status",
+        "default_headers",
+        "cache",
+        "request_order",
+        "post_max_size",
+        "stream_factory"
+    )
+
+    default_status: int
+
+    default_headers: List[Tuple[str, str]]
+
+    cache: CacheSourceContainer     # may be used by multiple factories, do not close
+
+    request_order: Iterable[str]
+
+    post_max_size: Optional[int]
+
+    stream_factory: Optional[StreamFactory]
+
+    def __init__(
+        self,
+        default_status: int,
+        default_headers: List[Tuple[str, str]],
+        cache: CacheSourceContainer,
+        request_order: Iterable[str],
+        post_max_size: Optional[int],
+        stream_factory: Optional[StreamFactory]
+    ):
+        self.default_status = default_status
+        self.default_headers = default_headers
+        self.cache = cache
+        self.request_order = request_order
+        self.post_max_size = post_max_size
+        self.stream_factory = stream_factory
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, PHPWSGIInterfaceFactory):
+            return self.default_status == other.default_status \
+                and self.default_headers == other.default_headers \
+                and self.cache == other.cache \
+                and self.request_order == other.request_order \
+                and self.post_max_size == other.post_max_size \
+                and self.stream_factory == other.stream_factory
+        return NotImplemented
+
+    @staticmethod
+    def parse_post_config(config: Mapping[str, Any]) -> Tuple[Optional[int], Optional[StreamFactory]]:
+        """parse the post section of the config file"""
+        try:
+            max_size = config["max_size"]
+        except KeyError:
+            max_size = None
+        else:
+            if not isinstance(max_size, int):
+                raise ValueError("value of key 'max_size' expected to be a int")
+        if config.get("enable", True):
+            upload_config = config.get("uploads", {})
+            if upload_config.get("enable", True):
+                try:
+                    dir = upload_config["directory"]
+                except KeyError:
+                    dir = gettempdir()
+                else:
+                    if not isinstance(dir, str):
+                        raise ValueError("value of key 'dir' expected to be a str")
+                try:
+                    max_files = upload_config["max_files"]
+                except KeyError:
+                    max_files = None
+                else:
+                    if not isinstance(max_files, int):
+                        raise ValueError("value of key 'max_files' expected to be a int")
+                return max_size, UploadStreamFactory(dir, max_files)
+            else:
+                return max_size, NullStreamFactory()
+        else:
+            return max_size, None
+
+    @classmethod
+    def from_config(cls, config: Mapping[str, Any], cache: CacheSourceContainer) -> PHPWSGIInterfaceFactory:
+        """create an instance from config data"""
+        try:
+            status = config["default_status"]
+        except KeyError:
+            status = 200
+        else:
+            if not isinstance(status, int):
+                raise ValueError("value of key 'default_status' expected to be a int")
+        try:
+            header_table = config["default_headers"]
+        except KeyError:
+            headers = [("Content-Type", 'text/html; charset="UTF-8"')]
+        else:
+            if isinstance(header_table, Mapping):
+                headers = []
+                for key, values in header_table.items():
+                    if isinstance(values, Sequence):
+                        for value in values:
+                            if isinstance(value, str):
+                                headers.append((key, value))
+                            else:
+                                raise ValueError(
+                                    f"value of key {key} expected to be a Sequence of strings"
+                                )
+                    else:
+                        raise ValueError(f"value of key {key} expected to be a Sequence")
+            else:
+                raise ValueError("value of key 'default_headers' expected to be a Mapping")
+        try:
+            request_order = config["request_order"]
+        except KeyError:
+            request_order = ("GET", "POST", "COOKIE")
+        else:
+            if not isinstance(request_order, Sequence):
+                raise ValueError("value of key 'request_order' expected to be a Sequence")
+        post_max_size, stream_factory = cls.parse_post_config(config.get("post", {}))
+        return cls(
+            status,
+            headers,
+            cache,
+            request_order,
+            post_max_size,
+            stream_factory
+        )
+
+    def interface(self, environ: Environ, start_response: StartResponse) -> PHPWSGIInterface:
+        """create an PHPWSGIInterface"""
+        return PHPWSGIInterface(
+            environ,
+            start_response,
+            self.default_status,
+            Headers(self.default_headers.copy()),  # prevent changes from affecting default_headers
+            self.cache,
+            self.request_order,
+            self.post_max_size,
+            self.stream_factory
+        )

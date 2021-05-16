@@ -4,11 +4,10 @@
 
 import sys
 import os
-import io
 import unittest
 import unittest.mock
 import time
-from tempfile import TemporaryDirectory
+from tempfile import TemporaryDirectory, gettempdir
 from wsgiref.headers import Headers
 from pyhp.wsgi.interfaces import php
 from pyhp.wsgi.interfaces.phputils import NullStreamFactory, UploadStreamFactory, UploadError
@@ -343,3 +342,114 @@ class TestPHPWSGIInterface(unittest.TestCase):
             interface.register_shutdown_function(lambda: sys.exit())
             interface.register_shutdown_function(lambda: tests.append(4))
         self.assertEqual(tests, [1, 2, 3])
+
+
+class TestPHPWSGIInterfaceFactory(unittest.TestCase):
+    """tests for PHPWSGIInterfaceFactory"""
+
+    def test_eq(self) -> None:
+        """test PHPWSGIInterfaceFactory.__eq__"""
+        factories = [
+            php.PHPWSGIInterfaceFactory(200, [], None, ("GET", "POST", "COOKIE"), None, None),
+            php.PHPWSGIInterfaceFactory(400, [], None, ("GET", "POST", "COOKIE"), None, None),
+            php.PHPWSGIInterfaceFactory(200, [("a", "b")], None, ("GET", "POST", "COOKIE"), None, None),
+            php.PHPWSGIInterfaceFactory(200, [], None, ("POST", "COOKIE"), None, None),
+            php.PHPWSGIInterfaceFactory(200, [], None, ("GET", "POST", "COOKIE"), 5000, None),
+            php.PHPWSGIInterfaceFactory(200, [], None, ("GET", "POST", "COOKIE"), None, NullStreamFactory()),
+            42
+        ]
+        for factory in factories:
+            self.assertEqual([obj for obj in factories if obj == factory], [factory])
+
+    def test_parse_post_config(self) -> None:
+        """test PHPWSGIInterfaceFactory.parse_post_config"""
+        self.assertEqual(
+            php.PHPWSGIInterfaceFactory.parse_post_config({}),
+            (None, UploadStreamFactory(gettempdir(), None))
+        )
+        self.assertEqual(
+            php.PHPWSGIInterfaceFactory.parse_post_config({"enable": False}),
+            (None, None)
+        )
+        self.assertEqual(
+            php.PHPWSGIInterfaceFactory.parse_post_config({"uploads": {"enable": False}}),
+            (None, NullStreamFactory())
+        )
+        self.assertEqual(
+            php.PHPWSGIInterfaceFactory.parse_post_config({
+                "max_size": 42,
+                "uploads": {
+                    "directory": "/test",
+                    "max_files": 20
+                }
+            }),
+            (42, UploadStreamFactory("/test", 20))
+        )
+        with self.assertRaises(ValueError):
+            php.PHPWSGIInterfaceFactory.parse_post_config({"max_size": 9.9})
+        with self.assertRaises(ValueError):
+            php.PHPWSGIInterfaceFactory.parse_post_config({"uploads": {"max_files": 9.9}})
+        with self.assertRaises(ValueError):
+            php.PHPWSGIInterfaceFactory.parse_post_config({"uploads": {"directory": 42}})
+
+    def test_from_config(self) -> None:
+        """test PHPWSGIInterfaceFactory.from_config"""
+        self.assertEqual(
+            php.PHPWSGIInterfaceFactory.from_config(
+                {
+                    "default_status": 400,
+                    "default_headers": {
+                        "a": ["a", "b"]
+                    },
+                    "request_order": ["a", "b", "c"]
+                },
+                None
+            ),
+            php.PHPWSGIInterfaceFactory(
+                400,
+                [("a", "a"), ("a", "b")],
+                None,
+                ["a", "b", "c"],
+                None,
+                UploadStreamFactory(gettempdir())
+            )
+        )
+        self.assertEqual(
+            php.PHPWSGIInterfaceFactory.from_config({}, None),
+            php.PHPWSGIInterfaceFactory(
+                200,
+                [("Content-Type", 'text/html; charset="UTF-8"')],
+                None,
+                ("GET", "POST", "COOKIE"),
+                None,
+                UploadStreamFactory(gettempdir())
+            )
+        )
+        with self.assertRaises(ValueError):
+            php.PHPWSGIInterfaceFactory.from_config({"default_status": "test"}, None)
+        with self.assertRaises(ValueError):
+            php.PHPWSGIInterfaceFactory.from_config({"default_headers": 42}, None)
+        with self.assertRaises(ValueError):
+            php.PHPWSGIInterfaceFactory.from_config({"default_headers": {"a": 42}}, None)
+        with self.assertRaises(ValueError):
+            php.PHPWSGIInterfaceFactory.from_config({"default_headers": {"a": [42]}}, None)
+        with self.assertRaises(ValueError):
+            php.PHPWSGIInterfaceFactory.from_config({"request_order": 42}, None)
+
+    def test_interface(self) -> None:
+        """test PHPWSGIInterfaceFactory.interface"""
+        stream_factory = NullStreamFactory()
+        start_response = lambda s, h, e=None: lambda b: None
+        environ = {"wsgi.input": sys.stdin}
+        with php.PHPWSGIInterfaceFactory(
+            400,
+            [("a", "b")],
+            None,
+            ("a", "b", "c"),
+            -9,
+            stream_factory
+        ).interface(environ, start_response) as interface:
+            self.assertEqual(interface.environ, environ)
+            self.assertIs(interface.start_response, start_response)
+            self.assertEqual(interface.status_code, 400)
+            self.assertEqual(interface.headers.items(), [("a", "b")])
