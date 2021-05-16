@@ -79,7 +79,7 @@ class TestPHPWSGIInterface(unittest.TestCase):
             self.assertEqual(interface.SERVER["PHP_AUTH_PW"], "opensesame")
             self.assertNotIn("PHP_AUTH_DIGEST", interface.SERVER)
             self.assertEqual(int(interface.SERVER["REQUEST_TIME_FLOAT"]), interface.SERVER["REQUEST_TIME"])
-            self.assertTrue(timestamp < interface.SERVER["REQUEST_TIME_FLOAT"] < time.time())
+            self.assertTrue(timestamp <= interface.SERVER["REQUEST_TIME_FLOAT"] <= time.time())
             self.assertIn("CUSTOM", interface.SERVER)
 
     def test_get(self) -> None:

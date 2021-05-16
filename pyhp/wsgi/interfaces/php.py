@@ -186,7 +186,7 @@ class PHPWSGIInterface(WSGIInterface):
             try:
                 _, POST, FILES = parse_form_data(
                     self.environ,
-                    stream_factory,
+                    stream_factory,     # type: ignore
                     max_content_length=max_size
                 )
             except RequestEntityTooLarge:

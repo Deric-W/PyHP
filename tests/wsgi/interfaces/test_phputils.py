@@ -179,7 +179,8 @@ class TestFilesType(unittest.TestCase):
 
     def test_getitem(self) -> None:
         """test FilesType.__getitem__"""
-        with open(os.devnull, "rb") as stream:
+        stream = tempfile.NamedTemporaryFile("rb", delete=False)
+        try:
             file = phputils.FilesType(
                 FileStorage(
                     stream,
@@ -191,3 +192,5 @@ class TestFilesType(unittest.TestCase):
                 self.assertEqual(file[attribute], getattr(file, attribute))
             with self.assertRaises(KeyError):
                 file["asjdahdashdsohosh"]
+        finally:
+            os.unlink(stream.name)
