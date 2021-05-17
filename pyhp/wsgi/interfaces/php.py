@@ -114,7 +114,7 @@ class PHPWSGIInterface(WSGIInterface):
 
     header_callbacks: SimpleCallbackQueue
 
-    cache: CacheSourceContainer
+    cache: Optional[CacheSourceContainer]
 
     shutdown_callbacks: ArgumentCallbackQueue
 
@@ -136,7 +136,7 @@ class PHPWSGIInterface(WSGIInterface):
         start_response: StartResponse,
         status_code: int,
         headers: Headers,
-        cache: CacheSourceContainer,
+        cache: Optional[CacheSourceContainer],
         request_order: Iterable[str] = ("GET", "POST", "COOKIE"),
         post_max_size: Optional[int] = None,
         stream_factory: Optional[StreamFactory] = None
@@ -404,7 +404,7 @@ class PHPWSGIInterfaceFactory(WSGIInterfaceFactory):
 
     default_headers: List[Tuple[str, str]]
 
-    cache: CacheSourceContainer     # may be used by multiple factories, do not close
+    cache: Optional[CacheSourceContainer]     # may be used by multiple factories, do not close
 
     request_order: Iterable[str]
 
@@ -416,7 +416,7 @@ class PHPWSGIInterfaceFactory(WSGIInterfaceFactory):
         self,
         default_status: int,
         default_headers: List[Tuple[str, str]],
-        cache: CacheSourceContainer,
+        cache: Optional[CacheSourceContainer],
         request_order: Iterable[str],
         post_max_size: Optional[int],
         stream_factory: Optional[StreamFactory]
@@ -472,7 +472,7 @@ class PHPWSGIInterfaceFactory(WSGIInterfaceFactory):
             return max_size, None
 
     @classmethod
-    def from_config(cls, config: Mapping[str, Any], cache: CacheSourceContainer) -> PHPWSGIInterfaceFactory:
+    def from_config(cls, config: Mapping[str, Any], cache: Optional[CacheSourceContainer] = None) -> PHPWSGIInterfaceFactory:
         """create an instance from config data"""
         try:
             status = config["default_status"]

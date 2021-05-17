@@ -1,5 +1,5 @@
 Status: 200 OK
-Content-Type: text/html
+Content-Type: text/html; charset="UTF-8"
 
 <html>
     <head>
@@ -8,10 +8,10 @@ Content-Type: text/html
     <body>
         GET, POST, COOKIE and REQUEST are available.
 Their values are:
-OrderedDict([('Test1', 'World!'), ('Test2', ''), ('Test3', ''), ('test0', ['Hello', 'World!'])])
-OrderedDict()
-OrderedDict([('', ['', '', '']), ('Test1', 'World! = Hello'), ('Test2', ''), ('Test3', ''), ('test0', ['Hello', 'World!'])])
-OrderedDict([('', ['', '', '']), ('Test1', 'World! = Hello'), ('Test2', ''), ('Test3', ''), ('test0', ['Hello', 'World!'])])
+[('Test1', 'World!'), ('Test2', ''), ('Test3', ''), ('test0', 'Hello'), ('test0', 'World!')]
+[]
+[('Test1', 'World! = Hello'), ('Test2', ''), ('Test3', ''), ('test0', 'Hello'), ('test0', 'World!')]
+[('Test1', 'World! = Hello'), ('Test2', ''), ('Test3', ''), ('test0', 'Hello'), ('test0', 'World!')]
 
     </body>
 </html>

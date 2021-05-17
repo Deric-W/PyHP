@@ -1,6 +1,6 @@
 Status: 200 OK
-Content-Type: text/html
-Set-Cookie: Test0=test%20%21
+Content-Type: text/html; charset="UTF-8"
+Set-Cookie: Test0="test%20%21"
 
 
 <html>

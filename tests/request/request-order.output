@@ -1,5 +1,5 @@
 Status: 200 OK
-Content-Type: test
+Content-Type: text/html; charset="UTF-8"
 
 <html>
     <head>
@@ -8,7 +8,7 @@ Content-Type: test
     <body>
         The standart order to fill REQUEST is 'GET POST COOKIE'.
 With the custom order 'GET POST unknown value', REQUEST will be like this:
-OrderedDict([('Test1', 'World!'), ('Test2', ''), ('Test3', ''), ('test0', ['Hello', 'World!'])])
+[('Test1', 'World!'), ('Test2', ''), ('Test3', ''), ('test0', 'Hello'), ('test0', 'World!')]
 
     </body>
 </html>

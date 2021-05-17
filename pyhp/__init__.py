@@ -24,6 +24,5 @@ __all__ = (
     "compiler",
     "backends",
     "wsgi",
-    "libpyhp",
     "main"
 )

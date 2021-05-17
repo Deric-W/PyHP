@@ -14,22 +14,21 @@
 
 import sys
 import os
-import re
 import argparse
-from contextlib import ExitStack
-from typing import Any, Mapping, Iterable, MutableMapping
+from wsgiref.handlers import CGIHandler
+from typing import Any, Iterable, MutableMapping
 import toml
-from . import __version__, libpyhp
-from .compiler import util, generic, parsers
-from .backends import CodeSourceContainer
-from .backends.util import ModuleHierarchyBuilder, PathHierarchyBuilder
+from . import __version__
+from .wsgi.apps import SimpleWSGIApp
+from .wsgi.util import SimpleWSGIAppFactory
+from .backends.memory import MemorySource
 
 
 __all__ = (
     "CONFIG_LOCATIONS",
     "argparser",
     "cli_main",
-    "main",
+    "cgi_main",
     "load_config"
 )
 
@@ -63,58 +62,26 @@ argparser.add_argument(
     nargs="?",
     default="-"
 )
+argparser.add_argument(
+    "args",
+    nargs=argparse.REMAINDER
+)
 
 
-def cli_main() -> int:
-    """cli entry point"""
-    args = argparser.parse_args()
-    if args.config is None:     # try to find the config location
-        config = load_config()
-    else:                       # user specified the config location
-        config = toml.load(args.config)
-    return main(args.name, config)
+class CLIHandler(CGIHandler):
+    """subclass of CGIHandler that adds SCRIPT_FILENAME, argv and argc and drops headers"""
+    __slots__ = ()
 
+    def __init__(self, args: argparse.Namespace) -> None:
+        CGIHandler.__init__(self)
+        if args.name != "-":    # ignore if reading from sys.stdin
+            self.base_env["SCRIPT_FILENAME"] = args.name
+        self.base_env["argv"] = [args.name] + args.args
+        self.base_env["argc"] = len(args.args) + 1  # type: ignore
 
-def main(name: str, config: Mapping[str, Any]) -> int:
-    """start the PyHP Interpreter with predefined arguments"""
-    # prepare compiler
-    parser = parsers.RegexParser(
-        re.compile(config["parser"]["start"]),
-        re.compile(config["parser"]["end"])
-    )
-    builder = generic.GenericCodeBuilder(
-        config["compiler"]["optimization_level"]
-    )
-    compiler = util.Compiler(
-        parser,
-        util.Dedenter(builder) if config["compiler"]["dedent"] else builder
-    )
-
-    with ExitStack() as exit_stack:
-        if name == "-":  # read from stdin
-            code = compiler.compile_file(sys.stdin)
-        else:
-            container = exit_stack.enter_context(
-                get_container(compiler, config["backend"])
-            )
-            code = exit_stack.enter_context(container[name]).code()
-
-        # prepare the PyHP Object
-        PyHP = get_pyhp(name, config["request"])
-
-        exit_stack.push(reset_stdout)
-        # prevent universal newlines from messing with text sections
-        sys.stdout.reconfigure(newline="\n")    # type: ignore
-        # wrap stdout
-        sys.stdout.write = PyHP.make_header_wrapper(sys.stdout.write)   # type: ignore
-        try:
-            for text in code.execute({"PyHP": PyHP}):
-                sys.stdout.write(text)
-        finally:    # run shutdown functions even if a exception occurred
-            PyHP.run_shutdown_functions()
-        if not PyHP.headers_sent():  # send headers manually if no output or error occurred
-            PyHP.send_headers()
-    return 0    # return 0 on success
+    def send_headers(self) -> None:
+        """drop headers in cli mode"""
+        pass
 
 
 def load_config(search_paths: Iterable[str] = CONFIG_LOCATIONS) -> MutableMapping[str, Any]:
@@ -133,32 +100,47 @@ def load_config(search_paths: Iterable[str] = CONFIG_LOCATIONS) -> MutableMappin
     raise RuntimeError("failed to locate the config file")
 
 
-def get_container(compiler: util.Compiler, backend_config: Mapping[str, Any]) -> CodeSourceContainer:
-    """create a code source container from config data"""
-    resolve = backend_config["resolve"]
-    if resolve == "module":
-        hierarchy_builder = ModuleHierarchyBuilder(compiler)
-    elif resolve == "path":
-        hierarchy_builder = PathHierarchyBuilder(compiler)  # type: ignore
-    else:
-        raise ValueError(f"value '{resolve}' of key 'resolve' is unknown")
-    hierarchy_builder.add_config(backend_config["containers"])
-    return hierarchy_builder.hierarchy()
+def cli_main() -> int:
+    """cli entry point"""
+    args = argparser.parse_args()
+    if args.config is None:     # try to find the config location
+        config = load_config()
+    else:                       # user specified the config location
+        config = toml.load(args.config)
+    with SimpleWSGIAppFactory.from_config(config) as factory:
+        if args.name == "-":    # read from stdin
+            app = SimpleWSGIApp(
+                MemorySource(factory.compiler.compile_str(
+                    sys.stdin.read(),
+                    sys.stdin.name
+                )),     # sys.stdin has no location
+                factory.interface_factory
+            )
+        else:   # use the backend of the factory
+            app = factory.app(args.name)
+        with app:
+            CLIHandler(args).run(app)   # type: ignore
+    return 0
 
 
-def get_pyhp(name: str, request_config: Mapping[str, Any]) -> libpyhp.PyHP:
-    """create a PyHP instance from config data"""
-    return libpyhp.PyHP(
-        file_path=name,
-        request_order=request_config["request_order"],
-        keep_blank_values=request_config["keep_blank_values"],
-        fallback_value=request_config.get("fallback_value", ""),
-        enable_post_data_reading=request_config["enable_post_data_reading"],
-        default_mimetype=request_config["default_mimetype"]
-    )
-
-
-def reset_stdout(*_args: Any) -> bool:
-    """reset stdout"""
-    sys.stdout.reconfigure(newline=None)    # type: ignore
-    return False    # dont swallow exceptions
+def cgi_main() -> int:
+    """cgi entry point"""
+    args = argparser.parse_args()
+    if args.config is None:     # try to find the config location
+        config = load_config()
+    else:                       # user specified the config location
+        config = toml.load(args.config)
+    with SimpleWSGIAppFactory.from_config(config) as factory:
+        if args.name == "-":    # read from stdin
+            app = SimpleWSGIApp(
+                MemorySource(factory.compiler.compile_str(
+                    sys.stdin.read(),
+                    sys.stdin.name
+                )),     # sys.stdin has no location
+                factory.interface_factory
+            )
+        else:   # use the backend of the factory
+            app = factory.app(args.name)
+        with app:
+            CGIHandler().run(app)   # type: ignore
+    return 0

@@ -67,7 +67,7 @@ class WSGIInterfaceFactory(metaclass=ABCMeta):
 
     @classmethod
     @abstractmethod
-    def from_config(cls: Type[T], config: Mapping[str, Any], cache: CacheSourceContainer) -> T:
+    def from_config(cls: Type[T], config: Mapping[str, Any], cache: Optional[CacheSourceContainer] = None) -> T:
         """create an instance from config data and a cache"""
         raise NotImplementedError
 

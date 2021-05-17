@@ -1,0 +1,3 @@
+If executed from the cli, argv and argc are set and headers are ignored.
+Argv: ['./tests/header/cli.pyhp', '-a', 'b'], Argc: 3.
+Current Script: ./tests/header/cli.pyhp.

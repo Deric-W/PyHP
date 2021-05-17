@@ -1,7 +1,10 @@
 #!/usr/bin/pyhp
 <?pyhp
+    x = 1
+
     def test():
-        print("custom text")
+        global x
+        x += 1
 
     PyHP.header_register_callback(test)
 ?>
@@ -12,7 +15,8 @@
     <body>
         <?pyhp
             print("With this function you can set a callback to be executed just before the headers are being send.")
-            print("Output from this callback will be send with the headers.")
+            print(f"Example: x is now {x}.")
+            print("Output from this callback or calling exit() is not allowed and the result is undefined.")
         ?>
     </body>
 </html>

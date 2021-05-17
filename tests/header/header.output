@@ -1,8 +1,8 @@
 Status: 404 Not Found
-Content-Type: text/html
+Content-Type: text/html; charset="UTF-8"
 Test0: 
 Test1: 
-Test2: Hello
+Test2 : Hello
 Test2: World!
 test3: 1
 not_send: True

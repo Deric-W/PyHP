@@ -1,4 +1,4 @@
-# config file to test request_order and default_mimetype 
+# config file to test request_order and default_mimetype
 
 [parser]
 # regular expression matching the start of a code section
@@ -34,7 +34,14 @@ name = "pyhp.backends.files.Directory"
 config.path = "."
 
 
-[request]
+[interface]
+# which interface to use, simple or php
+name = "php"
+
+[interface.config]
+# default http status code
+default_status = 200
+
 # order to fill up REQUEST, values already present in REQUEST get overwritten
 # unknown methods are skipped
 request_order = [
@@ -43,16 +50,32 @@ request_order = [
     "unknown"
 ]
 
-# if arameters with no or blank values should be kept
-keep_blank_values = true
+# default http headers
+[interface.config.default_headers]
+# headers are stored as name-values pairs
+Content-Type = ['text/html; charset="UTF-8"']
 
-# fallback value if a parameter is not in REQUEST / GET / POST / COOKIE
-# comment out if a KeyError should be raised instead
-fallback_value = ""
+[interface.config.post]
+# if wsgi.input should be parsed
+enable = true
 
-# if stdin should not be consumed
-# this results in POST not being populated
-enable_post_data_reading = false
+# max length of the entire post-data in bytes, omit for unlimited
+max_size = 8000000
 
-# fallback value of the Content-Type header
-default_mimetype = "test"
+[interface.config.post.uploads]
+# if file uploads are allowed
+enable = true
+
+# directory for uploaded files
+# defaults to system temporary directory
+#directory = /your/temp/dir
+
+# how many files can be uploaded at once
+max_files = 20
+
+
+
+
+
+
+

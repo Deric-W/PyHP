@@ -20,7 +20,8 @@ __all__ = (
     "StartResponse",
     "Environ",
     "apps",
-    "interfaces"
+    "interfaces",
+    "util"
 )
 
 # WSGI types

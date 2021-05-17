@@ -15,7 +15,7 @@
 from __future__ import annotations
 from wsgiref.headers import Headers
 from http import HTTPStatus
-from typing import Type, Mapping, Any, List, Tuple, Sequence
+from typing import Mapping, Any, List, Tuple, Sequence, Optional
 from . import WSGIInterface, WSGIInterfaceFactory
 from .. import Environ, StartResponse
 from ...backends.caches import CacheSourceContainer
@@ -36,9 +36,9 @@ class SimpleWSGIInterface(WSGIInterface):
 
     headers: Headers
 
-    cache: CacheSourceContainer
+    cache: Optional[CacheSourceContainer]
 
-    def __init__(self, environ: Environ, start_response: StartResponse, status: str, headers: Headers, cache: CacheSourceContainer) -> None:
+    def __init__(self, environ: Environ, start_response: StartResponse, status: str, headers: Headers, cache: Optional[CacheSourceContainer]) -> None:
         self.environ = environ
         self.start_response = start_response    # type: ignore
         self.status = status
@@ -80,9 +80,9 @@ class SimpleWSGIInterfaceFactory(WSGIInterfaceFactory):
 
     default_headers: List[Tuple[str, str]]
 
-    cache: CacheSourceContainer     # may be used by multiple factories, do not close
+    cache: Optional[CacheSourceContainer]    # may be used by multiple factories, do not close
 
-    def __init__(self, default_status: str, default_headers: List[Tuple[str, str]], cache: CacheSourceContainer) -> None:
+    def __init__(self, default_status: str, default_headers: List[Tuple[str, str]], cache: Optional[CacheSourceContainer]) -> None:
         self.default_status = default_status
         self.default_headers = default_headers
         self.cache = cache
@@ -95,7 +95,7 @@ class SimpleWSGIInterfaceFactory(WSGIInterfaceFactory):
         return NotImplemented
 
     @classmethod
-    def from_config(cls: Type[SimpleWSGIInterfaceFactory], config: Mapping[str, Any], cache: CacheSourceContainer) -> SimpleWSGIInterfaceFactory:
+    def from_config(cls, config: Mapping[str, Any], cache: Optional[CacheSourceContainer] = None) -> SimpleWSGIInterfaceFactory:
         """create an instance from config data and a cache"""
         try:
             status = config["default_status"]

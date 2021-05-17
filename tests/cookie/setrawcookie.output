@@ -1,5 +1,5 @@
 Status: 200 OK
-Content-Type: text/html
+Content-Type: text/html; charset="UTF-8"
 Set-Cookie: Test0=
 Set-Cookie: Test1=test !; Path=/test; Secure
 

@@ -1,0 +1,6 @@
+#!/usr/bin/pyhp
+<?pyhp
+    print("If executed from the cli, argv and argc are set and headers are ignored.")
+    print(f'Argv: {PyHP.SERVER["argv"]}, Argc: {PyHP.SERVER["argc"]}.')
+    print(f'Current Script: {PyHP.SERVER["SCRIPT_FILENAME"]}.')
+?>

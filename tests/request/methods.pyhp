@@ -5,11 +5,10 @@
     </head>
     <body>
         <?pyhp
-            from collections import OrderedDict as dict
             print("GET, POST, COOKIE and REQUEST are available.")
             print("Their values are:")
             for method in (PyHP.GET, PyHP.POST, PyHP.COOKIE, PyHP.REQUEST):
-                print(dict(sorted(method.items())))
+                print(sorted(method.items(multi=True)))
         ?>
     </body>
 </html>
