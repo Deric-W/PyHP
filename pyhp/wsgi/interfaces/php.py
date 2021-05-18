@@ -35,10 +35,10 @@ from typing import (
 )
 import werkzeug.http
 from werkzeug.exceptions import RequestEntityTooLarge
-from werkzeug.datastructures import MultiDict
+from werkzeug.datastructures import MultiDict, FileStorage
 from werkzeug.formparser import parse_form_data
 from ...backends.caches import CacheSourceContainer
-from .. import Environ, StartResponse
+from .. import Environ, StartResponse, map_failsafe
 from . import WSGIInterface, WSGIInterfaceFactory
 from .phputils import (
     valid_path,
@@ -51,23 +51,21 @@ from .phputils import (
 )
 
 __all__ = (
-    "close_files",
     "PHPWSGIInterface",
     "PHPWSGIInterfaceFactory"
 )
 
 
-def close_files(iterator: Iterable[Any]) -> None:
-    """close a iterable of objects with a .close method"""
-    previous_exception = None
-    for file in iterator:
-        try:
-            file.close()
-        except Exception as e:  # dont stop when .close fails
-            e.__context__ = previous_exception
-            previous_exception = e
-    if previous_exception is not None:
-        raise previous_exception
+def remove_file_storage(file_storage: FileStorage) -> None:
+    """remove the file of a FileStorage"""
+    file_storage.close()
+    try:
+        name = file_storage.stream.name
+    except AttributeError:
+        pass
+    else:
+        if valid_path(name):
+            os.unlink(name)
 
 
 def unquote_cookie(cookie: Tuple[str, str]) -> Tuple[str, str]:
@@ -200,18 +198,8 @@ class PHPWSGIInterface(WSGIInterface):
                 return POST, MultiDict(
                     map(lambda item: (item[0], FilesType(item[1])), FILES.items(multi=True))
                 )
-            except BaseException as err:   # dont leak files
-                previous_exception = None
-                for _, file_storage in FILES.items(multi=True):
-                    try:
-                        file_storage.close()
-                        if valid_path(file_storage.stream.name):
-                            os.unlink(file_storage.stream.name)
-                    except Exception as e:  # dont stop when .close or .unlink fails
-                        e.__context__ = previous_exception
-                        previous_exception = e
-                if previous_exception is not None:
-                    raise previous_exception from err
+            except BaseException:   # dont leak files
+                map_failsafe(lambda item: remove_file_storage(item[1]), FILES.items(multi=True))
                 raise
 
     def create_cookie(self) -> MultiDict[str, str]:
@@ -386,7 +374,7 @@ class PHPWSGIInterface(WSGIInterface):
         except SystemExit:  # some callback called exit()
             pass
         finally:
-            close_files(map(lambda item: item[1], self.FILES.items(multi=True)))
+            map_failsafe(lambda item: item[1].close(), self.FILES.items(multi=True))
 
 
 class PHPWSGIInterfaceFactory(WSGIInterfaceFactory):

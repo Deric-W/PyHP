@@ -15,15 +15,30 @@
 from abc import ABCMeta, abstractmethod
 from contextlib import redirect_stdout
 from io import StringIO
+from weakref import ref
+from threading import current_thread, Lock
 from types import TracebackType
-from typing import Iterable, Iterator, ContextManager, TypeVar, Optional, Type, Generator
-from . import Environ, StartResponse
+from typing import (
+    Iterable,
+    Iterator,
+    ContextManager,
+    TypeVar,
+    Optional,
+    Type,
+    Generator,
+    Dict,
+    List,
+    Tuple
+)
+from . import Environ, StartResponse, map_failsafe
+from .proxys import StackProxy
 from .interfaces import WSGIInterfaceFactory, WSGIInterface
-from ..backends import CodeSource
+from ..backends import CodeSource, CodeSourceContainer
 
 __all__ = (
     "WSGIApp",
-    "SimpleWSGIApp"
+    "SimpleWSGIApp",
+    "ConcurrentWSGIApp"
 )
 
 T = TypeVar("T")
@@ -128,7 +143,7 @@ class SimpleWSGIApp(WSGIApp):
     """implementation for single threaded environments"""
     __slots__ = ("source",)
 
-    source: CodeSource
+    source: CodeSource  # used only by this app, close
 
     def __init__(self, code_source: CodeSource, interface_factory: WSGIInterfaceFactory) -> None:
         self.source = code_source
@@ -145,3 +160,78 @@ class SimpleWSGIApp(WSGIApp):
     def close(self) -> None:
         """close the code source"""
         self.source.close()
+
+
+class ConcurrentWSGIApp(WSGIApp):
+    """implementation for multi threaded environments"""
+    __slots__ = ("name", "backend", "proxy", "pending_removals", "sources", "sources_lock")
+
+    name: str
+
+    backend: CodeSourceContainer    # may be used by other objects, dont close
+
+    proxy: StackProxy[StringIO]
+
+    pending_removals: List[int]
+
+    sources: Dict[int, Tuple[CodeSource, ref]]
+
+    source_lock: Lock
+
+    def __init__(self, name: str, backend: CodeSourceContainer, proxy: StackProxy[StringIO], interface_factory: WSGIInterfaceFactory) -> None:
+        self.name = name
+        self.backend = backend
+        self.proxy = proxy
+        self.pending_removals = []
+        self.sources = {}
+        self.sources_lock = Lock()
+        self.interface_factory = interface_factory
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, ConcurrentWSGIApp):
+            return self.name == other.name \
+                and self.backend == other.backend \
+                and self.proxy == other.proxy \
+                and self.pending_removals == other.pending_removals \
+                and self.sources == other.sources \
+                and self.interface_factory == other.interface_factory
+        return NotImplemented
+
+    def code_source(self) -> CodeSource:
+        """return a code source"""
+        thread = current_thread()
+        tid = id(thread)
+        with self.sources_lock:  # do not rely on dict being thread safe
+            self.commit_removals()  # can deathlock if done by the weak references
+            try:
+                return self.sources[tid][0]
+            except KeyError:
+                # schedule source for removal if the current thread is removed
+                weakref = ref(thread, lambda r: self.pending_removals.append(tid))
+                source = self.backend[self.name]
+                # self.sources keeps the weak reference alive
+                self.sources[tid] = (source, weakref)
+                return source
+
+    def commit_removals(self) -> None:
+        """commit pending removals"""
+        while True:
+            try:
+                tid = self.pending_removals.pop()
+            except IndexError:  # no removals left
+                break
+            self.sources.pop(tid)[0].close()
+
+    def redirect_stdout(self, buffer: StringIO) -> ContextManager[StringIO]:
+        """redirect stdout to a buffer and return a context manager"""
+        # allow for stdout to be redirected to multiple buffers at the same time
+        return self.proxy.replace(buffer)
+
+    def close(self) -> None:
+        """close the code sources"""
+        # lock not needed, app should not be in use now
+        try:
+            map_failsafe(lambda t: t[0].close(), self.sources.values())
+        finally:
+            self.sources.clear()    # all closed (or tried to), prevent double closes
+            self.pending_removals.clear()   # removed everything

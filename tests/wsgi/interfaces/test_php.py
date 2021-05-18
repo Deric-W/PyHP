@@ -4,40 +4,33 @@
 
 import sys
 import os
+import io
 import unittest
 import unittest.mock
 import time
-from tempfile import TemporaryDirectory, gettempdir
+from tempfile import TemporaryDirectory, gettempdir, NamedTemporaryFile
 from wsgiref.headers import Headers
+from werkzeug.datastructures import FileStorage
 from pyhp.wsgi.interfaces import php
 from pyhp.wsgi.interfaces.phputils import NullStreamFactory, UploadStreamFactory, UploadError
 
 
-class TestFunctions(unittest.TestCase):
-    """tests for stand-alone functions"""
-
-    def test_close_files(self) -> None:
-        """test close_files"""
-        files = [
-            unittest.mock.Mock(),
-            unittest.mock.Mock(),
-            unittest.mock.Mock(),
-            unittest.mock.Mock()
-        ]
-        files[1].close.configure_mock(side_effect=RuntimeError)
-        files[2].close.configure_mock(side_effect=ValueError)
-        try:
-            php.close_files(files)
-        except ValueError as e:
-            self.assertIsInstance(e.__context__, RuntimeError)
-        for mock in files:
-            mock.close.assert_called()
-        files.clear()
-        php.close_files(files)
-
-
 class TestPHPWSGIInterface(unittest.TestCase):
     """tests for PHPWSGIInterface"""
+
+    def test_remove_file_storage(self) -> None:
+        """test remove_file_storage"""
+        file = NamedTemporaryFile(delete=False)
+        try:
+            file_storage = FileStorage(file)
+            php.remove_file_storage(file_storage)
+            self.assertTrue(file_storage.stream.closed)
+            self.assertFalse(os.path.exists(file.name))
+        except BaseException:
+            os.unlink(file.name)
+            raise
+        file = io.BytesIO()
+        php.remove_file_storage(FileStorage(file))
 
     def test_eq(self) -> None:
         """test PHPWSGIInterface.__eq__"""

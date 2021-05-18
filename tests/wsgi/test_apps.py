@@ -6,10 +6,13 @@ from __future__ import annotations
 import re
 import unittest
 import unittest.mock
+import threading
+from io import StringIO
 from typing import Type, Mapping, Any, Generator
 from pyhp.wsgi import Environ, StartResponse
-from pyhp.wsgi.apps import SimpleWSGIApp
-from pyhp.wsgi.interfaces import WSGIInterface, WSGIInterfaceFactory
+from pyhp.wsgi.apps import SimpleWSGIApp, ConcurrentWSGIApp
+from pyhp.wsgi.proxys import LocalStackProxy
+from pyhp.wsgi.interfaces import WSGIInterface, WSGIInterfaceFactory, simple
 from pyhp.backends.files import Directory
 from pyhp.backends.caches import CacheSourceContainer
 from pyhp.compiler.parsers import RegexParser
@@ -27,6 +30,13 @@ container = Directory(
         GenericCodeBuilder(-1)
     )
 )
+
+
+def test_app(app, amount) -> None:
+    for _ in range(amount):
+        iterator = app({}, lambda s, h, e=None: lambda b: None)
+        list(iterator)
+        iterator.close()
 
 
 class DummyFactory(WSGIInterfaceFactory):
@@ -54,7 +64,7 @@ class BrokenFactory(WSGIInterfaceFactory):
         self.mock.end_headers.configure_mock(side_effect=lambda: 1 + "b")   # type: ignore
 
     @classmethod
-    def from_config(cls: Type[DummyFactory], config: Mapping[str, Any], cache: CacheSourceContainer) -> DummyFactory:
+    def from_config(cls: Type[BrokenFactory], config: Mapping[str, Any], cache: CacheSourceContainer) -> BrokenFactory:
         """create an instance from config data and a cache"""
         return cls()
 
@@ -176,3 +186,83 @@ class TestSimpleWSGIApp(unittest.TestCase):
         with SimpleWSGIApp(source, None) as app:    # type: ignore
             self.assertEqual(source, app.code_source())
         self.assertTrue(source.fd.closed)
+
+
+class TestConcurrentWSGIApp(unittest.TestCase):
+    """test ConcurrentWSGIApp"""
+
+    def test_eq(self) -> None:
+        """test ConcurrentWSGIApp.__eq__"""
+        proxy1 = LocalStackProxy(None)
+        proxy2 = LocalStackProxy(42)
+        factory1 = DummyFactory()
+        factory2 = BrokenFactory()
+        apps = [
+            ConcurrentWSGIApp("abc", container, proxy1, factory1),
+            ConcurrentWSGIApp("def", container, proxy1, factory1),
+            ConcurrentWSGIApp("abc", None, proxy1, factory1),
+            ConcurrentWSGIApp("abc", container, proxy2, factory1),
+            ConcurrentWSGIApp("abc", container, proxy1, factory2)
+        ]
+        try:
+            for app in apps:
+                self.assertEqual([obj for obj in apps if obj == app], [app])
+            self.assertNotEqual(apps[0], 42)
+        finally:
+            for app in apps:
+                app.close()
+
+    def test_code_source(self) -> None:
+        """test ConcurrentWSGIApp.code_source"""
+        with ConcurrentWSGIApp(
+            "wsgi/empty.pyhp",
+            unittest.mock.MagicMock(wraps=container),
+            LocalStackProxy(None),
+            simple.SimpleWSGIInterfaceFactory("200 OK", [], None)
+        ) as app:
+            app.backend.__getitem__.configure_mock(side_effect=lambda n: container[n])
+            thread1 = threading.Thread(target=lambda: test_app(app, 2))
+            thread2 = threading.Thread(target=lambda: test_app(app, 1))
+            thread1.start()
+            thread1.join()
+            self.assertEqual(len(app.sources), 1)
+            del thread1
+            thread2.start()
+            thread2.join()
+            self.assertEqual(len(app.sources), 1)
+            self.assertEqual(
+                app.backend.__getitem__.mock_calls,
+                [
+                    unittest.mock.call("wsgi/empty.pyhp"),
+                    unittest.mock.call("wsgi/empty.pyhp")
+                ]
+            )
+
+
+    def test_redirect_stdout(self) -> None:
+        """test ConcurrentWSGIApp.redirect_stdout"""
+        with ConcurrentWSGIApp("abc", container, LocalStackProxy(None), DummyFactory()) as app:
+            buffer = StringIO()
+            with app.redirect_stdout(buffer) as buffer2:
+                self.assertIs(buffer, buffer2)
+                app.proxy.write("test")
+            self.assertEqual(buffer.getvalue(), "test")
+
+    def test_close(self) -> None:
+        """test ConcurrentWSGIApp.close"""
+        app = ConcurrentWSGIApp("abc", container, LocalStackProxy(None), DummyFactory())
+        self.assertEqual(len(app.sources), 0)
+        sources = {
+            0: (unittest.mock.Mock(), None),
+            1: (unittest.mock.Mock(), None),
+            2: (unittest.mock.Mock(), None)
+        }
+        sources[1][0].close.configure_mock(side_effect=RuntimeError)
+        app.sources.update(sources)
+        app.pending_removals.append(9)
+        with self.assertRaises(RuntimeError):
+            app.close()
+        self.assertEqual(len(app.sources), 0)
+        self.assertEqual(len(app.pending_removals), 0)
+        for source in sources.values():
+            source[0].close.assert_called_once()
