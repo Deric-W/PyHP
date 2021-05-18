@@ -4,6 +4,7 @@
 
 from __future__ import annotations
 import re
+import gc
 import unittest
 import unittest.mock
 import threading
@@ -227,6 +228,7 @@ class TestConcurrentWSGIApp(unittest.TestCase):
             thread1.join()
             self.assertEqual(len(app.sources), 1)
             del thread1
+            gc.collect()    # make sure thread1 is removed
             thread2.start()
             thread2.join()
             self.assertEqual(len(app.sources), 1)
