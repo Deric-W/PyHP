@@ -238,15 +238,15 @@ class TestConcurrentWSGIApp(unittest.TestCase):
             thread2.join()
             if thread1_weakref() is None:
                 self.assertEqual(len(app.sources), 1)
+                self.assertEqual(
+                    app.backend.__getitem__.mock_calls,
+                    [
+                        unittest.mock.call("wsgi/empty.pyhp"),
+                        unittest.mock.call("wsgi/empty.pyhp")
+                    ]
+                )
             else:
                 warnings.warn("thread1 is somehow being kept alive, probably by coverage tools")
-            self.assertEqual(
-                app.backend.__getitem__.mock_calls,
-                [
-                    unittest.mock.call("wsgi/empty.pyhp"),
-                    unittest.mock.call("wsgi/empty.pyhp")
-                ]
-            )
 
 
     def test_redirect_stdout(self) -> None:
