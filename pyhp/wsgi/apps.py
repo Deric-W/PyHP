@@ -200,7 +200,10 @@ class ConcurrentWSGIApp(WSGIApp):
     def code_source(self) -> CodeSource:
         """return a code source"""
         thread = current_thread()
-        tid = id(thread)
+        # since the current thread is already running ident is not None
+        # recycling is not a problem since the new thread will use to source
+        # of the old one until the source is removed and then create a new one
+        tid: int = thread.ident  # type: ignore
         with self.sources_lock:  # do not rely on dict being thread safe
             self.commit_removals()  # can deathlock if done by the weak references
             try:
@@ -220,6 +223,7 @@ class ConcurrentWSGIApp(WSGIApp):
                 tid = self.pending_removals.pop()
             except IndexError:  # no removals left
                 break
+            # no except needed, tid is always in self.sources
             self.sources.pop(tid)[0].close()
 
     def redirect_stdout(self, buffer: StringIO) -> ContextManager[StringIO]:
