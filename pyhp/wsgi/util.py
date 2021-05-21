@@ -13,11 +13,13 @@
 # SPDX-License-Identifier: GPL-3.0-only
 
 import re
+import sys
 from abc import ABCMeta, abstractmethod
 from types import TracebackType
 from typing import Mapping, Any, TypeVar, Tuple, Optional, Type, TextIO
 import toml
-from .apps import WSGIApp, SimpleWSGIApp
+from .apps import WSGIApp, SimpleWSGIApp, ConcurrentWSGIApp
+from .proxys import LocalStackProxy
 from .interfaces import WSGIInterfaceFactory, simple, php
 from ..compiler import Parser, CodeBuilder, generic, parsers
 from ..compiler.util import Compiler, Dedenter
@@ -29,7 +31,8 @@ __all__ = (
     "create_backend",
     "create_compiler",
     "WSGIAppFactory",
-    "SimpleWSGIAppFactory"
+    "SimpleWSGIAppFactory",
+    "ConcurrentWSGIAppFactory"
 )
 
 T = TypeVar("T", bound="WSGIAppFactory")
@@ -206,3 +209,57 @@ class SimpleWSGIAppFactory(WSGIAppFactory):
             self.backend[code_name],
             self.interface_factory
         )
+
+
+class ConcurrentWSGIAppFactory(WSGIAppFactory):
+    """factory for ConcurrentWSGIApps"""
+    __slots__ = ("proxy", "old_stdout")
+
+    proxy: LocalStackProxy[TextIO]
+
+    old_stdout: TextIO
+
+    def __init__(
+        self,
+        interface_factory: WSGIInterfaceFactory,
+        compiler: Compiler[Parser, CodeBuilder],
+        backend: CodeSourceContainer,
+        cache: Optional[CacheSourceContainer]
+    ) -> None:
+        self.interface_factory = interface_factory
+        self.compiler = compiler
+        self.backend = backend
+        self.cache = cache
+        self.old_stdout = sys.stdout
+        self.proxy = LocalStackProxy(self.old_stdout)
+        sys.stdout = self.proxy     # type: ignore
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, ConcurrentWSGIAppFactory):
+            return self.interface_factory == other.interface_factory \
+                and self.compiler == other.compiler \
+                and self.backend == other.backend \
+                and self.cache == other.cache \
+                and self.proxy == other.proxy
+        return NotImplemented
+
+    def app(self, code_name: str) -> WSGIApp:
+        """create a new ConcurrentWSGIApp executing the code represented by code_name from the backend"""
+        return ConcurrentWSGIApp(
+            code_name,
+            self.backend,
+            self.proxy,     # type: ignore
+            self.interface_factory
+        )
+
+    def close(self) -> None:
+        """close the backend and cache and reset sys.stdout"""
+        backend, cache = self.detach()
+        try:
+            try:
+                if cache is not None and backend is not cache:    # cache and backend can be identical
+                    cache.close()
+            finally:    # dont stop on error
+                backend.close()
+        finally:    # dont stop on error too
+            sys.stdout = self.old_stdout

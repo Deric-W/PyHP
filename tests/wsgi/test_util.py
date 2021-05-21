@@ -4,6 +4,7 @@
 
 import unittest
 import unittest.mock
+import sys
 import re
 import toml
 from pyhp.wsgi import util
@@ -12,7 +13,7 @@ from pyhp.compiler.util import Compiler, Dedenter
 from pyhp.backends import CodeSourceContainer, memory, files
 from pyhp.backends.caches import CacheSourceContainer
 from pyhp.backends.caches.timestamped.memory import MemoryCache
-from pyhp.wsgi.apps import SimpleWSGIApp
+from pyhp.wsgi.apps import SimpleWSGIApp, ConcurrentWSGIApp
 from pyhp.wsgi.interfaces import simple, php
 
 
@@ -107,7 +108,8 @@ class TestSimpleWSGIAppFactory(unittest.TestCase):
         with memory.HashMap.from_config({"test": "test"}, compiler) as backend:
             factories = [
                 util.SimpleWSGIAppFactory(factory1, compiler, backend, None),
-                util.SimpleWSGIAppFactory(factory2, None, backend, None),
+                util.SimpleWSGIAppFactory(factory2, compiler, backend, None),
+                util.SimpleWSGIAppFactory(factory1, None, backend, None),
                 util.SimpleWSGIAppFactory(factory1, compiler, None, None)
             ]
             for factory in factories:
@@ -179,6 +181,9 @@ class TestSimpleWSGIAppFactory(unittest.TestCase):
         dummy1.from_config.configure_mock(side_effect=lambda c, b: dummy1)
         dummy2 = unittest.mock.Mock(spec=CacheSourceContainer)
         dummy2.from_config.configure_mock(side_effect=lambda c, b: dummy2)
+        dummy3 = unittest.mock.Mock(spec=CacheSourceContainer)
+        dummy3.from_config.configure_mock(side_effect=lambda c, b: dummy3)
+        dummy3.close.configure_mock(side_effect=RuntimeError)
         util.SimpleWSGIAppFactory(None, None, dummy1, dummy2).close()
         dummy1.close.assert_called_once()
         dummy2.close.assert_called_once()
@@ -189,3 +194,86 @@ class TestSimpleWSGIAppFactory(unittest.TestCase):
         dummy1.close.reset_mock()
         util.SimpleWSGIAppFactory(None, None, dummy1, None).close()
         dummy1.close.assert_called_once()
+        dummy1.close.reset_mock()
+        with self.assertRaises(RuntimeError):
+            util.SimpleWSGIAppFactory(None, None, dummy1, dummy3).close()
+        dummy1.close.assert_called_once()
+        dummy3.close.assert_called_once()
+
+
+class TestConcurrentWSGIAppFactory(unittest.TestCase):
+    """tests for ConcurrentWSGIAppFactory"""
+
+    def test_eq(self) -> None:
+        """test ConcurrentWSGIAppFactory.__eq__"""
+        factory1 = simple.SimpleWSGIInterfaceFactory("200 Ok", [], None)
+        factory2 = simple.SimpleWSGIInterfaceFactory("200 Ok", [("a", "b")], None)
+        with memory.HashMap.from_config({"test": "test"}, compiler) as backend:
+            try:
+                app_factory = util.ConcurrentWSGIAppFactory(factory1, compiler, backend, None)
+                self.assertNotEqual(    # different sys.stdout default
+                    app_factory,
+                    util.ConcurrentWSGIAppFactory(factory1, compiler, backend, None)
+                )
+                sys.stdout = sys.__stdout__
+                self.assertEqual(
+                    app_factory,
+                    util.ConcurrentWSGIAppFactory(factory1, compiler, backend, None)
+                )
+                sys.stdout = sys.__stdout__
+                self.assertNotEqual(
+                    app_factory,
+                    util.ConcurrentWSGIAppFactory(factory2, compiler, backend, None)
+                )
+                sys.stdout = sys.__stdout__
+                self.assertNotEqual(
+                    app_factory,
+                    util.ConcurrentWSGIAppFactory(factory1, None, backend, None)
+                )
+                sys.stdout = sys.__stdout__
+                self.assertNotEqual(
+                    app_factory,
+                    util.ConcurrentWSGIAppFactory(factory1, compiler, None, None)
+                )
+                self.assertNotEqual(app_factory, 42)
+            finally:
+                sys.stdout = sys.__stdout__
+
+    def test_close(self) -> None:
+        """test ConcurrentWSGIAppFactory.close"""
+        try:
+            dummy1 = unittest.mock.Mock(spec=CodeSourceContainer)
+            dummy1.from_config.configure_mock(side_effect=lambda c, b: dummy1)
+            dummy2 = unittest.mock.Mock(spec=CacheSourceContainer)
+            dummy2.from_config.configure_mock(side_effect=lambda c, b: dummy2)
+            dummy3 = unittest.mock.Mock(spec=CacheSourceContainer)
+            dummy3.from_config.configure_mock(side_effect=lambda c, b: dummy3)
+            dummy3.close.configure_mock(side_effect=RuntimeError)
+            util.ConcurrentWSGIAppFactory(None, None, dummy1, dummy2).close()
+            dummy1.close.assert_called_once()
+            dummy2.close.assert_called_once()
+            dummy1.close.reset_mock()
+            dummy2.close.reset_mock()
+            util.ConcurrentWSGIAppFactory(None, None, dummy1, dummy1).close()
+            dummy1.close.assert_called_once()
+            dummy1.close.reset_mock()
+            util.ConcurrentWSGIAppFactory(None, None, dummy1, None).close()
+            dummy1.close.assert_called_once()
+            dummy1.close.reset_mock()
+            with self.assertRaises(RuntimeError):
+                util.ConcurrentWSGIAppFactory(None, None, dummy1, dummy3).close()
+            dummy1.close.assert_called_once()
+            dummy3.close.assert_called_once()
+            self.assertIs(sys.stdout, sys.__stdout__)
+        finally:
+            sys.stdout = sys.__stdout__
+
+    def test_app(self) -> None:
+        """test ConcurrentWSGIAppFactory.app"""
+        factory = simple.SimpleWSGIInterfaceFactory("200 Ok", [], None)
+        with memory.HashMap.from_config({"test": "test"}, compiler) as backend, \
+                util.ConcurrentWSGIAppFactory(factory, compiler, backend, None) as app_factory:
+            self.assertEqual(
+                app_factory.app("test"),
+                ConcurrentWSGIApp("test", backend, app_factory.proxy, factory)
+            )

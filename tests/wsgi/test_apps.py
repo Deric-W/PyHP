@@ -248,7 +248,6 @@ class TestConcurrentWSGIApp(unittest.TestCase):
             else:
                 warnings.warn("thread1 is somehow being kept alive, probably by coverage tools")
 
-
     def test_redirect_stdout(self) -> None:
         """test ConcurrentWSGIApp.redirect_stdout"""
         with ConcurrentWSGIApp("abc", container, LocalStackProxy(None), DummyFactory()) as app:
