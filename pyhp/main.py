@@ -38,7 +38,6 @@ CONFIG_LOCATIONS = (
 )
 
 argparser = argparse.ArgumentParser(
-    prog="pyhp",
     description="Interpreter for .pyhp Scripts (https://github.com/Deric-W/PyHP)"
 )
 argparser.add_argument(
@@ -64,6 +63,7 @@ argparser.add_argument(
 )
 argparser.add_argument(
     "args",
+    help="Arguments passed to the script in cli mode",
     nargs=argparse.REMAINDER
 )
 
@@ -82,6 +82,10 @@ class CLIHandler(CGIHandler):
     def send_headers(self) -> None:
         """drop headers in cli mode"""
         pass
+
+    def handle_error(self) -> None:
+        """log current error but do not send special error output in cli mode"""
+        self.log_exception(sys.exc_info())
 
 
 def load_config(search_paths: Iterable[str] = CONFIG_LOCATIONS) -> MutableMapping[str, Any]:
