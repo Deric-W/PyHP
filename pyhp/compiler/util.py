@@ -53,10 +53,15 @@ class Compiler(Generic[P, B]):
     def compile_raw(self, source: str, spec: ModuleSpec) -> Code:
         """compile a source string with a spec into a code object"""
         builder = self.builder()
-        if source.startswith("#!"):     # shebang, remove first line
-            self.parser.build(source.partition("\n")[2], builder, 1)
-        else:
-            self.parser.build(source, builder)
+        try:
+            if source.startswith("#!"):     # shebang, remove first line
+                # line offset of 1 to compensate for removed shebang
+                self.parser.build(source.partition("\n")[2], builder, 1)
+            else:
+                self.parser.build(source, builder)
+        except SyntaxError as e:    # change filename
+            e.filename = spec.origin
+            raise e
         return builder.code(spec)
 
     def compile_str(self, source: str, origin: str = "<string>", loader: Optional[Loader] = None) -> Code:
@@ -66,13 +71,18 @@ class Compiler(Generic[P, B]):
     def compile_file(self, file: TextIO, loader: Optional[Loader] = None) -> Code:
         """compile a text stream into a code object"""
         builder = self.builder()
-        first_line = file.readline()
-        if first_line.startswith("#!"):     # shebang, remove first line
-            self.parser.build(file.read(), builder, 1)  # line offset of 1 to compensate for removed shebang
-        else:
-            self.parser.build(first_line + file.read(), builder)
         spec = ModuleSpec("__main__", loader, origin=file.name, is_package=False)
         spec.has_location = True
+        first_line = file.readline()
+        try:
+            if first_line.startswith("#!"):     # shebang, remove first line
+                # line offset of 1 to compensate for removed shebang
+                self.parser.build(file.read(), builder, 1)
+            else:
+                self.parser.build(first_line + file.read(), builder)
+        except SyntaxError as e:    # change filename
+            e.filename = spec.origin
+            raise e
         return builder.code(spec)
 
 

@@ -112,7 +112,7 @@ class ByteCodeBuilder(CodeBuilder):
         """add a code section with a line offset"""
         try:
             nodes = [
-                ast.increment_lineno(node, offset) for node in ast.parse(code, mode="exec").body
+                ast.increment_lineno(node, offset) for node in ast.parse(code, "<string>", mode="exec").body
             ]
         except SyntaxError as e:    # set correct lineno and reraise
             if e.lineno is not None:
@@ -166,7 +166,7 @@ class ByteCodeBuilder(CodeBuilder):
                 ],
                 type_ignores=[]
             ),
-            "<unknown>" if spec.origin is None else spec.origin,
+            "<string>" if spec.origin is None else spec.origin,
             "exec",
             optimize=self.optimization_level,
             dont_inherit=True
