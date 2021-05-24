@@ -5,6 +5,7 @@
 import re
 import unittest
 import unittest.mock
+from io import StringIO
 from importlib.machinery import ModuleSpec
 from pyhp.compiler import util, parsers, generic
 
@@ -80,6 +81,24 @@ class TestCompiler(unittest.TestCase):
         self.compiler.parser.build("text1<?pyhp code1 ?>text2<?pyhp code2 ?>", builder, 1)
         code2 = builder.code(ModuleSpec("__main__", None, origin="Test", is_package=False))
         self.assertEqual(code, code2)
+
+    def test_filename(self) -> None:
+        """test filename of SyntaxErrors"""
+        spec = ModuleSpec("__main__", None, origin="42", is_package=False)
+        try:
+            self.compiler.compile_raw("<?pyhp a[1 ?>", spec)
+        except SyntaxError as e:
+            self.assertEqual(e.filename, "42")
+        else:
+            raise AssertionError("Compiler.compile_raw did not raise a SyntaxError")
+        file = StringIO("<?pyhp a[1 ?>")
+        file.name = "42"
+        try:
+            self.compiler.compile_file(file)
+        except SyntaxError as e:
+            self.assertEqual(e.filename, "42")
+        else:
+            raise AssertionError("Compiler.compile_file did not raise a SyntaxError")
 
 
 class TestDedenter(unittest.TestCase):

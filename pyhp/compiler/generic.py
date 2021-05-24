@@ -119,7 +119,7 @@ class GenericCodeBuilder(CodeBuilder):
     def code(self, spec: ModuleSpec) -> GenericCode:
         """build a code object from the received sections"""
         if spec.origin is None:
-            sections = self.compile_sections("<unknown>")
+            sections = self.compile_sections("<string>")
         else:
             sections = self.compile_sections(spec.origin)
         return GenericCode(tuple(sections), spec)
