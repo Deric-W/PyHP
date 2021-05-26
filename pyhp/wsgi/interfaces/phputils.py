@@ -328,4 +328,7 @@ class FilesType:
         """remove the file"""
         name = self.tmp_name
         if name != "":
-            os.unlink(name)
+            try:
+                os.unlink(name)
+            except FileNotFoundError:   # file was probably moved by the script
+                pass

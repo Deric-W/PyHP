@@ -3,6 +3,7 @@
 """tests for pyhp.wsgi.interfaces.phputils"""
 
 import os
+import io
 import sys
 import unittest
 import tempfile
@@ -194,3 +195,40 @@ class TestFilesType(unittest.TestCase):
                 file["asjdahdashdsohosh"]
         finally:
             os.unlink(stream.name)
+
+    def test_close(self) -> None:
+        """test FilesType.close"""
+        stream = tempfile.NamedTemporaryFile("rb", delete=False)
+        try:
+            phputils.FilesType(
+                FileStorage(
+                    stream,
+                    filename="upload.test",
+                    content_type="test/plain"
+                )
+            ).close()
+            self.assertFalse(os.path.exists(stream.name))
+        except BaseException:
+            try:
+                os.unlink(stream.name)
+            except FileNotFoundError:
+                pass
+            raise
+
+        phputils.FilesType(
+            FileStorage(
+                phputils.FailedStream(phputils.UploadError.DISABLED),
+                filename="upload.test",
+                content_type="test/plain"
+            )
+        ).close()
+
+        stream = io.BytesIO()
+        stream.name = "./aaaaaaaaaaaaaaaaaaaaaaaaaaaaa"   # does not exist
+        phputils.FilesType(
+            FileStorage(
+                stream,
+                filename="upload.test",
+                content_type="test/plain"
+            )
+        ).close()

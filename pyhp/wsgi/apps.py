@@ -95,7 +95,7 @@ class WSGIApp(metaclass=ABCMeta):
             while True:
                 buffer = StringIO()
                 try:
-                    with self.redirect_stdout(buffer) as buffer:
+                    with self.redirect_stdout(buffer):
                         buffer.write(next(iterator))
                 except (StopIteration, SystemExit):     # no more sections, return
                     yield buffer.getvalue().encode("utf8")
