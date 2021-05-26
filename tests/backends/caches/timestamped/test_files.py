@@ -51,6 +51,7 @@ class BrokenCode:
         raise RuntimeError
 
 
+@unittest.skipIf(sys.platform.startswith("win"), "requires Posix")
 class TestFileCacheSource(unittest.TestCase):
     """test FileCacheSource"""
     def test_eq(self) -> None:
@@ -126,20 +127,6 @@ class TestFileCacheSource(unittest.TestCase):
                 finally:
                     os.rmdir(path)
 
-    @unittest.skipIf(not sys.platform.startswith("win"), "requires Windows")
-    def test_update_windows(self) -> None:
-        """test FileCacheSource.update on windows"""
-        with tempfile.TemporaryDirectory(".") as directory:
-            path = os.path.join(directory, "tmp.cache")
-            with FileCacheSource(FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler), path) as source:
-                other = open(path, "w")     # test other readers
-                try:
-                    self.assertFalse(source.update(source.code_source.code()))
-                    self.assertFalse(os.path.exists(path + ".new"))
-                finally:
-                    other.close()
-                    os.unlink(path)
-
     def test_cached(self) -> None:
         """test FileCacheSource.cached"""
         with tempfile.TemporaryDirectory(".") as directory:
@@ -166,6 +153,7 @@ class TestFileCacheSource(unittest.TestCase):
                 self.assertFalse(os.path.exists(path))
 
 
+@unittest.skipIf(sys.platform.startswith("win"), "requires Posix")
 class TestFileCache(unittest.TestCase):
     """test FileCache"""
 

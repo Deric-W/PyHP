@@ -38,7 +38,7 @@ S = TypeVar("S", bound=TimestampedCodeSource)
 class FileCacheSource(CacheSource[S]):
     """
     source which caches a TimestampedCodeSource on disk
-    WARNING: poor performance when updating files with multiple readers on windows
+    WARNING: only works reliably on posix systems
     """
     __slots__ = ("path", "ttl")
 
@@ -87,25 +87,12 @@ class FileCacheSource(CacheSource[S]):
         except FileExistsError:  # cache is currently being renewed by another process
             return False
         try:
-            pickle.dump(code, fd)
-        except BaseException:   # something went wrong, clean up tmp_path
-            fd.close()  # close before unlink to prevent errors on windows
-            os.unlink(tmp_path)
-            raise   # dont hide the error
-        else:
-            fd.close()  # close before os.replace to prevent errors on windows
-        try:
+            try:
+                pickle.dump(code, fd)
+            finally:
+                fd.close()
             os.replace(tmp_path, self.path)  # atomic, old readers will continue reading the old cache
-        except PermissionError as e:
-            os.unlink(tmp_path)     # clean up tmp_path
-            winerror = getattr(e, "winerror", None)
-            # Somehow windows reports the same winerror if the file is in use
-            # or we have invalid permissions.
-            # Since we already accessed both files we assume we have permissions
-            if winerror == 5 or winerror == 32:     # file is currently used by other readers on windows
-                return False
-            raise   # we have invalid permissions on posix, reraise
-        except BaseException:   # something else went wrong, clean up tmp_path
+        except BaseException:   # something went wrong, clean up tmp_path
             os.unlink(tmp_path)
             raise   # dont hide the error
         return True
