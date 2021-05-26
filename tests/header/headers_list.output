@@ -1,5 +1,5 @@
 Status: 200 OK
-Content-Type: text/html
+Content-Type: text/html; charset="UTF-8"
 Test0: 1
 
 
@@ -11,7 +11,7 @@ Test0: 1
     <body>
         The headers_list function lists all headers like they would be sent to the client.
 The headers are: 
-Content-Type: text/html
+Content-Type: text/html; charset="UTF-8"
 Test0: 1
 Test1: 2
 

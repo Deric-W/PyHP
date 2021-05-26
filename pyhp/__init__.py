@@ -23,6 +23,6 @@ __contact__ = "https://github.com/Deric-W/PyHP"
 __all__ = (
     "compiler",
     "backends",
-    "libpyhp",
+    "wsgi",
     "main"
 )
