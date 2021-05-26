@@ -36,7 +36,10 @@ S = TypeVar("S", bound=TimestampedCodeSource)
 
 
 class FileCacheSource(CacheSource[S]):
-    """source which caches a TimestampedCodeSource on disk"""
+    """
+    source which caches a TimestampedCodeSource on disk
+    WARNING: only works reliably on posix systems
+    """
     __slots__ = ("path", "ttl")
 
     path: str
@@ -65,32 +68,34 @@ class FileCacheSource(CacheSource[S]):
             fd = os.open(self.path, os.O_RDONLY)    # in case the cache file gets cleared before we open it
         except FileNotFoundError:                   # not cached
             code = self.code_source.code()
-            self.update(code)
+            self.update(code)   # if the cache file could not be replaced carry on
             return code
         try:
             if check_mtime(self.code_source.mtime(), os.fstat(fd).st_mtime_ns, self.ttl):
-                return pickle.load(os.fdopen(fd, "rb", closefd=False))
+                return pickle.load(os.fdopen(fd, "rb", closefd=False))  # not outdated
         finally:
             os.close(fd)    # close before self.write to prevent errors on windows
-        code = self.code_source.code()  # outdated
-        self.update(code)
+        code = self.code_source.code()  # cache is outdated
+        self.update(code)   # if the cache file could not be replaced carry on
         return code
 
-    def update(self, code: Code) -> None:
-        """update the cache file"""
+    def update(self, code: Code) -> bool:
+        """update the cache file, return if it could be replaced"""
         tmp_path = self.path + ".new"   # prevent potential readers from reading parts of the old AND new cache
         try:
-            with open(tmp_path, "xb") as fd:
-                pickle.dump(code, fd)
-            os.replace(tmp_path, self.path)  # atomic, old readers will continue reading the old cache
+            fd = open(tmp_path, "xb")
         except FileExistsError:  # cache is currently being renewed by another process
-            pass
-        except BaseException:   # something else happend, clean up tmp_path
+            return False
+        try:
             try:
-                os.unlink(tmp_path)
-            except FileNotFoundError:
-                pass
+                pickle.dump(code, fd)
+            finally:
+                fd.close()
+            os.replace(tmp_path, self.path)  # atomic, old readers will continue reading the old cache
+        except BaseException:   # something went wrong, clean up tmp_path
+            os.unlink(tmp_path)
             raise   # dont hide the error
+        return True
 
     def cached(self) -> bool:
         """check if the cache file exists and is up to date"""
