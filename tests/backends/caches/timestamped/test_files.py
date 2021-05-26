@@ -7,6 +7,7 @@ import re
 import io
 import os
 import os.path
+import sys
 import time
 import tempfile
 from pyhp.backends.files import FileSource, Directory
@@ -38,6 +39,16 @@ compiler2 = Compiler(
     ),
     GenericCodeBuilder(0)   # different than compiler!
 )
+
+
+class BrokenCode:
+    """code objects which fails to pickle"""
+
+    def __getstate__(self) -> None:
+        raise RuntimeError
+
+    def __setstate__(self, state) -> None:
+        raise RuntimeError
 
 
 class TestFileCacheSource(unittest.TestCase):
@@ -73,6 +84,7 @@ class TestFileCacheSource(unittest.TestCase):
                     [source],
                     [s for s in sources if s == source]
                 )
+            self.assertNotEqual(sources[0], 42)
         finally:
             for source in sources:
                 source.close()
@@ -96,6 +108,37 @@ class TestFileCacheSource(unittest.TestCase):
                     self.assertFalse(os.path.exists(path))
                 finally:
                     os.unlink(path + ".new")
+
+    def test_update(self) -> None:
+        """test FileCacheSource.update error handling"""
+        with tempfile.TemporaryDirectory(".") as directory:
+            path = os.path.join(directory, "tmp.cache")
+            with FileCacheSource(FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler), path) as source:
+                with self.assertRaises(RuntimeError):
+                    source.update(BrokenCode())
+                self.assertFalse(os.path.exists(path + ".new"))
+
+                os.mkdir(path)
+                try:
+                    with self.assertRaises(IsADirectoryError):
+                        source.update(source.code_source.code())
+                    self.assertFalse(os.path.exists(path + ".new"))
+                finally:
+                    os.rmdir(path)
+
+    @unittest.skipIf(not sys.platform.startswith("win"), "requires Windows")
+    def test_update_windows(self) -> None:
+        """test FileCacheSource.update on windows"""
+        with tempfile.TemporaryDirectory(".") as directory:
+            path = os.path.join(directory, "tmp.cache")
+            with FileCacheSource(FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler), path) as source:
+                other = open(path, "w")     # test other readers
+                try:
+                    self.assertFalse(source.update(source.code_source.code()))
+                    self.assertFalse(os.path.exists(path + ".new"))
+                finally:
+                    other.close()
+                    os.unlink(path)
 
     def test_cached(self) -> None:
         """test FileCacheSource.cached"""
