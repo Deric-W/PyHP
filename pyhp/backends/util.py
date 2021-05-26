@@ -82,11 +82,15 @@ class ConfigHierarchyBuilder(HierarchyBuilder, metaclass=ABCMeta):
         for container in containers:
             name = container["name"]
             if isinstance(name, str):
-                config = container["config"]
-                if isinstance(config, Mapping):
-                    self.add_name(name, config)
+                try:
+                    config = container["config"]
+                except KeyError:
+                    self.add_name(name, {})
                 else:
-                    raise ValueError("value of key 'config' expected to be a Mapping")
+                    if isinstance(config, Mapping):
+                        self.add_name(name, config)
+                    else:
+                        raise ValueError("value of key 'config' expected to be a Mapping")
             else:
                 raise ValueError("value of key 'name' expected to be a str")
 

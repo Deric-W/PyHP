@@ -54,7 +54,7 @@ class HashMap(Dict[str, MemorySource], CodeSourceContainer[MemorySource]):
 
     @classmethod
     def from_config(cls, config: Mapping[str, Any], before: ConfigHierarchy) -> HashMap:
-        """create a instance from configuration data"""
+        """create a instance from configuration data or another container which will be closed"""
         container = cls()
         if isinstance(before, Compiler):
             for name, code in config.items():   # config consists of multiple 'name = source code'
@@ -68,4 +68,5 @@ class HashMap(Dict[str, MemorySource], CodeSourceContainer[MemorySource]):
             for name, source in before.items():
                 with source:
                     container[name] = MemorySource(source.code())
+            before.close()  # dont close if an error occurs
         return container

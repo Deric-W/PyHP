@@ -2,12 +2,28 @@
 
 """Unit tests for the PyHP cli"""
 
+import re
 import sys
 import os
 import unittest
+import unittest.mock
 import subprocess
 import toml
 from pyhp import main
+from pyhp.compiler import util, generic, parsers
+from pyhp.backends import CodeSourceContainer
+
+
+compiler = util.Compiler(
+    parsers.RegexParser(
+        re.compile(r"\<\?pyhp\s"),
+        re.compile(r"\s\?\>")
+    ),
+    generic.GenericCodeBuilder(-1)
+)
+
+dummy = unittest.mock.Mock(spec=CodeSourceContainer)
+dummy.from_config.configure_mock(side_effect=lambda c, b: dummy)
 
 
 class TestCli(unittest.TestCase):

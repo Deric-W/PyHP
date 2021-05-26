@@ -3,6 +3,7 @@
 """Tests for pyhp.backends.memory"""
 
 import unittest
+import unittest.mock
 import re
 from pyhp.backends.memory import MemorySource, HashMap
 from pyhp.compiler.parsers import RegexParser
@@ -47,6 +48,9 @@ class TestHashMap(unittest.TestCase):
                 self.container
             )
         )
+        dummy = unittest.mock.Mock(wraps=self.container)
+        HashMap.from_config({}, dummy)
+        dummy.close.assert_called()
 
     def test_access(self) -> None:
         """test HashMap code retrieval"""
