@@ -67,6 +67,7 @@ class TestFileSource(unittest.TestCase):
                     [source],
                     [s for s in sources if s == source]
                 )
+            self.assertNotEqual(sources[0], 42)
         finally:
             for source in sources:
                 source.close()
@@ -210,6 +211,8 @@ class TestDirectory(unittest.TestCase):
                         source.code(),
                         compiler.compile_file(fd, SourceFileLoader("__main__", path))
                     )
+        with self.assertRaises(KeyError):
+            self.container["42"].close()
 
     def test_iter(self) -> None:
         """test iter(Directory)"""
@@ -248,6 +251,7 @@ class TestDirectory(unittest.TestCase):
             [self.container],
             [directory for directory in directories if directory == self.container]
         )
+        self.assertNotEqual(self.container, 42)
 
     def test_contains(self) -> None:
         """test Directory.__contains__"""
@@ -262,6 +266,8 @@ class TestDirectory(unittest.TestCase):
             self.container.mtime("syntax.pyhp"),
             os.stat("tests/embedding/syntax.pyhp").st_mtime_ns
         )
+        with self.assertRaises(KeyError):
+            self.container.mtime("42")
 
     def test_ctime(self) -> None:
         """test Directory.ctime"""
@@ -269,6 +275,8 @@ class TestDirectory(unittest.TestCase):
             self.container.ctime("syntax.pyhp"),
             os.stat("tests/embedding/syntax.pyhp").st_ctime_ns
         )
+        with self.assertRaises(KeyError):
+            self.container.ctime("42")
 
     def test_atime(self) -> None:
         """test Directory.atime"""
@@ -276,6 +284,8 @@ class TestDirectory(unittest.TestCase):
             self.container.atime("syntax.pyhp"),
             os.stat("tests/embedding/syntax.pyhp").st_atime_ns
         )
+        with self.assertRaises(KeyError):
+            self.container.atime("42")
 
     def test_info(self) -> None:
         """test Directory.info"""
@@ -288,6 +298,8 @@ class TestDirectory(unittest.TestCase):
                 stat.st_atime_ns
             )
         )
+        with self.assertRaises(KeyError):
+            self.container.info("42")
 
 
 class TestStrictDirectory(unittest.TestCase):
