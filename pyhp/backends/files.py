@@ -169,8 +169,13 @@ class Directory(TimestampedCodeSourceContainer[FileSource]):
 
     def __getitem__(self, name: str) -> FileSource:
         """get FileSource instance by path (absolute or relative to the directory)"""
+        path = self.path(name)
+        try:
+            file = io.FileIO(path, "r")
+        except FileNotFoundError as e:
+            raise KeyError("file does not exist") from e
         return FileSource(
-            io.FileIO(self.path(name), "r"),
+            file,
             self.compiler
         )
 
@@ -194,19 +199,31 @@ class Directory(TimestampedCodeSourceContainer[FileSource]):
     # more performant than the standart implementations
     def mtime(self, name: str) -> int:
         """retrieve the modification timestamp of name"""
-        return os.stat(self.path(name)).st_mtime_ns
+        try:
+            return os.stat(self.path(name)).st_mtime_ns
+        except FileNotFoundError as e:
+            raise KeyError("file does not exist") from e
 
     def ctime(self, name: str) -> int:
         """retrieve the creation timestamp of name"""
-        return os.stat(self.path(name)).st_ctime_ns
+        try:
+            return os.stat(self.path(name)).st_ctime_ns
+        except FileNotFoundError as e:
+            raise KeyError("file does not exist") from e
 
     def atime(self, name: str) -> int:
         """retrieve the access timestamp of name"""
-        return os.stat(self.path(name)).st_atime_ns
+        try:
+            return os.stat(self.path(name)).st_atime_ns
+        except FileNotFoundError as e:
+            raise KeyError("file does not exist") from e
 
     def info(self, name: str) -> SourceInfo:
         """retireve the info about name"""
-        stat = os.stat(self.path(name))
+        try:
+            stat = os.stat(self.path(name))
+        except FileNotFoundError as e:
+            raise KeyError("file does not exist") from e
         return SourceInfo(
             stat.st_mtime_ns,
             stat.st_ctime_ns,

@@ -32,6 +32,11 @@ from ... import (
 from ....compiler import Code
 
 
+__all__ = (
+    "FileCacheSource",
+    "FileCache"
+)
+
 S = TypeVar("S", bound=TimestampedCodeSource)
 
 
@@ -113,12 +118,6 @@ class FileCacheSource(CacheSource[S]):
             raise NotCachedException("cache already clear") from e
 
 
-def reconstruct_name(path: str) -> str:
-    """reconstruct the name from a file cache path"""
-    name, _, _ = os.path.basename(path).rpartition(".")
-    return base64.b32decode(name.encode("utf8"), casefold=True).decode("utf8")
-
-
 class FileCache(CacheSourceContainer[TimestampedCodeSourceContainer[S], FileCacheSource[S]]):
     """file cache which stores all cache files inside a central directory"""
     __slots__ = ("directory_name", "ttl")
@@ -167,13 +166,22 @@ class FileCache(CacheSourceContainer[TimestampedCodeSourceContainer[S], FileCach
         """garbage collect all cached sources and return the number removed"""
         removed = 0
         for path in self.paths():
-            name = reconstruct_name(path)
-            cache_mtime = os.stat(path).st_mtime_ns
-            if not check_mtime(self.source_container.mtime(name), cache_mtime, self.ttl):
+            name = self.reconstruct_name(path)
+            try:
+                cache_mtime = os.stat(path).st_mtime_ns
+            except FileNotFoundError:   # file was removed
+                continue
+            try:
+                source_mtime = self.source_container.mtime(name)
+            except KeyError:    # source was removed
+                outdated = True
+            else:
+                outdated = not check_mtime(source_mtime, cache_mtime, self.ttl)
+            if outdated:
                 try:
                     os.unlink(path)
                 except FileNotFoundError:   # file was already removed
-                    pass
+                    continue
                 removed += 1
         return removed
 
@@ -191,6 +199,11 @@ class FileCache(CacheSourceContainer[TimestampedCodeSourceContainer[S], FileCach
             self.directory_name,
             base64.b32encode(name.encode("utf8")).decode("utf8") + ".pickle"
         )   # use base32 because of case-insensitive file systems and forbidden characters
+
+    def reconstruct_name(self, path: str) -> str:
+        """reconstruct the name from a file cache path"""
+        name, _, _ = os.path.basename(path).rpartition(".")
+        return base64.b32decode(name.encode("utf8"), casefold=True).decode("utf8")
 
     def paths(self) -> Iterator[str]:
         """return a iterator yielding all paths currently in use (including outdated ones)"""

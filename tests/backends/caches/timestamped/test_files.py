@@ -14,8 +14,7 @@ from pyhp.backends.files import FileSource, Directory
 from pyhp.backends.caches import NotCachedException
 from pyhp.backends.caches.timestamped.files import (
     FileCacheSource,
-    FileCache,
-    reconstruct_name
+    FileCache
 )
 from pyhp.compiler.parsers import RegexParser
 from pyhp.compiler.generic import GenericCodeBuilder
@@ -210,16 +209,39 @@ class TestFileCache(unittest.TestCase):
         """test FileCache.gc and FileCache.clear"""
         with tempfile.TemporaryDirectory() as directory, \
                 FileCache(Directory("tests/embedding", compiler), directory) as cache:
+            tmp_file = os.path.join(directory, "tmp.pyhp")
+            open(tmp_file, "x").close()
+            try:
+                with cache["syntax.pyhp"] as source:
+                    source.fetch()
+                with cache["shebang.pyhp"] as source:
+                    source.fetch()
+                with cache[tmp_file] as source:
+                    source.fetch()
+                os.utime(cache.path("shebang.pyhp"), (0, 0))
+            finally:
+                os.unlink(tmp_file)
+            try:
+                self.assertEqual(cache.gc(), 2)
+                self.assertTrue(os.path.exists(cache.path("syntax.pyhp")))
+                self.assertFalse(os.path.exists(cache.path("shebang.pyhp")))
+                self.assertFalse(os.path.exists(cache.path(tmp_file)))
+            finally:
+                cache.clear()
+
+    def test_clear(self) -> None:
+        """test FileCache.clear"""
+        with tempfile.TemporaryDirectory() as directory, \
+                FileCache(Directory("tests/embedding", compiler), directory) as cache:
             with cache["syntax.pyhp"] as source:
                 source.fetch()
             with cache["shebang.pyhp"] as source:
                 source.fetch()
-            os.utime(cache.path("shebang.pyhp"), (0, 0))
-            self.assertEqual(cache.gc(), 1)
             self.assertTrue(os.path.exists(cache.path("syntax.pyhp")))
-            self.assertFalse(os.path.exists(cache.path("shebang.pyhp")))
+            self.assertTrue(os.path.exists(cache.path("shebang.pyhp")))
             cache.clear()
             self.assertFalse(os.path.exists(cache.path("syntax.pyhp")))
+            self.assertFalse(os.path.exists(cache.path("shebang.pyhp")))
 
     def test_path(self) -> None:
         """test FileCache.path"""
@@ -227,4 +249,4 @@ class TestFileCache(unittest.TestCase):
             self.assertTrue(cache.path("test").startswith("tmp"))
             self.assertNotEqual(cache.path("test"), cache.path("test2"))
             self.assertNotIn("|", cache.path("|"))
-            self.assertEqual(reconstruct_name(cache.path("test2")), "test2")
+            self.assertEqual(cache.reconstruct_name(cache.path("test2")), "test2")
