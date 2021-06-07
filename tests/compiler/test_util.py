@@ -115,6 +115,7 @@ class TestDedenter(unittest.TestCase):
         """test the dedentation process"""
         builder = unittest.mock.Mock()
         dedenter = util.Dedenter(builder)
+        dedenter.add_code(" #test", 0)   # no code
         dedenter.add_code("test", 0)    # no indent
         dedenter.add_code(" test", 0)   # simple indent
         dedenter.add_code(" test\n test", 0)
@@ -122,15 +123,18 @@ class TestDedenter(unittest.TestCase):
         dedenter.add_code("\t\t#test\n test\n test", 0)
         dedenter.add_code("\t\t\ntest\ntest", 0)
         dedenter.add_code("\ntest", 0)
+        dedenter.add_code(" abc\r\n cdf\r\n", 1)    # keep original line endings
         builder.add_code.assert_has_calls(
             (
+                unittest.mock.call(" #test", 0),
                 unittest.mock.call("test", 0),
                 unittest.mock.call("test", 0),
                 unittest.mock.call("test\ntest", 0),
                 unittest.mock.call("\t\t#test\ntest\ntest", 0),
                 unittest.mock.call("\t\t#test\ntest\ntest", 0),
                 unittest.mock.call("\t\t\ntest\ntest", 0),
-                unittest.mock.call("\ntest", 0)
+                unittest.mock.call("\ntest", 0),
+                unittest.mock.call("abc\r\ncdf\r\n", 1)
             ),
             any_order=False
         )
