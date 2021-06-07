@@ -115,25 +115,32 @@ class Dedenter(CodeBuilderDecorator[B]):
 
     def add_code(self, code: str, offset: int) -> None:
         """delegate method call to builder with dedented code"""
-        lines = code.splitlines()
-        indentation = None
-        for line_num, line in enumerate(lines):
-            if self.is_code(line):                  # ignore lines without code
-                if indentation is None:             # first line of code, set starting indentation
-                    indentation = self.get_indentation(line)
+        lines = code.splitlines(keepends=True)  # keep original line endings
+        iterator = enumerate(lines)
+        for line_offset, line in iterator:  # search for the first line of code
+            if self.is_code(line):
+                indentation = self.get_indentation(line)    # store offset and indentation
+                indentation_offset = line_offset
+                lines[line_offset] = line[len(indentation):]    # remove the indentation
+                break   # found the first line of code
+        else:           # no code found, join lines and return
+            self.builder.add_code("".join(lines), offset)
+            return None
+        for line_offset, line in iterator:  # strip the indentation from the remaining code lines
+            if self.is_code(line):
                 if line.startswith(indentation):    # if line starts with starting indentation
-                    lines[line_num] = line[len(indentation):]  # remove starting indentation
+                    lines[line_offset] = line[len(indentation):]  # remove starting indentation
                 else:
                     raise StartingIndentationError(            # raise Exception on bad indentation
-                        f"line does not start with the indentation of line {offset + 1}",
+                        f"line does not start with the indentation of line {offset + indentation_offset + 1}",
                         (
                             "<unkown>",
-                            line_num + offset + 1,
+                            offset + line_offset + 1,
                             len(indentation),
                             line
                         )
                     )
-        self.builder.add_code("\n".join(lines), offset)     # join the lines back together
+        self.builder.add_code("".join(lines), offset)     # join the lines back together
 
     def copy(self) -> Dedenter[B]:
         """copy the dedenter with his current state"""
