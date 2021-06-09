@@ -44,6 +44,7 @@ class TestHierarchyBuilder(unittest.TestCase):
             [builder1],
             [b for b in (builder1, builder2, builder3) if b == builder1]
         )
+        self.assertNotEqual(builder1, 42)
 
     def test_building(self) -> None:
         """test building a hierarchy"""
@@ -123,3 +124,7 @@ class TestPathHierarchyBuilder(unittest.TestCase):
         builder.add_name("tests/backends/dummy.py:HashMap", {})
         builder2.add_container(memory.HashMap, {})
         self.assertEqual(builder, builder2)
+        with self.assertRaises(ImportError):
+            builder.add_name("not_in_use.txt:Test", {})
+        with self.assertRaises(FileNotFoundError):
+            builder.add_name("not_in_use.py:Test", {})

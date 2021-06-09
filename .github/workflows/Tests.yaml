@@ -67,7 +67,7 @@ jobs:
         key: ${{ runner.os }}-pip-${{ hashFiles('setup.cfg') }}
 
     - name: Install test dependencies
-      run: python -m pip --cache-dir ~/.cache/pip install --quiet mypy
+      run: python -m pip --cache-dir ~/.cache/pip install --quiet mypy types-toml types-werkzeug
 
     # check
     - name: run MyPy

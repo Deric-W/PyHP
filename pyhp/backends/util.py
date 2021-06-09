@@ -119,6 +119,8 @@ class PathHierarchyBuilder(ConfigHierarchyBuilder):
         """add a CodeSourceContainer to the hierarchy by file path and name seperated by ':'"""
         path, _, name = name.rpartition(":")
         spec = importlib.util.spec_from_file_location("container_module", location=path)
+        if spec is None:
+            raise ImportError(f"failed to create spec from path '{name}'")
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)     # type: ignore
         self.add_container(getattr(module, name), config)
