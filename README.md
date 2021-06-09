@@ -1,4 +1,4 @@
-# PyHP-Interpreter ![Tests](https://github.com/Deric-W/PyHP/workflows/Tests/badge.svg)  [![codecov](https://codecov.io/gh/Deric-W/PyHP/branch/master/graph/badge.svg?token=SA72E6KGXT)](https://codecov.io/gh/Deric-W/PyHP) [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
+# PyHP-Interpreter [![Tests](https://github.com/Deric-W/PyHP/actions/workflows/Tests.yaml/badge.svg)](https://github.com/Deric-W/PyHP/actions/workflows/Tests.yaml)  [![codecov](https://codecov.io/gh/Deric-W/PyHP/branch/master/graph/badge.svg?token=SA72E6KGXT)](https://codecov.io/gh/Deric-W/PyHP) [![License: GPL v3](https://img.shields.io/badge/License-GPLv3-blue.svg)](https://www.gnu.org/licenses/gpl-3.0)
 
 PyHP is a package that allows you to embed Python code like PHP code into HTML and other text files.
 A script is called either by the configuration of the web server or a shebang and communicates with the web server via WSGI.
