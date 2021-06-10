@@ -14,7 +14,8 @@ from pyhp.backends.files import FileSource, Directory
 from pyhp.backends.caches import NotCachedException
 from pyhp.backends.caches.timestamped.files import (
     FileCacheSource,
-    FileCache
+    FileCache,
+    FILE_EXTENSION
 )
 from pyhp.compiler.parsers import RegexParser
 from pyhp.compiler.generic import GenericCodeBuilder
@@ -250,3 +251,48 @@ class TestFileCache(unittest.TestCase):
             self.assertNotEqual(cache.path("test"), cache.path("test2"))
             self.assertNotIn("|", cache.path("|"))
             self.assertEqual(cache.reconstruct_name(cache.path("test2")), "test2")
+
+    def test_paths(self) -> None:
+        """test FileCache.paths"""
+        with tempfile.TemporaryDirectory() as directory, \
+                FileCache(Directory("tests/embedding", compiler), directory) as cache:
+            tmp_path = os.path.join(directory, "test.txt")
+            dir_path = os.path.join(directory, "test" + FILE_EXTENSION)
+            with cache["syntax.pyhp"] as source:
+                source.fetch()
+            with cache["shebang.pyhp"] as source:
+                source.fetch()
+            try:
+                open(tmp_path, "xb").close()
+                try:
+                    os.mkdir(dir_path)
+                    try:
+                        paths = list(cache.paths())
+                        self.assertEqual(len(paths), 2)
+                        self.assertEqual(   # order not important, use sets
+                            set(paths),
+                            {
+                                cache.path("syntax.pyhp"),
+                                cache.path("shebang.pyhp")
+                            }
+                        )
+                    finally:
+                        os.rmdir(dir_path)
+                finally:
+                    os.unlink(tmp_path)
+            finally:
+                cache.clear()
+
+    def test_reconstruct_name(self) -> None:
+        """test FileCache.reconstruct_name"""
+        names = [
+            "test",
+            "test/42/9",
+            "äöü|<",
+            "\n\n\n"
+        ]
+        with FileCache(Directory("tests/embedding", compiler), "tmp") as cache:
+            for name in names:
+                path = cache.path(name)
+                self.assertEqual(cache.reconstruct_name(path.lower()), name)
+                self.assertEqual(cache.reconstruct_name(path.upper()), name)

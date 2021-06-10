@@ -15,6 +15,7 @@
 
 from __future__ import annotations
 import os
+import sys
 import base64
 import pickle
 from typing import TypeVar, Any, Mapping, Iterator
@@ -33,11 +34,15 @@ from ....compiler import Code
 
 
 __all__ = (
+    "FILE_EXTENSION",
     "FileCacheSource",
     "FileCache"
 )
 
 S = TypeVar("S", bound=TimestampedCodeSource)
+
+# use cache tag in extension to prevent errors with different python versions
+FILE_EXTENSION = f".{sys.implementation.cache_tag}.pickle"
 
 
 class FileCacheSource(CacheSource[S]):
@@ -139,9 +144,10 @@ class FileCache(CacheSourceContainer[TimestampedCodeSourceContainer[S], FileCach
 
     def __getitem__(self, name: str) -> FileCacheSource[S]:
         """get FileCacheSource with path as returned by .path()"""
+        path = self.path(name)  # dont leak sources if self.path fails
         return FileCacheSource(
             self.source_container[name],
-            self.path(name),
+            path,
             self.ttl
         )
 
@@ -194,20 +200,20 @@ class FileCache(CacheSourceContainer[TimestampedCodeSourceContainer[S], FileCach
                 pass
 
     def path(self, name: str) -> str:
-        """return directory_name/<base32 encoded name>.pickle"""
+        """return directory_name/<base32 encoded name>FILE_EXTENSION"""
         return os.path.join(
             self.directory_name,
-            base64.b32encode(name.encode("utf8")).decode("utf8") + ".pickle"
+            base64.b32encode(name.encode("utf8")).decode("utf8") + FILE_EXTENSION
         )   # use base32 because of case-insensitive file systems and forbidden characters
 
     def reconstruct_name(self, path: str) -> str:
         """reconstruct the name from a file cache path"""
-        name, _, _ = os.path.basename(path).rpartition(".")
+        name, _, _ = os.path.basename(path).partition(".")
         return base64.b32decode(name.encode("utf8"), casefold=True).decode("utf8")
 
     def paths(self) -> Iterator[str]:
         """return a iterator yielding all paths currently in use (including outdated ones)"""
         with os.scandir(self.directory_name) as directory:
             for entry in directory:
-                if entry.name.endswith(".pickle") and entry.is_file():
+                if entry.name.endswith(FILE_EXTENSION) and entry.is_file():
                     yield entry.path
