@@ -73,10 +73,3 @@ enable = true
 
 # how many files can be uploaded at once
 max_files = 20
-
-
-
-
-
-
-

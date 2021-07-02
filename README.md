@@ -82,10 +82,10 @@ A script is called either by the configuration of the web server or a shebang an
   - Optional: set the `PYHPCONFIG` environ variable or copy *pyhp.toml* to one of the config file locations to use the CLI commands
 
   ### Debian package
-  1. build the *pyhp-core* python package with `python3 setup.py bdist_wheel`
-  2. go to the *debian* directory and execute `./build_deb.sh`
-  3. enter a package version, the path of the *pyhp-core* wheel and the pip command you wish to use
-  4. Done! You can now install the debian package with `sudo dpkg -i pyhp_<package version>_all.deb`
+  1. execute `debian/build_deb.sh` in the root directory of the project.
+  2. Done! You can now install the debian package with `sudo dpkg -i python3-pyhp-core_{version}-1_all.deb`
+
+  - Optional: check if the recommended packages `python3-toml` and `python3-werkzeug` are installed to use the CLI commands 
 
   ### Manually
   1. install the *pyhp-core* python package

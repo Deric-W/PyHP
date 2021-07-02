@@ -1,61 +1,62 @@
 #!/bin/sh -e
 # script for building the pyhp debian package
 # it is recommended to run this script as root or to set the owner and group of the files to root
-# you need to build the pyhp-core wheel first
 
-if [ "$1" = "" ]
-then read -p "Version: " version
-else version=$1
-fi
+version=$(python3 setup.py --version)
+maintainer=$(python3 setup.py --maintainer)
+email=$(python3 setup.py --maintainer-email)
+homepage=$(python3 setup.py --url)
+description=$(python3 setup.py --description)
+licence=$(python3 setup.py --licence)
 
-if [ "$2" = "" ]
-then read -p "pyhp-core Wheel: " wheel
-else wheel=$2
-fi
-
-if [ "$3" = "" ]
-then read -p "pip executeable: " pip
-else pip=$3
-fi
-
-package="pyhp_${version}_all"
-
+package="python3-pyhp-core_${version}-1_all"
 mkdir "$package"
 
 # place pyhp-core files
-mkdir -p "${package}/usr/lib/python3/dist-packages"
-$pip install --target "${package}/usr/lib/python3/dist-packages" --ignore-installed --no-compile "$wheel"
+python3 setup.py install --install-layout=deb --no-compile --single-version-externally-managed --root="$package"
 
-# place config file and "executable"
+# strip python version from .egg-info directory
+mv $package/usr/lib/python3/dist-packages/pyhp_core-${version}-*.egg-info "$package/usr/lib/python3/dist-packages/pyhp_core-${version}.egg-info"
+
+# place config file
 mkdir "${package}/etc"
-cp ../pyhp.toml "${package}/etc"
-
-mkdir -p "${package}/usr/bin"
-mv "${package}/usr/lib/python3/dist-packages/bin/pyhp" "${package}/usr/bin"
-rmdir "${package}/usr/lib/python3/dist-packages/bin"
-chmod +x "${package}/usr/bin/pyhp"
+cp pyhp.toml "${package}/etc"
 
 # place metadata files
 mkdir "$package/DEBIAN"
-# calculate installed size
-cat control | python3 format.py "${version}" $(du -sk --apparent-size --exclude "DEBIAN" "${package}" 2>/dev/null | cut -f1) > "${package}/DEBIAN/control"
-cp conffiles "$package/DEBIAN"
 
-mkdir -p "${package}/usr/share/doc/pyhp"
-cp copyright "${package}/usr/share/doc/pyhp"
-cp changelog "${package}/usr/share/doc/pyhp/changelog.Debian"
-gzip -n --best "${package}/usr/share/doc/pyhp/changelog.Debian"
+# place control
+cat debian/control | python3 debian/format.py \
+	"$version" \
+	"$maintainer" "$email" \
+	$(du -sk --apparent-size --exclude "DEBIAN" "${package}" 2>/dev/null | cut -f1) \
+	"$homepage" \
+	"$description" \
+	> "${package}/DEBIAN/control"
 
-# generate md5sums file
-chdir "$package"
-md5sum $(find . -type d -name "DEBIAN" -prune -o -type f -print) > DEBIAN/md5sums  # ignore metadata files
-sha256sum $(find . -type d -name "DEBIAN" -prune -o -type f -print) > DEBIAN/sha256sums
-chdir ../
+# place conffiles
+cp debian/conffiles "$package/DEBIAN"
+
+# place copyright and changelog
+mkdir -p "${package}/usr/share/doc/python3-pyhp-core"
+cat debian/copyright | python3 debian/format.py \
+	"$maintainer" "$email" \
+	"$homepage" \
+	"$licence" \
+	> "${package}/usr/share/doc/python3-pyhp-core/copyright"
+cp debian/changelog "${package}/usr/share/doc/python3-pyhp-core/changelog.Debian"
+gzip -n --best "${package}/usr/share/doc/python3-pyhp-core/changelog.Debian"
+
+# generate md5sums and sha256sums file
+cd "$package"
+md5sum $(find . -type d -name "DEBIAN" -prune -o -type f -print) > "DEBIAN/md5sums"  # ignore metadata files
+sha256sum $(find . -type d -name "DEBIAN" -prune -o -type f -print) > "DEBIAN/sha256sums"
+cd ..
 
 # if root set file permissions, else warn
 if [ $(id -u) = 0 ]
 then chown root:root -R "$package"
-else echo "not running as root, permissions in package may be wrong"
+else echo "Warning: not running as root, permissions in package may be wrong"
 fi
 
 # build debian package
