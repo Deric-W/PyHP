@@ -1,4 +1,17 @@
-pyhp (2.2-1) stable; urgency=low
+python3-pyhp-core (3.0-1) stable; urgency=low
+
+  * seventh release
+  * add WSGI submodule
+  * add CGI and CLI mode to CLI commands
+  * fix error in file cache with multiple python versions
+  * fix error message in Dedenter
+  * fix FileCache.gc raising KeyError
+  * fix filename in tracebacks of syntax errors
+  * fix debian package
+
+ -- Eric Wolf <robo-eric@gmx.de>  Fri, 02 Jul 2021 10:30:00 +0100
+
+python3-pyhp-core (2.2-1) stable; urgency=low
 
   * sixth release
   * replace cache handlers with backends submodule
@@ -9,7 +22,7 @@ pyhp (2.2-1) stable; urgency=low
 
  -- Eric Wolf <robo-eric@gmx.de>  Sun, 14 Mar 2021 19:00:00 +0100
 
-pyhp (2.1-1) stable; urgency=low
+python3-pyhp-core (2.1-1) stable; urgency=low
 
   * fifth release
   * add bytecode code object implementation
@@ -21,7 +34,7 @@ pyhp (2.1-1) stable; urgency=low
 
  -- Eric Wolf <robo-eric@gmx.de>  Wed, 27 Jan 2021 19:17:00 +0100
 
-pyhp (2.0-1) stable; urgency=low
+python3-pyhp-core (2.0-1) stable; urgency=low
 
   * fourth release
   * add max_size and ttl caching options
@@ -42,7 +55,7 @@ pyhp (2.0-1) stable; urgency=low
 
  -- Eric Wolf <robo-eric@gmx.de>  Sun, 26 Jan 2020 18:11:00 +0100
 
-pyhp (1.2-1) stable; urgency=low
+python3-pyhp-core (1.2-1) stable; urgency=low
 
   * third release
   * add support for ~ as home directory in cache_path
@@ -50,7 +63,7 @@ pyhp (1.2-1) stable; urgency=low
   
  -- Eric Wolf <robo-eric@gmx.de>  Tue, 13 Aug 2019 18:07:00 +0100
 
-pyhp (1.1-1) stable; urgency=low
+python3-pyhp-core (1.1-1) stable; urgency=low
 
   * second release
   * add register_shutdown_function
@@ -63,7 +76,7 @@ pyhp (1.1-1) stable; urgency=low
   
  -- Eric Wolf <robo-eric@gmx.de>  Sat, 03 Aug 2019 15:30:00 +0100
 
-pyhp (1.0-1) stable; urgency=low
+python3-pyhp-core (1.0-1) stable; urgency=low
 
   * first release
   * add basic functionality
