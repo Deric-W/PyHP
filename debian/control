@@ -1,13 +1,14 @@
-Package: pyhp
-Version: {0}
+Package: python3-pyhp-core
+Source: pyhp-core
+Version: {0}-1
 Architecture: all
-Maintainer: Eric Wolf <robo-eric@gmx.de>
-Installed-Size: {1}
+Maintainer: {1} <{2}>
+Installed-Size: {3}
 Depends: python3:any (>= 3.7)
-Suggests: apache2
-Section: web
+Recommends: python3-toml (>= 0.10.0), python3-werkzeug (>= 0.14.0)
+Section: python
 Priority: optional
-Homepage: https://github.com/Deric-W/PyHP
-Description: Application for embedding and using python code like php
- PyHP is a application/python package for embedding python code in text files like HTML, 
+Homepage: {4}
+Description: {5}
+ PyHP is a application/python package for embedding python code in text files like HTML,
  with several PHP functions available.

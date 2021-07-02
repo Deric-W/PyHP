@@ -8,7 +8,7 @@
             print("GET, POST, COOKIE and REQUEST are available.")
             print("Their values are:")
             for method in (PyHP.GET, PyHP.POST, PyHP.COOKIE, PyHP.REQUEST):
-                print(sorted(method.items(multi=True)))
+                print(sorted(filter(lambda i: i[0] != "", method.items(multi=True))))  # filter empty cookies present before werkzeug 0.15.0
         ?>
     </body>
 </html>
