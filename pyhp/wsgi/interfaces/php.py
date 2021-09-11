@@ -42,8 +42,7 @@ from .. import Environ, StartResponse, map_failsafe
 from . import WSGIInterface, WSGIInterfaceFactory
 from .phputils import (
     valid_path,
-    SimpleCallbackQueue,
-    ArgumentCallbackQueue,
+    CallbackQueue,
     FilesType,
     StreamFactory,
     UploadStreamFactory,
@@ -110,11 +109,11 @@ class PHPWSGIInterface(WSGIInterface):
 
     header_sent: bool
 
-    header_callbacks: SimpleCallbackQueue
+    header_callbacks: CallbackQueue
 
     cache: Optional[CacheSourceContainer]
 
-    shutdown_callbacks: ArgumentCallbackQueue
+    shutdown_callbacks: CallbackQueue
 
     SERVER: MutableMapping[str, Any]
 
@@ -145,9 +144,9 @@ class PHPWSGIInterface(WSGIInterface):
         self.status_code = status_code
         self.headers = headers
         self.header_sent = False
-        self.header_callbacks = SimpleCallbackQueue()
+        self.header_callbacks = CallbackQueue()
         self.cache = cache
-        self.shutdown_callbacks = ArgumentCallbackQueue()
+        self.shutdown_callbacks = CallbackQueue()
         self.GET = self.create_get()
         self.COOKIE = self.create_cookie()
         self.POST, self.FILES = self.create_post(post_max_size, stream_factory)
@@ -291,7 +290,7 @@ class PHPWSGIInterface(WSGIInterface):
         """register a callback to be called with no arguments before the headers are send"""
         if replace:
             self.header_callbacks.clear()
-        self.header_callbacks.appendleft(callback)
+        self.header_callbacks.appendleft((callback, (), {}))
         return not self.header_sent
 
     def setcookie(
