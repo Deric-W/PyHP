@@ -22,8 +22,7 @@ from typing import TypeVar, Any, Mapping, Iterator
 from . import check_mtime
 from .. import (
     CacheSource,
-    CacheSourceContainer,
-    NotCachedException
+    CacheSourceContainer
 )
 from ... import (
     ConfigHierarchy,
@@ -115,12 +114,13 @@ class FileCacheSource(CacheSource[S]):
             return False
         return check_mtime(self.code_source.mtime(), cache_mtime, self.ttl)
 
-    def clear(self) -> None:
-        """unlink the cache file"""
+    def clear(self) -> bool:
+        """unlink the cache file and return if it existed"""
         try:
             os.unlink(self.path)
-        except FileNotFoundError as e:
-            raise NotCachedException("cache already clear") from e
+        except FileNotFoundError:
+            return False
+        return True
 
 
 class FileCache(CacheSourceContainer[TimestampedCodeSourceContainer[S], FileCacheSource[S]]):

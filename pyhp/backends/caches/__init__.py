@@ -36,7 +36,6 @@ from .. import (
 
 __all__ = (
     "CacheException",
-    "NotCachedException",
     "CacheSource",
     "CacheSourceContainer",
     "ClosingValuesView",
@@ -54,10 +53,6 @@ class CacheException(Exception):
     """Exception raised by cache operations"""
 
 
-class NotCachedException(CacheException):
-    """Exception raised by clearing sources currently not in the cache"""
-
-
 class CacheSource(CodeSourceDecorator[S]):
     """abc for code sources with caching features"""
     __slots__ = ()
@@ -70,15 +65,11 @@ class CacheSource(CodeSourceDecorator[S]):
         """remove the represented code object from the cache if it is no longer valid"""
         if self.cached():   # may be replaced by a specific thread safe implementation
             return False
-        try:
-            self.clear()
-        except NotCachedException:
-            return False
-        return True
+        return self.clear()
 
     @abstractmethod
-    def clear(self) -> None:
-        """remove the represented code object from the cache"""
+    def clear(self) -> bool:
+        """remove the represented code object from the cache and return if it was cached"""
         raise NotImplementedError
 
     @abstractmethod
@@ -106,10 +97,7 @@ class CacheSourceContainer(CodeSourceContainerDecorator[C, CS]):
     def clear(self) -> None:
         """remove all sources from the cache"""
         for source in self.cached().values():    # may be replaced by a specific thread safe implementation
-            try:
-                source.clear()
-            except NotCachedException:  # already removed
-                pass
+            source.clear()
 
 
 class CachedValuesView(ClosingValuesView[CS]):
