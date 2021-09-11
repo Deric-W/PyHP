@@ -208,6 +208,7 @@ class TestConcurrentWSGIAppFactory(unittest.TestCase):
         """test ConcurrentWSGIAppFactory.__eq__"""
         factory1 = simple.SimpleWSGIInterfaceFactory("200 Ok", [], None)
         factory2 = simple.SimpleWSGIInterfaceFactory("200 Ok", [("a", "b")], None)
+        stdout = sys.stdout
         with memory.HashMap.from_config({"test": "test"}, compiler) as backend:
             try:
                 app_factory = util.ConcurrentWSGIAppFactory(factory1, compiler, backend, None)
@@ -215,32 +216,33 @@ class TestConcurrentWSGIAppFactory(unittest.TestCase):
                     app_factory,
                     util.ConcurrentWSGIAppFactory(factory1, compiler, backend, None)
                 )
-                sys.stdout = sys.__stdout__
+                sys.stdout = stdout
                 self.assertEqual(
                     app_factory,
                     util.ConcurrentWSGIAppFactory(factory1, compiler, backend, None)
                 )
-                sys.stdout = sys.__stdout__
+                sys.stdout = stdout
                 self.assertNotEqual(
                     app_factory,
                     util.ConcurrentWSGIAppFactory(factory2, compiler, backend, None)
                 )
-                sys.stdout = sys.__stdout__
+                sys.stdout = stdout
                 self.assertNotEqual(
                     app_factory,
                     util.ConcurrentWSGIAppFactory(factory1, None, backend, None)
                 )
-                sys.stdout = sys.__stdout__
+                sys.stdout = stdout
                 self.assertNotEqual(
                     app_factory,
                     util.ConcurrentWSGIAppFactory(factory1, compiler, None, None)
                 )
                 self.assertNotEqual(app_factory, 42)
             finally:
-                sys.stdout = sys.__stdout__
+                sys.stdout = stdout
 
     def test_close(self) -> None:
         """test ConcurrentWSGIAppFactory.close"""
+        stdout = sys.stdout
         try:
             dummy1 = unittest.mock.Mock(spec=CodeSourceContainer)
             dummy1.from_config.configure_mock(side_effect=lambda c, b: dummy1)
@@ -264,9 +266,9 @@ class TestConcurrentWSGIAppFactory(unittest.TestCase):
                 util.ConcurrentWSGIAppFactory(None, None, dummy1, dummy3).close()
             dummy1.close.assert_called_once()
             dummy3.close.assert_called_once()
-            self.assertIs(sys.stdout, sys.__stdout__)
+            self.assertIs(sys.stdout, stdout)
         finally:
-            sys.stdout = sys.__stdout__
+            sys.stdout = stdout
 
     def test_app(self) -> None:
         """test ConcurrentWSGIAppFactory.app"""
