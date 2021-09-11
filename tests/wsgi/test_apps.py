@@ -248,6 +248,29 @@ class TestConcurrentWSGIApp(unittest.TestCase):
             else:
                 warnings.warn("thread1 is somehow being kept alive, probably by coverage tools")
 
+    def test_broken_backend(self) -> None:
+        """test error handling if requesting a code source fails"""
+        # this test may not catch all errors if the weak reference is being
+        # garbage collected before the thread object
+        with ConcurrentWSGIApp(
+            "wsgi/DOES_NOT_EXIST",
+            container,
+            LocalStackProxy(None),
+            simple.SimpleWSGIInterfaceFactory("200 OK", [], None)
+        ) as app:
+
+            def request_code_source() -> None:
+                with self.assertRaises(KeyError):
+                    app.code_source()
+
+            thread = threading.Thread(target=request_code_source)
+            thread.start()
+            thread.join()
+            del thread
+            gc.collect()    # make sure thread is removed
+            self.assertEqual(app.sources, {})
+            self.assertEqual(app.pending_removals, [])
+
     def test_redirect_stdout(self) -> None:
         """test ConcurrentWSGIApp.redirect_stdout"""
         with ConcurrentWSGIApp("abc", container, LocalStackProxy(None), DummyFactory()) as app:

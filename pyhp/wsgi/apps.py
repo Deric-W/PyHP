@@ -201,7 +201,7 @@ class ConcurrentWSGIApp(WSGIApp):
         """return a code source"""
         thread = current_thread()
         # since the current thread is already running ident is not None
-        # recycling is not a problem since the new thread will use to source
+        # recycling is not a problem since the new thread will use the source
         # of the old one until the source is removed and then create a new one
         tid: int = thread.ident  # type: ignore
         with self.sources_lock:  # do not rely on dict being thread safe
@@ -209,9 +209,11 @@ class ConcurrentWSGIApp(WSGIApp):
             try:
                 return self.sources[tid][0]
             except KeyError:
+                # request source before creating weak reference to prevent false entries
+                # in pending_removals in case of an error
+                source = self.backend[self.name]
                 # schedule source for removal if the current thread is removed
                 weakref = ref(thread, lambda r: self.pending_removals.append(tid))
-                source = self.backend[self.name]
                 # self.sources keeps the weak reference alive
                 self.sources[tid] = (source, weakref)
                 return source
