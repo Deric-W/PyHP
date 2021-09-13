@@ -52,6 +52,10 @@ A script is called either by the configuration of the web server or a shebang an
      - `header_register_callback` with an additional `replace` keyword argument to register multiple callbacks
      - `setcookie` with an additional `samesite` keyword argument
      - `setrawcookie` also with an additional `samesite` keyword argument
+     - `opcache_compile_file` which raises Exceptions instead of returning `False` when compilation fails
+     - `opcache_invalidate`
+     - `opcache_is_script_cached`
+     - `opcache_reset`
 
   ### Config file
 
