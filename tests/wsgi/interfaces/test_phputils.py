@@ -11,39 +11,12 @@ from pyhp.wsgi.interfaces import phputils
 from werkzeug.datastructures import FileStorage
 
 
-class TestSimpleCallbackQueue(unittest.TestCase):
-    """tests for SimpleCallbackQueue"""
+class TestCallbackQueue(unittest.TestCase):
+    """tests for CallbackQueue"""
 
     def test_execute(self) -> None:
-        """test SimpleCallbackQueue.execute"""
-        queue = phputils.SimpleCallbackQueue()
-        results = []
-        queue.append(lambda: results.append(1))
-        queue.append(lambda: results.append(2))
-        queue.append(lambda: results.append(3))
-        queue.execute()
-        self.assertEqual(results, [3, 2, 1])
-
-    def test_exception(self) -> None:
-        """test behavior on callback exceptions"""
-        queue = phputils.SimpleCallbackQueue()
-        results = []
-        queue.append(lambda: results.append(1))
-        queue.append(lambda: results.append(x))  # raises NameError
-        queue.append(lambda: results.append(3))
-        with self.assertRaises(NameError):
-            queue.execute()
-        self.assertEqual(results, [3])
-        queue.execute()
-        self.assertEqual(results, [3, 1])
-
-
-class TestArgumentCallbackQueue(unittest.TestCase):
-    """tests for ArgumentCallbackQueue"""
-
-    def test_execute(self) -> None:
-        """test SimpleCallbackQueue.execute"""
-        queue = phputils.ArgumentCallbackQueue()
+        """test CallbackQueue.execute"""
+        queue = phputils.CallbackQueue()
         results = []
         queue.append((lambda x: results.append(x), [1], {}))
         queue.append((lambda: results.append(2), [], {}))
@@ -53,7 +26,7 @@ class TestArgumentCallbackQueue(unittest.TestCase):
 
     def test_exception(self) -> None:
         """test behavior on callback exceptions"""
-        queue = phputils.ArgumentCallbackQueue()
+        queue = phputils.CallbackQueue()
         results = []
         queue.append((lambda x: results.append(x), [1], {}))
         queue.append((lambda: results.append(x), [], {}))   # raises NameError

@@ -36,8 +36,7 @@ from werkzeug.datastructures import FileStorage
 __all__ = (
     "UPLOAD_SUFFIX",
     "valid_path",
-    "SimpleCallbackQueue",
-    "ArgumentCallbackQueue",
+    "CallbackQueue",
     "UploadError",
     "FailedStream",
     "StreamFactory",
@@ -54,21 +53,7 @@ def valid_path(name: Optional[str]) -> bool:
     return name is not None and not (name.startswith("<") and name.endswith(">"))
 
 
-class SimpleCallbackQueue(Deque[Callable[[], None]]):
-    """class implementing a queue of callbacks with no arguments"""
-    __slots__ = ()
-
-    def execute(self) -> None:
-        """execute callbacks from right to left"""
-        while True:
-            try:
-                callback = self.pop()
-            except IndexError:              # consumed all callbacks
-                break
-            callback()
-
-
-class ArgumentCallbackQueue(Deque[Tuple[Callable[..., None], Sequence[Any], Mapping[str, Any]]]):
+class CallbackQueue(Deque[Tuple[Callable[..., None], Sequence[Any], Mapping[str, Any]]]):
     """class implementing a queue of callbacks to be called with specific arguments"""
     __slots__ = ()
 

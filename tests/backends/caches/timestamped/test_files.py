@@ -11,7 +11,6 @@ import sys
 import time
 import tempfile
 from pyhp.backends.files import FileSource, Directory
-from pyhp.backends.caches import NotCachedException
 from pyhp.backends.caches.timestamped.files import (
     FileCacheSource,
     FileCache,
@@ -146,11 +145,11 @@ class TestFileCacheSource(unittest.TestCase):
         with tempfile.TemporaryDirectory(".") as directory:
             path = os.path.join(directory, "tmp.cache")
             with FileCacheSource(FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler), path, int(3e9)) as source:
-                with self.assertRaises(NotCachedException):
-                    source.clear()
+                self.assertFalse(source.clear())
                 source.fetch()
-                source.clear()
+                self.assertTrue(source.clear())
                 self.assertFalse(os.path.exists(path))
+                self.assertFalse(source.clear())
 
 
 @unittest.skipIf(sys.platform.startswith("win"), "requires Posix")

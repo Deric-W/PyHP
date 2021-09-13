@@ -9,7 +9,6 @@ import os
 import os.path
 import time
 from pyhp.backends.files import FileSource, Directory
-from pyhp.backends.caches import NotCachedException
 from pyhp.backends.caches.timestamped.memory import (
     MemoryCacheSource,
     MemoryCache,
@@ -141,12 +140,12 @@ class TestMemoryCacheSource(unittest.TestCase):
             "test",
             strategy
         ) as source:
+            self.assertFalse(source.clear())
             source.fetch()
             self.assertIn("test", strategy)
-            source.clear()
+            self.assertTrue(source.clear())
             self.assertNotIn("test", strategy)
-            with self.assertRaises(NotCachedException):
-                source.clear()
+            self.assertFalse(source.clear())
 
 
 class TestMemoryCache(unittest.TestCase):

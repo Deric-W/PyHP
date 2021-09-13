@@ -35,8 +35,7 @@ from typing import (
 from . import check_mtime
 from .. import (
     CacheSource,
-    CacheSourceContainer,
-    NotCachedException
+    CacheSourceContainer
 )
 from ... import (
     ConfigHierarchy,
@@ -111,12 +110,13 @@ class MemoryCacheSource(CacheSource[S]):
             return False    # not cached
         return check_mtime(self.code_source.mtime(), timestamp, self.ttl)
 
-    def clear(self) -> None:
+    def clear(self) -> bool:
         """remove the represented code object from the cache"""
         try:
             del self.strategy[self.name]
-        except KeyError as e:
-            raise NotCachedException("cache already clear") from e
+        except KeyError:
+            return False
+        return True
 
 
 class MemoryCache(CacheSourceContainer[TimestampedCodeSourceContainer[S], MemoryCacheSource[S]]):

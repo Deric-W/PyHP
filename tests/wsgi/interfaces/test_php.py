@@ -4,6 +4,7 @@
 
 import sys
 import os
+import re
 import io
 import unittest
 import unittest.mock
@@ -11,8 +12,22 @@ import time
 from tempfile import TemporaryDirectory, gettempdir, NamedTemporaryFile
 from wsgiref.headers import Headers
 from werkzeug.datastructures import FileStorage
+from pyhp.compiler import generic, util, parsers
+from pyhp.backends.files import Directory
+from pyhp.backends.caches.timestamped.memory import MemoryCache, UnboundedCacheStrategy
 from pyhp.wsgi.interfaces import php
 from pyhp.wsgi.interfaces.phputils import NullStreamFactory, UploadStreamFactory, UploadError
+
+
+def start_response(status, headers, error=None):
+    """wsgi start_response dummy"""
+    return lambda byte: None
+
+
+compiler = util.Compiler(
+    parsers.RegexParser(re.compile(r"<\?pyhp\s"), re.compile(r"\s\?>")),
+    generic.GenericCodeBuilder()
+)
 
 
 class TestPHPWSGIInterface(unittest.TestCase):
@@ -34,7 +49,6 @@ class TestPHPWSGIInterface(unittest.TestCase):
 
     def test_eq(self) -> None:
         """test PHPWSGIInterface.__eq__"""
-        start_response = lambda s, h, e: lambda b: None
         interface = php.PHPWSGIInterface({}, start_response, 200, Headers(), None)
         self.assertEqual(
             interface,
@@ -63,7 +77,7 @@ class TestPHPWSGIInterface(unittest.TestCase):
             "CUSTOM": "test"
         }
         timestamp = time.time()
-        with php.PHPWSGIInterface(environ, lambda s, h, e: lambda b: None, 200, Headers(), None) as interface:
+        with php.PHPWSGIInterface(environ, start_response, 200, Headers(), None) as interface:
             self.assertEqual(interface.SERVER["argv"], "a=b")
             self.assertEqual(interface.SERVER["PHP_SELF"], "/test.pyhp/test")
             self.assertEqual(interface.SERVER["PHP_AUTH_USER"], "aladdin")
@@ -79,12 +93,12 @@ class TestPHPWSGIInterface(unittest.TestCase):
         environ = {
             "QUERY_STRING": "a=b&a=c&b=&c&x=%C3%A4"
         }
-        with php.PHPWSGIInterface(environ, lambda s, h, e: lambda b: None, 200, Headers(), None) as interface:
+        with php.PHPWSGIInterface(environ, start_response, 200, Headers(), None) as interface:
             self.assertEqual(
                 list(interface.GET.items(multi=True)),
                 [("a", "b"), ("a", "c"), ("b", ""), ("c", ""), ("x", "ä")]
             )
-        with php.PHPWSGIInterface({}, lambda s, h, e: lambda b: None, 200, Headers(), None) as interface:
+        with php.PHPWSGIInterface({}, start_response, 200, Headers(), None) as interface:
             self.assertEqual(len(interface.GET), 0)
 
     def test_cookie(self) -> None:
@@ -92,12 +106,12 @@ class TestPHPWSGIInterface(unittest.TestCase):
         environ = {
             "HTTP_COOKIE": 'a="b"; a=c; a=; b; c=%C3%A4'
         }
-        with php.PHPWSGIInterface(environ, lambda s, h, e: lambda b: None, 200, Headers(), None) as interface:
+        with php.PHPWSGIInterface(environ, start_response, 200, Headers(), None) as interface:
             self.assertEqual(
                 list(interface.COOKIE.items(multi=True)),
                 [("a", "b"), ("a", "c"), ("a", ""), ("b", ""), ("c", "ä")]
             )
-        with php.PHPWSGIInterface({}, lambda s, h, e: lambda b: None, 200, Headers(), None) as interface:
+        with php.PHPWSGIInterface({}, start_response, 200, Headers(), None) as interface:
             self.assertEqual(len(interface.COOKIE), 0)
 
     def test_post(self) -> None:
@@ -111,7 +125,7 @@ class TestPHPWSGIInterface(unittest.TestCase):
                         "CONTENT_TYPE": 'multipart/form-data;boundary="boundary"',
                         "CONTENT_LENGTH": "324"
                     },
-                    lambda s, h, e: lambda b: None,
+                    start_response,
                     200,
                     Headers(),
                     None,
@@ -140,7 +154,7 @@ class TestPHPWSGIInterface(unittest.TestCase):
                         "CONTENT_TYPE": 'multipart/form-data;boundary="boundary"',
                         "CONTENT_LENGTH": "324"
                     },
-                    lambda s, h, e: lambda b: None,
+                    start_response,
                     200,
                     Headers(),
                     None,
@@ -160,7 +174,7 @@ class TestPHPWSGIInterface(unittest.TestCase):
                         "CONTENT_TYPE": 'multipart/form-data;boundary="boundary"',
                         "CONTENT_LENGTH": "324"
                     },
-                    lambda s, h, e: lambda b: None,
+                    start_response,
                     200,
                     Headers(),
                     None,
@@ -183,7 +197,7 @@ class TestPHPWSGIInterface(unittest.TestCase):
                         "QUERY_STRING": "field1=test&a=b&b=c",
                         "HTTP_COOKIE": "b=d; d=d"
                     },
-                    lambda s, h, e: lambda b: None,
+                    start_response,
                     200,
                     Headers(),
                     None,
@@ -198,7 +212,7 @@ class TestPHPWSGIInterface(unittest.TestCase):
 
     def test_header(self) -> None:
         """test PHPWSGIInterface.header"""
-        with php.PHPWSGIInterface({}, lambda s, h, e: lambda b: None, 200, Headers(), None) as interface:
+        with php.PHPWSGIInterface({}, start_response, 200, Headers(), None) as interface:
             interface.header("test: true")
             self.assertEqual(interface.headers.get_all("test"), ["true"])
             interface.header("test: maybe")
@@ -221,7 +235,7 @@ class TestPHPWSGIInterface(unittest.TestCase):
 
     def test_header_remove(self) -> None:
         """test PHPWSGIInterface.header_remove"""
-        with php.PHPWSGIInterface({}, lambda s, h, e: lambda b: None, 200, Headers(), None) as interface:
+        with php.PHPWSGIInterface({}, start_response, 200, Headers(), None) as interface:
             interface.header("test: true")
             interface.header("test: maybe", replace=False)
             interface.header("a: b")
@@ -232,7 +246,7 @@ class TestPHPWSGIInterface(unittest.TestCase):
 
     def tests_headers_list(self) -> None:
         """test PHPWSGIInterface.headers_list"""
-        with php.PHPWSGIInterface({}, lambda s, h, e: lambda b: None, 200, Headers(), None) as interface:
+        with php.PHPWSGIInterface({}, start_response, 200, Headers(), None) as interface:
             interface.header("test:true")
             interface.header("test: maybe", replace=False)
             interface.header("a: b")
@@ -243,21 +257,21 @@ class TestPHPWSGIInterface(unittest.TestCase):
 
     def test_headers_sent(self) -> None:
         """test PHPWSGIInterface.headers_sent"""
-        with php.PHPWSGIInterface({}, lambda s, h, e=None: lambda b: None, 200, Headers(), None) as interface:
+        with php.PHPWSGIInterface({}, start_response, 200, Headers(), None) as interface:
             self.assertFalse(interface.headers_sent())
             interface.end_headers()
             self.assertTrue(interface.headers_sent())
 
     def test_header_register_callback(self) -> None:
         """test PHPWSGIInterface.header_register_callback"""
-        with php.PHPWSGIInterface({}, lambda s, h, e=None: lambda b: None, 200, Headers(), None) as interface:
+        with php.PHPWSGIInterface({}, start_response, 200, Headers(), None) as interface:
             tests = []
             self.assertTrue(interface.header_register_callback(lambda: tests.append(1)))
             interface.header_register_callback(lambda: tests.append(2))
             interface.end_headers()
             self.assertEqual(tests, [2])
             self.assertFalse(interface.header_register_callback(lambda: tests.append(1)))
-        with php.PHPWSGIInterface({}, lambda s, h, e=None: lambda b: None, 200, Headers(), None) as interface:
+        with php.PHPWSGIInterface({}, start_response, 200, Headers(), None) as interface:
             tests = []
             interface.header_register_callback(lambda: tests.append(1))
             interface.header_register_callback(lambda: tests.append(2), replace=False)
@@ -266,7 +280,7 @@ class TestPHPWSGIInterface(unittest.TestCase):
 
     def test_setcookie(self) -> None:
         """test PHPWSGIInterface.setcookie"""
-        with php.PHPWSGIInterface({}, lambda s, h, e=None: lambda b: None, 200, Headers(), None) as interface:
+        with php.PHPWSGIInterface({}, start_response, 200, Headers(), None) as interface:
             self.assertTrue(interface.setcookie("a", "b"))
             interface.setcookie("a", "ä")
             interface.setcookie(
@@ -292,7 +306,7 @@ class TestPHPWSGIInterface(unittest.TestCase):
 
     def test_setrawcookie(self) -> None:
         """test PHPWSGIInterface.setrawcookie"""
-        with php.PHPWSGIInterface({}, lambda s, h, e=None: lambda b: None, 200, Headers(), None) as interface:
+        with php.PHPWSGIInterface({}, start_response, 200, Headers(), None) as interface:
             self.assertTrue(interface.setrawcookie("a", "b"))
             interface.setrawcookie("a", "ä")
             interface.setrawcookie(
@@ -328,13 +342,35 @@ class TestPHPWSGIInterface(unittest.TestCase):
     def test_register_shutdown_function(self) -> None:
         """test PHPWSGIInterface.register_shutdown_function"""
         tests = []
-        with php.PHPWSGIInterface({}, lambda s, h, e=None: lambda b: None, 200, Headers(), None) as interface:
+        with php.PHPWSGIInterface({}, start_response, 200, Headers(), None) as interface:
             interface.register_shutdown_function(lambda: tests.append(1))
-            interface.register_shutdown_function(lambda x: tests.append(x), 2)
+            interface.register_shutdown_function(tests.append, 2)
             interface.register_shutdown_function(lambda x=1: tests.append(x), x=3)
-            interface.register_shutdown_function(lambda: sys.exit())
+            interface.register_shutdown_function(sys.exit)
             interface.register_shutdown_function(lambda: tests.append(4))
         self.assertEqual(tests, [1, 2, 3])
+
+    def test_cache_disabled(self) -> None:
+        """test opcache functions if cache is disabled"""
+        with php.PHPWSGIInterface({}, start_response, 200, Headers(), None) as interface:
+            self.assertFalse(interface.opcache_compile_file("test"))
+            self.assertFalse(interface.opcache_invalidate("test"))
+            self.assertFalse(interface.opcache_is_script_cached("test"))
+            self.assertFalse(interface.opcache_reset())
+
+    def test_cache(self) -> None:
+        """test opcache functions"""
+        with MemoryCache(Directory("./tests/embedding", compiler), UnboundedCacheStrategy()) as cache:
+            with php.PHPWSGIInterface({}, start_response, 200, Headers(), cache) as interface:
+                self.assertFalse(interface.opcache_is_script_cached("syntax.pyhp"))
+                self.assertTrue(interface.opcache_compile_file("syntax.pyhp"))
+                self.assertTrue(interface.opcache_invalidate("syntax.pyhp"))
+                self.assertTrue(interface.opcache_is_script_cached("syntax.pyhp"))
+                self.assertTrue(interface.opcache_invalidate("syntax.pyhp", force=True))
+                self.assertFalse(interface.opcache_is_script_cached("syntax.pyhp"))
+                self.assertTrue(interface.opcache_compile_file("syntax.pyhp"))
+                self.assertTrue(interface.opcache_reset())
+                self.assertFalse(interface.opcache_is_script_cached("syntax.pyhp"))
 
 
 class TestPHPWSGIInterfaceFactory(unittest.TestCase):
@@ -432,7 +468,6 @@ class TestPHPWSGIInterfaceFactory(unittest.TestCase):
     def test_interface(self) -> None:
         """test PHPWSGIInterfaceFactory.interface"""
         stream_factory = NullStreamFactory()
-        start_response = lambda s, h, e=None: lambda b: None
         environ = {"wsgi.input": sys.stdin}
         with php.PHPWSGIInterfaceFactory(
             400,

@@ -42,8 +42,7 @@ from .. import Environ, StartResponse, map_failsafe
 from . import WSGIInterface, WSGIInterfaceFactory
 from .phputils import (
     valid_path,
-    SimpleCallbackQueue,
-    ArgumentCallbackQueue,
+    CallbackQueue,
     FilesType,
     StreamFactory,
     UploadStreamFactory,
@@ -110,11 +109,11 @@ class PHPWSGIInterface(WSGIInterface):
 
     header_sent: bool
 
-    header_callbacks: SimpleCallbackQueue
+    header_callbacks: CallbackQueue
 
     cache: Optional[CacheSourceContainer]
 
-    shutdown_callbacks: ArgumentCallbackQueue
+    shutdown_callbacks: CallbackQueue
 
     SERVER: MutableMapping[str, Any]
 
@@ -145,9 +144,9 @@ class PHPWSGIInterface(WSGIInterface):
         self.status_code = status_code
         self.headers = headers
         self.header_sent = False
-        self.header_callbacks = SimpleCallbackQueue()
+        self.header_callbacks = CallbackQueue()
         self.cache = cache
-        self.shutdown_callbacks = ArgumentCallbackQueue()
+        self.shutdown_callbacks = CallbackQueue()
         self.GET = self.create_get()
         self.COOKIE = self.create_cookie()
         self.POST, self.FILES = self.create_post(post_max_size, stream_factory)
@@ -291,7 +290,7 @@ class PHPWSGIInterface(WSGIInterface):
         """register a callback to be called with no arguments before the headers are send"""
         if replace:
             self.header_callbacks.clear()
-        self.header_callbacks.appendleft(callback)
+        self.header_callbacks.appendleft((callback, (), {}))
         return not self.header_sent
 
     def setcookie(
@@ -357,6 +356,41 @@ class PHPWSGIInterface(WSGIInterface):
     def register_shutdown_function(self, callback: Callable[..., None], *args: Any, **kwargs: Any) -> None:
         """register a callback to be called on shutdown"""
         self.shutdown_callbacks.appendleft((callback, args, kwargs))
+
+    def opcache_compile_file(self, filename: str) -> bool:
+        """add the code associated with filename to the cache and return if caching is enabled"""
+        if self.cache is None:
+            return False
+        with self.cache[filename] as source:
+            source.fetch()
+        return True
+
+    def opcache_is_script_cached(self, filename: str) -> bool:
+        """check if caching is enabled and the code associated with filename is cached"""
+        if self.cache is None:
+            return False
+        return filename in self.cache.cached()
+
+    def opcache_invalidate(self, filename: str, force: bool = False) -> bool:
+        """
+        remove the code associated with filename from the cache if it is outdated
+        or force is True and return if the cache is enabled
+        """
+        if self.cache is None:
+            return False
+        with self.cache[filename] as source:
+            if force:
+                source.clear()
+            else:
+                source.gc()
+        return True
+
+    def opcache_reset(self) -> bool:
+        """remove all code from the cache and return if the cache is enabled"""
+        if self.cache is None:
+            return False
+        self.cache.clear()
+        return True
 
     def end_headers(self) -> None:
         """call start_response with the current headers"""

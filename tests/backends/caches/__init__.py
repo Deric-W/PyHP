@@ -7,7 +7,6 @@ import unittest.mock
 from typing import Mapping, Any
 from pyhp.backends.caches import (
     CacheSource,
-    NotCachedException,
     CacheSourceContainer,
     CachedMapping
 )
@@ -23,7 +22,7 @@ class TestCacheSource(unittest.TestCase):
         """test CacheSource.gc"""
         source = unittest.mock.Mock(spec_set=CacheSource)
         source.cached.configure_mock(side_effect=(False, False, True))
-        source.clear.configure_mock(side_effect=(NotCachedException, None, None))
+        source.clear.configure_mock(side_effect=(False, True, True))
         self.assertEqual(CacheSource.gc(source), False)
         self.assertEqual(CacheSource.gc(source), True)
         self.assertEqual(CacheSource.gc(source), False)
@@ -78,7 +77,7 @@ class TestCacheSourceContainer(unittest.TestCase):
             "a": unittest.mock.Mock(spec_set=CacheSource),
             "b": unittest.mock.Mock(spec_set=CacheSource)
         }
-        cached["b"].clear.configure_mock(side_effect=(NotCachedException,))
+        cached["b"].clear.configure_mock(side_effect=(False,))
         container = unittest.mock.Mock(spec_set=CacheSourceContainer)
         container.cached.configure_mock(side_effect=(cached,))
         CacheSourceContainer.clear(container)
