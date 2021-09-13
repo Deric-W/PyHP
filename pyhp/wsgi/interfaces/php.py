@@ -357,6 +357,41 @@ class PHPWSGIInterface(WSGIInterface):
         """register a callback to be called on shutdown"""
         self.shutdown_callbacks.appendleft((callback, args, kwargs))
 
+    def opcache_compile_file(self, filename: str) -> bool:
+        """add the code associated with filename to the cache and return if caching is enabled"""
+        if self.cache is None:
+            return False
+        with self.cache[filename] as source:
+            source.fetch()
+        return True
+
+    def opcache_is_script_cached(self, filename: str) -> bool:
+        """check if caching is enabled and the code associated with filename is cached"""
+        if self.cache is None:
+            return False
+        return filename in self.cache.cached()
+
+    def opcache_invalidate(self, filename: str, force: bool = False) -> bool:
+        """
+        remove the code associated with filename from the cache if it is outdated
+        or force is True and return if the cache is enabled
+        """
+        if self.cache is None:
+            return False
+        with self.cache[filename] as source:
+            if force:
+                source.clear()
+            else:
+                source.gc()
+        return True
+
+    def opcache_reset(self) -> bool:
+        """remove all code from the cache and return if the cache is enabled"""
+        if self.cache is None:
+            return False
+        self.cache.clear()
+        return True
+
     def end_headers(self) -> None:
         """call start_response with the current headers"""
         self.header_callbacks.execute()
