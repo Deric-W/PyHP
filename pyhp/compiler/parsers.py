@@ -12,7 +12,9 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # SPDX-License-Identifier: GPL-3.0-only
 
-from typing import Pattern, Tuple, Iterator
+from __future__ import annotations
+import re
+from typing import Pattern, Tuple, Iterator, Mapping, Any
 from . import Parser
 
 
@@ -36,6 +38,14 @@ class RegexParser(Parser):
         if isinstance(other, RegexParser):
             return self.start == other.start and self.end == other.end
         return NotImplemented
+
+    @classmethod
+    def from_config(cls, config: Mapping[str, Any]) -> RegexParser:
+        """create an instance from config data"""
+        return cls(
+            re.compile(config.get("start", r"<\?pyhp\s")),
+            re.compile(config.get("end", r"\s\?>"))
+        )
 
     def parse(self, source: str, line_offset: int = 0) -> Iterator[Tuple[str, int, bool]]:
         """parse source code, yielding sections with line offset and bool to indicate if they are code"""

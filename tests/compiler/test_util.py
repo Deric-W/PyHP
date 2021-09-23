@@ -18,6 +18,19 @@ class TestCompiler(unittest.TestCase):
         generic.GenericCodeBuilder(-1)
     )
 
+    def test_from_config(self) -> None:
+        """test Compiler.from_config"""
+        self.assertEqual(
+            util.Compiler.from_config(self.compiler.parser, {"dedent": False}),
+            self.compiler
+        )
+        self.assertIsInstance(
+            util.Compiler.from_config(self.compiler.parser, {}).base_builder,
+            util.Dedenter
+        )
+        with self.assertRaises(ValueError):
+            util.Compiler.from_config(self.compiler.parser, {"optimization_level": "test"})
+
     def test_builder(self) -> None:
         """test if the builder is independent from the compiler"""
         self.assertFalse(self.compiler.builder() is self.compiler.base_builder)

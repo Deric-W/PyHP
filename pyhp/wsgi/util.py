@@ -12,7 +12,6 @@
 # along with this program.  If not, see <https://www.gnu.org/licenses/>.
 # SPDX-License-Identifier: GPL-3.0-only
 
-import re
 import sys
 from abc import ABCMeta, abstractmethod
 from types import TracebackType
@@ -21,15 +20,14 @@ import toml
 from .apps import WSGIApp, SimpleWSGIApp, ConcurrentWSGIApp
 from .proxys import LocalStackProxy
 from .interfaces import WSGIInterfaceFactory, simple, php
-from ..compiler import Parser, CodeBuilder, generic, parsers
-from ..compiler.util import Compiler, Dedenter
-from ..backends import CodeSourceContainer, util
+from ..compiler import parsers
+from ..compiler.util import Compiler
+from ..backends import CodeSourceContainer
+from ..backends.util import hierarchy_from_config
 from ..backends.caches import CacheSourceContainer
 
 
 __all__ = (
-    "create_backend",
-    "create_compiler",
     "WSGIAppFactory",
     "SimpleWSGIAppFactory",
     "ConcurrentWSGIAppFactory"
@@ -38,54 +36,13 @@ __all__ = (
 T = TypeVar("T", bound="WSGIAppFactory")
 
 
-def create_backend(compiler: Compiler[Parser, CodeBuilder], backend_config: Mapping[str, Any]) -> CodeSourceContainer:
-    """create a backend from config data"""
-    try:
-        resolve = backend_config["resolve"]
-    except KeyError:
-        hierarchy_builder = util.ModuleHierarchyBuilder(compiler)  # type: util.ConfigHierarchyBuilder
-    else:
-        if resolve == "module":
-            hierarchy_builder = util.ModuleHierarchyBuilder(compiler)
-        elif resolve == "path":
-            hierarchy_builder = util.PathHierarchyBuilder(compiler)
-        else:
-            raise ValueError(f"value '{resolve}' of key 'resolve' is unknown")
-    try:
-        hierarchy_builder.add_config(backend_config["containers"])
-    except BaseException:   # close already constructed containers
-        try:
-            hierarchy = hierarchy_builder.hierarchy()
-        except IndexError:  # no containers constructed, ignore
-            pass
-        else:
-            hierarchy.close()
-        raise   # dont hide the error
-    return hierarchy_builder.hierarchy()
-
-
-def create_compiler(parser: Parser, compiler_config: Mapping[str, Any]) -> Compiler[Parser, CodeBuilder]:
-    """create a compiler from config data"""
-    try:
-        optimization_level = compiler_config["optimization_level"]
-    except KeyError:
-        optimization_level = -1
-    else:
-        if not isinstance(optimization_level, int):
-            raise ValueError("value of key 'optimization_level' expected to be an int")
-    builder = generic.GenericCodeBuilder(optimization_level)    # type: CodeBuilder
-    if compiler_config.get("dedent", True):
-        builder = Dedenter(builder)
-    return Compiler(parser, builder)
-
-
 class WSGIAppFactory(metaclass=ABCMeta):
     """factory for WSGI Apps"""
     __slots__ = ("interface_factory", "compiler", "backend", "cache")
 
     interface_factory: WSGIInterfaceFactory
 
-    compiler: Compiler[Parser, CodeBuilder]
+    compiler: Compiler
 
     backend: CodeSourceContainer
 
@@ -94,7 +51,7 @@ class WSGIAppFactory(metaclass=ABCMeta):
     def __init__(
         self,
         interface_factory: WSGIInterfaceFactory,
-        compiler: Compiler[Parser, CodeBuilder],
+        compiler: Compiler,
         backend: CodeSourceContainer,
         cache: Optional[CacheSourceContainer]
     ) -> None:
@@ -121,12 +78,11 @@ class WSGIAppFactory(metaclass=ABCMeta):
     @classmethod
     def from_config(cls: Type[T], config: Mapping[str, Any]) -> T:
         """create an instance from config data"""
-        compiler = cls.get_compiler(
-            cls.get_parser(config.get("parser", {})),
+        compiler = Compiler.from_config(
+            parsers.RegexParser.from_config(config.get("parser", {})),
             config.get("compiler", {})
         )
-        backend_config = config.get("backend", {})
-        backend = cls.get_backend(compiler, backend_config)
+        backend = hierarchy_from_config(compiler, config.get("backend", {}))
         try:
             if isinstance(backend, CacheSourceContainer):   # use the backend if its a cache
                 cache = backend  # type: Optional[CacheSourceContainer]
@@ -146,24 +102,6 @@ class WSGIAppFactory(metaclass=ABCMeta):
     def from_config_file(cls: Type[T], file: TextIO) -> T:
         """create an instance from a config file"""
         return cls.from_config(toml.load(file))
-
-    @staticmethod
-    def get_parser(parser_config: Mapping[str, Any]) -> Parser:
-        """create a parser from config data"""
-        return parsers.RegexParser(
-            re.compile(parser_config.get("start", r"<\?pyhp\s")),
-            re.compile(parser_config.get("end", r"\s\?>"))
-        )
-
-    @staticmethod
-    def get_compiler(parser: Parser, compiler_config: Mapping[str, Any]) -> Compiler[Parser, CodeBuilder]:
-        """create a compiler from config data"""
-        return create_compiler(parser, compiler_config)
-
-    @staticmethod
-    def get_backend(compiler: Compiler[Parser, CodeBuilder], backend_config: Mapping[str, Any]) -> CodeSourceContainer:
-        """create a backend from config data"""
-        return create_backend(compiler, backend_config)
 
     @staticmethod
     def get_interface_factory(cache: Optional[CacheSourceContainer], interface_config: Mapping[str, Any]) -> WSGIInterfaceFactory:
@@ -222,7 +160,7 @@ class ConcurrentWSGIAppFactory(WSGIAppFactory):
     def __init__(
         self,
         interface_factory: WSGIInterfaceFactory,
-        compiler: Compiler[Parser, CodeBuilder],
+        compiler: Compiler,
         backend: CodeSourceContainer,
         cache: Optional[CacheSourceContainer]
     ) -> None:

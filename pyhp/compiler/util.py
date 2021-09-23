@@ -14,29 +14,29 @@
 
 from __future__ import annotations
 import re
-from typing import Optional, TextIO, TypeVar, Generic
+from typing import Optional, TextIO, TypeVar, Mapping, Any
 from importlib.abc import Loader
 from importlib.machinery import ModuleSpec
 from . import Parser, CodeBuilder, CodeBuilderDecorator, Code
+from .generic import GenericCodeBuilder
 
 
 __all__ = ("Compiler", "StartingIndentationError", "Dedenter")
 
 WHITESPACE_REGEX = re.compile(r"\s*")   # match zero or more times to match no whitespace too
 
-P = TypeVar("P", bound=Parser)
 B = TypeVar("B", bound=CodeBuilder)
 
 
-class Compiler(Generic[P, B]):
+class Compiler:
     """Facade to the compiler subsystem"""
     __slots__ = ("parser", "base_builder", "__weakref__")
 
-    parser: P
+    parser: Parser
 
-    base_builder: B
+    base_builder: CodeBuilder
 
-    def __init__(self, parser: P, builder: B) -> None:
+    def __init__(self, parser: Parser, builder: CodeBuilder) -> None:
         """construct a instance with a parser and a code builder"""
         self.parser = parser
         self.base_builder = builder
@@ -46,7 +46,23 @@ class Compiler(Generic[P, B]):
             return self.parser == other.parser and self.base_builder == other.base_builder
         return NotImplemented
 
-    def builder(self) -> B:
+    @classmethod
+    def from_config(cls, parser: Parser, config: Mapping[str, Any]) -> Compiler:
+        """create a compiler instance from config data"""
+        try:
+            optimization_level = config["optimization_level"]
+        except KeyError:
+            optimization_level = -1
+        else:
+            if not isinstance(optimization_level, int):
+                raise ValueError("value of key 'optimization_level' expected to be an int")
+        builder = GenericCodeBuilder(optimization_level)
+        return cls(
+            parser,
+            Dedenter(builder) if config.get("dedent", True) else builder
+        )
+
+    def builder(self) -> CodeBuilder:
         """get a code builder who is not used by other threads"""
         return self.base_builder.copy()
 

@@ -5,7 +5,7 @@
 import re
 import unittest
 import unittest.mock
-from pyhp.backends import util, memory, files
+from pyhp.backends import util, memory, files, CodeSourceContainer
 from pyhp.compiler.parsers import RegexParser
 from pyhp.compiler.generic import GenericCodeBuilder
 from pyhp.compiler.util import Compiler
@@ -25,6 +25,9 @@ compiler2 = Compiler(
     ),
     GenericCodeBuilder(-1)
 )
+
+dummy = unittest.mock.Mock(spec=CodeSourceContainer)
+dummy.from_config.configure_mock(side_effect=lambda c, b: dummy)
 
 
 class DummyConfigBuilder(util.ConfigHierarchyBuilder):
@@ -67,6 +70,39 @@ class TestHierarchyBuilder(unittest.TestCase):
         self.assertNotEqual(builder, builder2)
         self.assertEqual(builder, builder.copy())
 
+    def test_close_on_error(self) -> None:
+        """test HierarchyBuilder.close_on_error"""
+        builder = util.HierarchyBuilder(compiler)
+        with self.assertRaises(RuntimeError):
+            with builder.close_on_error():
+                raise RuntimeError  # test behavior if not containers where constructed
+        dummy = unittest.mock.Mock(spec=CodeSourceContainer)
+        dummy.from_config.configure_mock(side_effect=lambda b, c: dummy)
+        broken_dummy = unittest.mock.Mock(spec=CodeSourceContainer)
+        broken_dummy.from_config.configure_mock(side_effect=RuntimeError)
+        with self.assertRaises(RuntimeError):
+            with builder.close_on_error() as context_result:
+                self.assertIs(builder, context_result)
+                builder.add_container(dummy, {})
+                builder.add_container(broken_dummy, {})
+        with builder.close_on_error():
+            pass
+        dummy.close.assert_called_once()
+
+
+class TestHierarchyContext(unittest.TestCase):
+    """test for HierarchyContext"""
+    # HierarchyContext.__exit__ is being tested in TestHierarchyBuilder.close_on_error
+
+    def test_eq(self) -> None:
+        """test HierarchyContext.__eq__"""
+        contexts = [
+            util.HierarchyContext(util.HierarchyBuilder(compiler)),
+            util.HierarchyContext(util.PathHierarchyBuilder(compiler2)),
+            42
+        ]
+        self.assertEqual([contexts[0]], [i for i in contexts if i == contexts[0]])
+
 
 class TestConfigHierarchyBuilder(unittest.TestCase):
     """tests for ConfigHierarchyBuilder"""
@@ -74,8 +110,7 @@ class TestConfigHierarchyBuilder(unittest.TestCase):
         """test ConfigHierarchyBuilder.add_config"""
         config = [
             {
-                "name": "test1",
-                "config": {}
+                "name": "test1"
             },
             {
                 "name": "test2",
@@ -85,7 +120,7 @@ class TestConfigHierarchyBuilder(unittest.TestCase):
         builder = DummyConfigBuilder(compiler)
         builder.add_config(config)
         builder.add_name.assert_has_calls([
-            unittest.mock.call("test1", config[0]["config"]),
+            unittest.mock.call("test1", {}),
             unittest.mock.call("test2", config[1]["config"])
         ])
         with self.assertRaises(ValueError):
@@ -128,3 +163,46 @@ class TestPathHierarchyBuilder(unittest.TestCase):
             builder.add_name("not_in_use.txt:Test", {})
         with self.assertRaises(FileNotFoundError):
             builder.add_name("not_in_use.py:Test", {})
+
+
+class TestFunctions(unittest.TestCase):
+    """test module level functions"""
+
+    def test_hierarchy_from_config(self) -> None:
+        """test hierarchy_from_config"""
+        config = {
+            "resolve": "module",
+            "containers": [
+                {
+                    "name": "pyhp.backends.files.Directory",
+                    "config": {
+                        "path": "."
+                    }
+                }
+            ]
+        }
+        with util.hierarchy_from_config(compiler, config) as container:
+            self.assertIsInstance(container, CodeSourceContainer)
+        del config["resolve"]
+        with util.hierarchy_from_config(compiler, config) as container:
+            self.assertIsInstance(container, CodeSourceContainer)
+        config["resolve"] = "path"
+        config["containers"] = [
+            {"name": "./tests/backends/dummy.py:HashMap", "config": {}},
+        ]
+        with util.hierarchy_from_config(compiler, config) as container:
+            self.assertIsInstance(container, CodeSourceContainer)
+        del config["resolve"]
+        config["containers"] = [
+            {"name": "tests.backends.test_util.dummy", "config": {}},
+            {"name": "broken.name", "config": {}}
+        ]
+        with self.assertRaises(ImportError):
+            util.hierarchy_from_config(compiler, config)
+        dummy.close.assert_called_once()
+        dummy.close.reset_mock()
+        del config["containers"][0]     # test handling of no containers
+        with self.assertRaises(ImportError):
+            util.hierarchy_from_config(compiler, config)
+        with self.assertRaises(ValueError):
+            util.hierarchy_from_config(compiler, {"resolve": 42})
