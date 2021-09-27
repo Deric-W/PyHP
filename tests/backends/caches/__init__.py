@@ -63,26 +63,36 @@ class TestCacheSourceContainer(unittest.TestCase):
             "b": unittest.mock.Mock(spec_set=CacheSource),
             "c": unittest.mock.Mock(spec_set=CacheSource)
         }
-        sources["a"].gc.configure_mock(side_effect=(True, True))
-        sources["b"].gc.configure_mock(side_effect=(True, False))
-        sources["c"].gc.configure_mock(side_effect=(True, True))
+        sources["a"].gc.configure_mock(side_effect=(True, True, True))
+        sources["b"].gc.configure_mock(side_effect=(True, False, False))
+        sources["c"].gc.configure_mock(side_effect=(True, True, RuntimeError))
         self.assertEqual(CacheSourceContainer.gc(sources), 3)
-        for source in sources.values():
-            source.gc.assert_called()
         self.assertEqual(CacheSourceContainer.gc(sources), 2)
+        with self.assertRaises(RuntimeError):
+            CacheSourceContainer.gc(sources)
+        call = unittest.mock.call()
+        for source in sources.values():
+            source.gc.assert_has_calls((call, call, call))
+            source.close.assert_has_calls((call, call, call))
 
     def test_clear(self) -> None:
         """test CacheSourceContainer.clear"""
         cached = {
             "a": unittest.mock.Mock(spec_set=CacheSource),
-            "b": unittest.mock.Mock(spec_set=CacheSource)
+            "b": unittest.mock.Mock(spec_set=CacheSource),
+            "c": unittest.mock.Mock(spec_set=CacheSource)
         }
-        cached["b"].clear.configure_mock(side_effect=(False,))
+        cached["b"].clear.configure_mock(side_effect=(False, False))
         container = unittest.mock.Mock(spec_set=CacheSourceContainer)
-        container.cached.configure_mock(side_effect=(cached,))
+        container.cached.configure_mock(side_effect=(cached, cached))
         CacheSourceContainer.clear(container)
+        cached["c"].clear.configure_mock(side_effect=RuntimeError)
+        with self.assertRaises(RuntimeError):
+            CacheSourceContainer.clear(container)
+        call = unittest.mock.call()
         for source in cached.values():
-            source.clear.assert_called()
+            source.clear.assert_has_calls((call, call))
+            source.close.assert_has_calls((call, call))
 
     def test_close(self) -> None:
         """test CodeSourceContainerDecorator.close"""
