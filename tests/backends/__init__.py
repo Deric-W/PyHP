@@ -2,7 +2,6 @@
 
 """Uni tests for the abc"""
 
-import re
 import unittest
 import unittest.mock
 from typing import Any
@@ -15,9 +14,6 @@ from pyhp.backends import (
     TimestampedCodeSourceContainer
 )
 from pyhp.compiler import Code
-
-
-PATTERN = re.compile(r"a|b")
 
 
 def context_manager_exit(self: Any, *_args: Any) -> None:
@@ -68,13 +64,6 @@ class TestSourceContainer(unittest.TestCase):
         source.close.assert_called()
         self.assertFalse(CodeSourceContainer.__contains__(container, "Test"))
         self.assertFalse(CodeSourceContainer.__contains__(container, 1))
-
-    def test_search(self) -> None:
-        """test CodeSourceContainer.search"""
-        self.assertEqual(
-            list(CodeSourceContainer.search({"a": 1, "b": 2, "c": 3}, PATTERN)),
-            [("a", 1), ("b", 2)]
-        )
 
     def test_values(self) -> None:
         """test CodeSourceContainer.values"""

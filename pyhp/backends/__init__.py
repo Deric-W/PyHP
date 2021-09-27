@@ -26,9 +26,7 @@ from typing import (
     Any,
     Union,
     Optional,
-    Iterator,
-    Pattern,
-    Tuple
+    Iterator
 )
 from ..compiler import Code
 from ..compiler.util import Compiler
@@ -50,7 +48,8 @@ __all__ = (
     "memory",
     "files",
     "zipfiles",
-    "util"
+    "util",
+    "main"
 )
 
 
@@ -221,12 +220,6 @@ class CodeSourceContainer(Mapping[str, S]):
     def items(self) -> ItemsView[str, S]:
         """custom ItemsView which closes retrieved sources"""
         return ClosingItemsView(self)
-
-    def search(self, pattern: Pattern[str]) -> Iterator[Tuple[str, S]]:
-        """yield all sources with names which match the pattern"""
-        for name in self.keys():
-            if pattern.match(name) is not None:
-                yield name, self[name]
 
     def close(self) -> None:
         """perform cleanup actions"""
