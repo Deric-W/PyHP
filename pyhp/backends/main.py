@@ -151,6 +151,7 @@ argparser.add_argument(
 subcommands = argparser.add_subparsers(required=True, dest="subcommand")
 list_parser = subcommands.add_parser(
     "list",
+    description="list the names provided by the backend",
     help="list the names provided by the backend"
 )
 list_parser.add_argument(
@@ -170,6 +171,7 @@ list_parser.set_defaults(function=main_list)
 
 show_parser = subcommands.add_parser(
     "show",
+    description="show details about a name",
     help="show details about a name"
 )
 show_parser.add_argument(
@@ -181,6 +183,7 @@ show_parser.set_defaults(function=main_show)
 
 fetch_parser = subcommands.add_parser(
     "fetch",
+    description="warm the cache",
     help="warm the cache"
 )
 fetch_parser.add_argument(
@@ -193,6 +196,7 @@ fetch_parser.set_defaults(function=main_fetch)
 
 clear_parser = subcommands.add_parser(
     "clear",
+    description="clear the cache",
     help="clear the cache"
 )
 clear_parser.add_argument(
@@ -205,6 +209,7 @@ clear_parser.set_defaults(function=main_clear)
 
 gc_parser = subcommands.add_parser(
     "gc",
+    description="garbage collect the cache",
     help="garbage collect the cache"
 )
 gc_parser.add_argument(
@@ -217,6 +222,7 @@ gc_parser.set_defaults(function=main_gc)
 
 dump_parser = subcommands.add_parser(
     "dump",
+    description="dump names from the backend",
     help="dump names from the backend"
 )
 dump_parser.add_argument(
