@@ -3,11 +3,16 @@
 """Tests for pyhp.backends.caches.timestamped.memory"""
 
 import unittest
+import unittest.mock
 import re
-import io
 import os
 import os.path
 import time
+from pyhp.backends import (
+    TimestampedCodeSource,
+    TimestampedCodeSourceContainer,
+    SourceInfo
+)
 from pyhp.backends.files import FileSource, Directory
 from pyhp.backends.caches.timestamped.memory import (
     MemoryCacheSource,
@@ -132,6 +137,19 @@ class TestMemoryCacheSource(unittest.TestCase):
             self.assertNotIn("test", strategy)
             self.assertFalse(source.clear())
 
+    def test_timestamps(self) -> None:
+        """test FileCacheSource timestamp methods"""
+        mock = unittest.mock.Mock(spec_set=TimestampedCodeSource)
+        mock.mtime.configure_mock(side_effect=(1,))
+        mock.ctime.configure_mock(side_effect=(2,))
+        mock.atime.configure_mock(side_effect=(3,))
+        mock.info.configure_mock(side_effect=(SourceInfo(4, 5, 6),))
+        with MemoryCacheSource(mock, "test", UnboundedCacheStrategy()) as source:
+            self.assertEqual(source.mtime(), 1)
+            self.assertEqual(source.ctime(), 2)
+            self.assertEqual(source.atime(), 3)
+            self.assertEqual(source.info(), SourceInfo(4, 5, 6))
+
 
 class TestMemoryCache(unittest.TestCase):
     """test MemoryCache"""
@@ -207,6 +225,21 @@ class TestMemoryCache(unittest.TestCase):
             self.assertNotIn("shebang.pyhp", cache.strategy)
             cache.clear()
             self.assertEqual(len(cache.strategy), 0)
+
+    def test_timestamps(self) -> None:
+        """test FileCache timestamp methods"""
+        mock = unittest.mock.Mock(spec_set=TimestampedCodeSourceContainer)
+        mock.mtime.configure_mock(side_effect=lambda name: 1 if name == "test" else 0)
+        mock.ctime.configure_mock(side_effect=lambda name: 2 if name == "test" else 0)
+        mock.atime.configure_mock(side_effect=lambda name: 3 if name == "test" else 0)
+        mock.info.configure_mock(
+            side_effect=lambda name: SourceInfo(4, 5, 6) if name == "test" else SourceInfo(0, 0, 0)
+        )
+        with MemoryCache(mock, UnboundedCacheStrategy()) as cache:
+            self.assertEqual(cache.mtime("test"), 1)
+            self.assertEqual(cache.ctime("test"), 2)
+            self.assertEqual(cache.atime("test"), 3)
+            self.assertEqual(cache.info("test"), SourceInfo(4, 5, 6))
 
 
 class TestUnboundedCacheStrategy(unittest.TestCase):

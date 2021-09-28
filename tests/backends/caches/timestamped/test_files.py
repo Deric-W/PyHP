@@ -3,13 +3,18 @@
 """Tests for pyhp.backends.caching.timestamped.files"""
 
 import unittest
+import unittest.mock
 import re
-import io
 import os
 import os.path
 import sys
 import time
 import tempfile
+from pyhp.backends import (
+    TimestampedCodeSource,
+    TimestampedCodeSourceContainer,
+    SourceInfo
+)
 from pyhp.backends.files import FileSource, Directory
 from pyhp.backends.caches.timestamped.files import (
     FileCacheSource,
@@ -142,6 +147,19 @@ class TestFileCacheSource(unittest.TestCase):
                 self.assertFalse(os.path.exists(path))
                 self.assertFalse(source.clear())
 
+    def test_timestamps(self) -> None:
+        """test FileCacheSource timestamp methods"""
+        mock = unittest.mock.Mock(spec_set=TimestampedCodeSource)
+        mock.mtime.configure_mock(side_effect=(1,))
+        mock.ctime.configure_mock(side_effect=(2,))
+        mock.atime.configure_mock(side_effect=(3,))
+        mock.info.configure_mock(side_effect=(SourceInfo(4, 5, 6),))
+        with FileCacheSource(mock, "", int(1e9)) as source:
+            self.assertEqual(source.mtime(), 1)
+            self.assertEqual(source.ctime(), 2)
+            self.assertEqual(source.atime(), 3)
+            self.assertEqual(source.info(), SourceInfo(4, 5, 6))
+
 
 @unittest.skipIf(sys.platform.startswith("win"), "requires Posix")
 class TestFileCache(unittest.TestCase):
@@ -233,6 +251,21 @@ class TestFileCache(unittest.TestCase):
             cache.clear()
             self.assertFalse(os.path.exists(cache.path("syntax.pyhp")))
             self.assertFalse(os.path.exists(cache.path("shebang.pyhp")))
+
+    def test_timestamps(self) -> None:
+        """test FileCache timestamp methods"""
+        mock = unittest.mock.Mock(spec_set=TimestampedCodeSourceContainer)
+        mock.mtime.configure_mock(side_effect=lambda name: 1 if name == "test" else 0)
+        mock.ctime.configure_mock(side_effect=lambda name: 2 if name == "test" else 0)
+        mock.atime.configure_mock(side_effect=lambda name: 3 if name == "test" else 0)
+        mock.info.configure_mock(
+            side_effect=lambda name: SourceInfo(4, 5, 6) if name == "test" else SourceInfo(0, 0, 0)
+        )
+        with FileCache(mock, "tmp") as cache:
+            self.assertEqual(cache.mtime("test"), 1)
+            self.assertEqual(cache.ctime("test"), 2)
+            self.assertEqual(cache.atime("test"), 3)
+            self.assertEqual(cache.info("test"), SourceInfo(4, 5, 6))
 
     def test_path(self) -> None:
         """test FileCache.path"""

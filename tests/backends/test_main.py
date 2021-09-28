@@ -224,18 +224,19 @@ class TestMain(unittest.TestCase):
         mtime, ctime, _ = directory.info("shebang.pyhp")
         self.assertRegex(
             buffer.getvalue(),
-            f"Name: 'shebang.pyhp'\nmtime: {mtime}\nctime: {ctime}\natime: .+?\ncached: Not supported\n"
+            f"Name: 'shebang.pyhp'\nmtime: {mtime}\nctime: {ctime}\natime: [0-9]+?\ncached: Not supported\n"
         )
         buffer.seek(0)
         buffer.truncate(0)
         with MemoryCache(directory, UnboundedCacheStrategy()) as backend, backend["shebang.pyhp"] as source:
+            mtime, ctime, _ = source.info()
             self.assertEqual(
                 main.main_show(backend, Namespace(name="shebang.pyhp"), buffer),
                 0
             )
-            self.assertEqual(
+            self.assertRegex(
                 buffer.getvalue(),
-                "Name: 'shebang.pyhp'\nmtime: Not supported\nctime: Not supported\natime: Not supported\ncached: False\n"
+                f"Name: 'shebang.pyhp'\nmtime: {mtime}\nctime: {ctime}\natime: [0-9]+?\ncached: False\n"
             )
             buffer.seek(0)
             buffer.truncate(0)
@@ -244,9 +245,9 @@ class TestMain(unittest.TestCase):
                 main.main_show(backend, Namespace(name="shebang.pyhp"), buffer),
                 0
             )
-        self.assertEqual(
+        self.assertRegex(
             buffer.getvalue(),
-            "Name: 'shebang.pyhp'\nmtime: Not supported\nctime: Not supported\natime: Not supported\ncached: True\n"
+            f"Name: 'shebang.pyhp'\nmtime: {mtime}\nctime: {ctime}\natime: [0-9]+?\ncached: True\n"
         )
 
     def test_dump(self) -> None:
