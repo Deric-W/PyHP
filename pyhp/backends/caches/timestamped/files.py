@@ -27,7 +27,8 @@ from .. import (
 from ... import (
     ConfigHierarchy,
     TimestampedCodeSource,
-    TimestampedCodeSourceContainer
+    TimestampedCodeSourceContainer,
+    SourceInfo
 )
 from ....compiler import Code
 
@@ -44,7 +45,7 @@ S = TypeVar("S", bound=TimestampedCodeSource)
 FILE_EXTENSION = f".{sys.implementation.cache_tag}.pickle"
 
 
-class FileCacheSource(CacheSource[S]):
+class FileCacheSource(CacheSource[S], TimestampedCodeSource):
     """
     source which caches a TimestampedCodeSource on disk
     WARNING: only works reliably on posix systems
@@ -122,8 +123,24 @@ class FileCacheSource(CacheSource[S]):
             return False
         return True
 
+    def info(self) -> SourceInfo:
+        """retrieve all timestamps"""
+        return self.code_source.info()
 
-class FileCache(CacheSourceContainer[TimestampedCodeSourceContainer[S], FileCacheSource[S]]):
+    def mtime(self) -> int:
+        """retrieve the modification timestamp in ns"""
+        return self.code_source.mtime()
+
+    def ctime(self) -> int:
+        """retrieve the creation timestamp in ns"""
+        return self.code_source.ctime()
+
+    def atime(self) -> int:
+        """retireve the access timestamp in ns"""
+        return self.code_source.atime()
+
+
+class FileCache(CacheSourceContainer[TimestampedCodeSourceContainer[S], FileCacheSource[S]], TimestampedCodeSourceContainer[FileCacheSource[S]]):
     """file cache which stores all cache files inside a central directory"""
     __slots__ = ("directory_name", "ttl")
 
@@ -198,6 +215,22 @@ class FileCache(CacheSourceContainer[TimestampedCodeSourceContainer[S], FileCach
                 os.unlink(path)
             except FileNotFoundError:   # file was already removed
                 pass
+
+    def mtime(self, name: str) -> int:
+        """retrieve the modification timestamp of name"""
+        return self.source_container.mtime(name)
+
+    def ctime(self, name: str) -> int:
+        """retrieve the creation timestamp of name"""
+        return self.source_container.ctime(name)
+
+    def atime(self, name: str) -> int:
+        """retrieve the access timestamp of name"""
+        return self.source_container.atime(name)
+
+    def info(self, name: str) -> SourceInfo:
+        """retireve the info about name"""
+        return self.source_container.info(name)
 
     def path(self, name: str) -> str:
         """return directory_name/<base32 encoded name>FILE_EXTENSION"""

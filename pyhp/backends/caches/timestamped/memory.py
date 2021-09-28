@@ -40,7 +40,8 @@ from .. import (
 from ... import (
     ConfigHierarchy,
     TimestampedCodeSource,
-    TimestampedCodeSourceContainer
+    TimestampedCodeSourceContainer,
+    SourceInfo
 )
 from ....compiler import Code
 
@@ -64,7 +65,7 @@ POP_SENTINEL: object = object()
 CacheEntry = Tuple[Code, int]
 
 
-class MemoryCacheSource(CacheSource[S]):
+class MemoryCacheSource(CacheSource[S], TimestampedCodeSource):
     """in-memory cache source"""
     __slots__ = ("name", "strategy", "ttl")
 
@@ -96,10 +97,9 @@ class MemoryCacheSource(CacheSource[S]):
             code = self.code_source.code()
             self.strategy[self.name] = (code, time.time_ns())
             return code
-        if check_mtime(self.code_source.mtime(), timestamp, self.ttl):
-            return code
-        code = self.code_source.code()  # outdated
-        self.strategy[self.name] = (code, time.time_ns())
+        if not check_mtime(self.code_source.mtime(), timestamp, self.ttl):
+            code = self.code_source.code()  # outdated
+            self.strategy[self.name] = (code, time.time_ns())
         return code
 
     def cached(self) -> bool:
@@ -118,8 +118,24 @@ class MemoryCacheSource(CacheSource[S]):
             return False
         return True
 
+    def info(self) -> SourceInfo:
+        """retrieve all timestamps"""
+        return self.code_source.info()
 
-class MemoryCache(CacheSourceContainer[TimestampedCodeSourceContainer[S], MemoryCacheSource[S]]):
+    def mtime(self) -> int:
+        """retrieve the modification timestamp in ns"""
+        return self.code_source.mtime()
+
+    def ctime(self) -> int:
+        """retrieve the creation timestamp in ns"""
+        return self.code_source.ctime()
+
+    def atime(self) -> int:
+        """retireve the access timestamp in ns"""
+        return self.code_source.atime()
+
+
+class MemoryCache(CacheSourceContainer[TimestampedCodeSourceContainer[S], MemoryCacheSource[S]], TimestampedCodeSourceContainer[MemoryCacheSource[S]]):
     """in-memory cache with different strategies"""
     __slots__ = ("strategy", "ttl")
 
@@ -184,6 +200,22 @@ class MemoryCache(CacheSourceContainer[TimestampedCodeSourceContainer[S], Memory
     def clear(self) -> None:
         """remove all sources from the cache"""
         self.strategy.clear()
+
+    def mtime(self, name: str) -> int:
+        """retrieve the modification timestamp of name"""
+        return self.source_container.mtime(name)
+
+    def ctime(self, name: str) -> int:
+        """retrieve the creation timestamp of name"""
+        return self.source_container.ctime(name)
+
+    def atime(self, name: str) -> int:
+        """retrieve the access timestamp of name"""
+        return self.source_container.atime(name)
+
+    def info(self, name: str) -> SourceInfo:
+        """retireve the info about name"""
+        return self.source_container.info(name)
 
 
 class MemoryCacheStrategy(MutableMapping[K, V]):
