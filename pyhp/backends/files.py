@@ -70,30 +70,48 @@ class FileSource(TimestampedCodeSource, DirectCodeSource):
 
     spec: ModuleSpec
 
-    def __init__(self, fd: io.FileIO, compiler: Compiler) -> None:
+    def __init__(self, fd: io.FileIO, spec: ModuleSpec, compiler: Compiler) -> None:
         self.fd = fd
+        self.spec = spec
         self.compiler = compiler
-        if isinstance(self.fd.name, str):
-            self.spec = ModuleSpec(
-                "__main__",
-                SourceFileLoader("__main__", self.fd.name),
-                origin=self.fd.name,
-                is_package=False
-            )
-            self.spec.has_location = True
-        else:
-            self.spec = ModuleSpec(
-                "__main__",
-                None,
-                origin=f"<fd {self.fd.name}>",
-                is_package=False
-            )
 
     def __eq__(self, other: object) -> bool:
         if isinstance(other, FileSource):
             return self.fd.name == other.fd.name \
                 and self.compiler == other.compiler
         return NotImplemented
+
+    @classmethod
+    def with_inferred_spec(cls, fd: io.FileIO, compiler: Compiler) -> FileSource:
+        """create an instance with a spec inferred from the file"""
+        if isinstance(fd.name, str):
+            spec = ModuleSpec(
+                "__main__",
+                SourceFileLoader("__main__", fd.name),
+                origin=fd.name,
+                is_package=False
+            )
+            spec.has_location = True
+        else:
+            spec = ModuleSpec(
+                "__main__",
+                None,
+                origin=f"<fd {fd.name}>",
+                is_package=False
+            )
+        return cls(fd, spec, compiler)
+
+    @classmethod
+    def from_path(cls, path: str, compiler: Compiler) -> FileSource:
+        """create an instance with a spec inferred from a path"""
+        spec = ModuleSpec(
+            "__main__",
+            SourceFileLoader("__main__", path),
+            origin=path,
+            is_package=False
+        )
+        spec.has_location = True
+        return cls(io.FileIO(path, "r"), spec, compiler)
 
     def code(self) -> Code:
         """load and compile the code object from the file"""
@@ -171,13 +189,9 @@ class Directory(TimestampedCodeSourceContainer[FileSource]):
         """get FileSource instance by path (absolute or relative to the directory)"""
         path = self.path(name)
         try:
-            file = io.FileIO(path, "r")
+            return FileSource.from_path(path, self.compiler)
         except FileNotFoundError as e:
             raise KeyError("file does not exist") from e
-        return FileSource(
-            file,
-            self.compiler
-        )
 
     def __contains__(self, name: object) -> bool:   # prevent fd leakage
         if isinstance(name, str):

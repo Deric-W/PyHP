@@ -57,24 +57,15 @@ class TestFileCacheSource(unittest.TestCase):
         """test FileSource.__eq__"""
         sources = [
             FileCacheSource(
-                FileSource(
-                    io.FileIO("tests/embedding/syntax.pyhp", "r"),
-                    compiler
-                ),
+                FileSource.from_path("tests/embedding/syntax.pyhp", compiler),
                 "./tmp.cache"
             ),
             FileCacheSource(
-                FileSource(
-                    io.FileIO("tests/embedding/syntax.pyhp", "r"),
-                    compiler
-                ),
+                FileSource.from_path("tests/embedding/syntax.pyhp", compiler),
                 "./tmp.cache2"
             ),
             FileCacheSource(
-                FileSource(
-                    io.FileIO("tests/embedding/syntax.pyhp", "r"),
-                    compiler2
-                ),
+                FileSource.from_path("tests/embedding/syntax.pyhp", compiler2),
                 "./tmp.cache"
             )
         ]
@@ -93,7 +84,7 @@ class TestFileCacheSource(unittest.TestCase):
         """test FileCacheSource.code"""
         with tempfile.TemporaryDirectory(".") as directory:
             path = os.path.join(directory, "tmp.cache")
-            with FileCacheSource(FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler), path, int(1e9)) as source:
+            with FileCacheSource(FileSource.from_path("tests/embedding/syntax.pyhp", compiler), path, int(1e9)) as source:
                 code1 = source.code_source.code()
                 self.assertFalse(os.path.exists(path))
                 self.assertEqual(code1, source.code())
@@ -113,7 +104,7 @@ class TestFileCacheSource(unittest.TestCase):
         """test FileCacheSource.update error handling"""
         with tempfile.TemporaryDirectory(".") as directory:
             path = os.path.join(directory, "tmp.cache")
-            with FileCacheSource(FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler), path) as source:
+            with FileCacheSource(FileSource.from_path("tests/embedding/syntax.pyhp", compiler), path) as source:
                 with self.assertRaises(RuntimeError):
                     source.update(BrokenCode())
                 self.assertFalse(os.path.exists(path + ".new"))
@@ -130,7 +121,7 @@ class TestFileCacheSource(unittest.TestCase):
         """test FileCacheSource.cached"""
         with tempfile.TemporaryDirectory(".") as directory:
             path = os.path.join(directory, "tmp.cache")
-            with FileCacheSource(FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler), path, int(1e9)) as source:
+            with FileCacheSource(FileSource.from_path("tests/embedding/syntax.pyhp", compiler), path, int(1e9)) as source:
                 self.assertFalse(source.cached())
                 source.fetch()
                 self.assertTrue(source.cached())
@@ -144,7 +135,7 @@ class TestFileCacheSource(unittest.TestCase):
         """test FileCacheSource.clear"""
         with tempfile.TemporaryDirectory(".") as directory:
             path = os.path.join(directory, "tmp.cache")
-            with FileCacheSource(FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler), path, int(3e9)) as source:
+            with FileCacheSource(FileSource.from_path("tests/embedding/syntax.pyhp", compiler), path, int(3e9)) as source:
                 self.assertFalse(source.clear())
                 source.fetch()
                 self.assertTrue(source.clear())

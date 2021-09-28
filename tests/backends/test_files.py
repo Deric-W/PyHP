@@ -48,18 +48,9 @@ class TestFileSource(unittest.TestCase):
     def test_eq(self) -> None:
         """test FileSource.__eq__"""
         sources = [
-            FileSource(
-                io.FileIO(sys.stdin.fileno(), "r", closefd=False),
-                compiler
-            ),
-            FileSource(
-                io.FileIO("tests/embedding/syntax.pyhp", "r"),
-                compiler
-            ),
-            FileSource(
-                io.FileIO("tests/embedding/syntax.pyhp", "r"),
-                compiler2
-            )
+            FileSource.from_path("tests/embedding/shebang.pyhp", compiler),
+            FileSource.from_path("tests/embedding/syntax.pyhp", compiler),
+            FileSource.from_path("tests/embedding/syntax.pyhp", compiler2)
         ]
         try:
             for source in sources:
@@ -72,10 +63,35 @@ class TestFileSource(unittest.TestCase):
             for source in sources:
                 source.close()
 
+    def test_with_inferred_spec(self) -> None:
+        """test FileSource.with_inferred_spec"""
+        with FileSource.with_inferred_spec(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler) as source:
+            spec = source.spec
+        self.assertEqual(spec.name, "__main__")
+        self.assertIsInstance(spec.loader, SourceFileLoader)
+        self.assertEqual(spec.origin, "tests/embedding/syntax.pyhp")
+        self.assertTrue(spec.has_location)
+        with FileSource.with_inferred_spec(io.FileIO(sys.stdin.fileno(), "r", closefd=False), compiler) as source:
+            spec = source.spec
+        self.assertEqual(spec.name, "__main__")
+        self.assertTrue(spec.origin.startswith("<"))
+        self.assertFalse(spec.has_location)
+
+    def test_from_path(self) -> None:
+        """test FileSource.from_path"""
+        with FileSource.from_path("tests/embedding/syntax.pyhp", compiler) as source:
+            spec = source.spec
+            stat = os.fstat(source.fd.fileno())
+        self.assertEqual((stat.st_ino, stat.st_dev), os.stat("tests/embedding/syntax.pyhp")[1:3])
+        self.assertEqual(spec.name, "__main__")
+        self.assertIsInstance(spec.loader, SourceFileLoader)
+        self.assertEqual(spec.origin, "tests/embedding/syntax.pyhp")
+        self.assertTrue(spec.has_location)
+
     def test_code(self) -> None:
         """test FileSource.code"""
         with open("tests/embedding/syntax.pyhp", "r", newline="") as fd, \
-                FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler) as source:
+                FileSource.from_path("tests/embedding/syntax.pyhp", compiler) as source:
             loader = SourceFileLoader("__main__", "tests/embedding/syntax.pyhp")
             code = compiler.compile_file(fd, loader)
             code2 = source.code()
@@ -83,35 +99,21 @@ class TestFileSource(unittest.TestCase):
             self.assertEqual(code, code2)
             self.assertEqual(code2, code3)
 
-    def test_spec(self) -> None:
-        """test code spec"""
-        with FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler) as source:
-            spec1 = source.code().spec  # type: ignore
-            spec2 = FileSource(         # type: ignore
-                io.FileIO(source.fd.fileno(), "r", closefd=False),
-                compiler
-            ).code().spec
-        self.assertEqual(spec1.name, "__main__")
-        self.assertEqual(spec1.origin, "tests/embedding/syntax.pyhp")
-        self.assertTrue(spec1.has_location)
-        self.assertEqual(spec2.name, "__main__")
-        self.assertFalse(spec2.has_location)
-
     def test_source(self) -> None:
         """test FileSource.source"""
         with open("tests/embedding/syntax.pyhp", "r") as fd, \
-                FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler) as source:
+                FileSource.from_path("tests/embedding/syntax.pyhp", compiler) as source:
             # workaround git automatic newlines
             self.assertEqual(fd.read(), source.source().replace(os.linesep, "\n"))
 
     def test_size(self) -> None:
         """test FileSource.size"""
-        with FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler) as source:
+        with FileSource.from_path("tests/embedding/syntax.pyhp", compiler) as source:
             self.assertEqual(source.size(), len(source.source()))
 
     def test_introspection(self) -> None:
         """test code introspection"""
-        with FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler) as source:
+        with FileSource.from_path("tests/embedding/syntax.pyhp", compiler) as source:
             loader = SourceFileLoader("__main__", "tests/embedding/syntax.pyhp")
             spec = importlib.machinery.ModuleSpec(
                 "__main__",
@@ -132,7 +134,7 @@ class TestFileSource(unittest.TestCase):
     def test_timestamps(self) -> None:
         """test FileSource timestamps"""
         # allow parallel execution of file reading tests
-        with FileSource(io.FileIO("tests/__init__.py", "r"), compiler) as source:
+        with FileSource.from_path("tests/__init__.py", compiler) as source:
             info = source.info()
             self.assertEqual(
                 info,
@@ -319,21 +321,20 @@ class TestStrictDirectory(unittest.TestCase):
         """test resistance against path traversal"""
         for name in ("../test1", "a/../../test3", "../testsX"):  # would leave the directory
             with self.assertRaises(LeavesDirectoryError):
-                self.container[name].close()
+                self.container.path(name)
             with self.assertRaises(LeavesDirectoryError):
-                self.abs_container[name].close()
+                self.container.path(name)
         with self.assertRaises(ValueError):     # would leave directory on cwd change
-            self.container[os.path.abspath("test/embedding/syntax.pyhp")].close()
+            self.container.path(os.path.abspath("test/embedding/syntax.pyhp"))
         # would not leave directory on cwd change
-        self.abs_container[os.path.abspath("tests/embedding/syntax.pyhp")].close()
+        self.abs_container.path(os.path.abspath("tests/embedding/syntax.pyhp"))
         for name in ("syntax.pyhp", "../embedding/syntax.pyhp", "./syntax.pyhp"):   # inside path
-            self.container[name].close()
-            self.abs_container[name].close()
+            self.container.path(name)
+            self.abs_container.path(name)
 
     def test_contains(self) -> None:
-        """test Directory.__contains__"""
-        for name in self.container.keys():
-            self.assertIn(name, self.container)
+        """test StrictDirectory.__contains__"""
+        self.assertIn("syntax.pyhp", self.container)
+        self.assertNotIn(os.path.abspath("tests/embedding/syntax.pyhp"), self.container)
         self.assertNotIn("abc", self.container)
-        self.assertNotIn("../../../../abc", self.container)
         self.assertNotIn(1, self.container)
