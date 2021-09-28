@@ -1,0 +1,19 @@
+# Configuration for PyHP (https://github.com/Deric-W/PyHP)
+# This file uses the TOML syntax
+# Copy for testing pyhp.backends.main.main
+
+[backend]
+# how container names should be resolved to objects
+# module: the name is a module with a dot and the container name appended to it
+#         module.submodule.name
+# path: the name is a file path with a double colon and the container name appended to it
+#       /path/to/file.py:name
+resolve = "module"
+
+# array of containers to build a hierarchy
+[[backend.containers]]
+# the name of the container
+name = "pyhp.backends.files.Directory"
+
+# configuration options for the container
+config.path = "./tests/embedding"

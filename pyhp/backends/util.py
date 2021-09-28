@@ -16,7 +16,8 @@ from __future__ import annotations
 from abc import ABCMeta, abstractmethod
 import importlib
 import importlib.util
-from typing import List, Sequence, Mapping, Type, TypeVar, Any, Union
+from typing import List, Sequence, Mapping, Type, TypeVar, Any, Union, ContextManager, Optional
+from types import TracebackType
 from . import CodeSourceContainer, CodeSource
 from ..compiler.util import Compiler
 
@@ -25,7 +26,8 @@ __all__ = (
     "HierarchyBuilder",
     "ConfigHierarchyBuilder",
     "ModuleHierarchyBuilder",
-    "PathHierarchyBuilder"
+    "PathHierarchyBuilder",
+    "hierarchy_from_config"
 )
 
 T = TypeVar("T", bound="HierarchyBuilder")
@@ -65,12 +67,39 @@ class HierarchyBuilder:
         """remove and return the top container from the hierarchy"""
         return self.containers.pop()
 
+    def close_on_error(self: T) -> ContextManager[T]:
+        """return a context manager which closes the backends on error"""
+        return HierarchyContext(self)
+
     def copy(self: T) -> T:
         """copy the builder with his current state"""
         builder = self.__class__.__new__(self.__class__)
         builder.containers = self.containers.copy()
         builder.compiler = self.compiler
         return builder
+
+
+class HierarchyContext(ContextManager[T]):
+    """context manager which closes a hierarchy on error"""
+    __slots__ = ("builder",)
+
+    builder: T
+
+    def __init__(self, builder: T) -> None:
+        self.builder = builder
+
+    def __eq__(self, other: object) -> bool:
+        if isinstance(other, HierarchyContext):
+            return self.builder == other.builder
+        return NotImplemented
+
+    def __enter__(self) -> T:
+        return self.builder
+
+    def __exit__(self, type: Optional[Type[BaseException]], value: Optional[BaseException], traceback: Optional[TracebackType]) -> Optional[bool]:  # type: ignore
+        if type is not None and len(self.builder.containers) != 0:  # ignore if no containers where constructed
+            self.builder.hierarchy().close()
+        return False    # we dont handle exceptions
 
 
 class ConfigHierarchyBuilder(HierarchyBuilder, metaclass=ABCMeta):
@@ -124,3 +153,21 @@ class PathHierarchyBuilder(ConfigHierarchyBuilder):
         module = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(module)     # type: ignore
         self.add_container(getattr(module, name), config)
+
+
+def hierarchy_from_config(compiler: Compiler, backend_config: Mapping[str, Any]) -> CodeSourceContainer[CodeSource]:
+    """create a hierarchy from config data"""
+    try:
+        resolve = backend_config["resolve"]
+    except KeyError:
+        builder = ModuleHierarchyBuilder(compiler)  # type: ConfigHierarchyBuilder
+    else:
+        if resolve == "module":
+            builder = ModuleHierarchyBuilder(compiler)
+        elif resolve == "path":
+            builder = PathHierarchyBuilder(compiler)
+        else:
+            raise ValueError(f"value '{resolve}' of key 'resolve' is unknown")
+    with builder.close_on_error():
+        builder.add_config(backend_config["containers"])
+        return builder.hierarchy()

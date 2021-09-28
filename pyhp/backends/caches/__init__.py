@@ -90,14 +90,20 @@ class CacheSourceContainer(CodeSourceContainerDecorator[C, CS]):
         """garbage collect all cached sources and return the number removed"""
         number = 0
         for source in self.values():    # may be replaced by a specific thread safe implementation
-            if source.gc():
-                number += 1
+            try:
+                if source.gc():
+                    number += 1
+            finally:
+                source.close()
         return number
 
     def clear(self) -> None:
         """remove all sources from the cache"""
         for source in self.cached().values():    # may be replaced by a specific thread safe implementation
-            source.clear()
+            try:
+                source.clear()
+            finally:
+                source.close()
 
 
 class CachedValuesView(ClosingValuesView[CS]):

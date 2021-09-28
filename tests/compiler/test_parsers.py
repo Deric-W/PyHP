@@ -11,6 +11,19 @@ class TestRegexParser(unittest.TestCase):
     """Test the regex parser implementation"""
     parser = parsers.RegexParser(re.compile("{"), re.compile("}"))
 
+    def test_from_config(self) -> None:
+        """test RegexParser.from_config"""
+        self.assertEqual(
+            self.parser,
+            parsers.RegexParser.from_config({"start": "{", "end": "}"})
+        )
+        self.assertEqual(
+            parsers.RegexParser.from_config({}),
+            parsers.RegexParser(re.compile(r"<\?pyhp\s"), re.compile(r"\s\?>"))
+        )
+        with self.assertRaises(Exception):
+            parsers.RegexParser.from_config({"start": 42})
+
     def test_syntax(self) -> None:
         """test basic syntax"""
         sections = list(self.parser.parse("text1{code1}\n{code2}{\ncode3\n}text3\n"))

@@ -1,0 +1,38 @@
+#!/bin/sh -e
+
+# This maintainer script is part of PyHP (https://github.com/Deric-W/PyHP)
+# prerm script which clears cached files on uninstall or upgrade to avoid waste
+
+case "$1" in
+    remove|upgrade|deconfigure)
+        # clear cache
+        set +e
+        pyhp-backend clear >/dev/null 2>&1
+        ret="$?"
+        set -e
+        case "$ret" in
+            0) echo "Info: PyHP backend is a cache and has been cleared";;
+            1) echo "Warning: Exception while clearing PyHP backend";;
+            3) echo "Info: PyHP backend is not a cache and has not been cleared";;
+            *) echo "Warning: Error while clearing PyHP backend";;
+        esac
+
+        # remove __pycache__
+        if which py3clean >/dev/null 2>&1; then
+            py3clean -p python3-pyhp-core
+        else
+            find /usr/lib/python3/dist-packages/pyhp -type d -name __pycache__ -prune -exec rm -r "{}" \;
+        fi
+    ;;
+
+    failed-upgrade)
+        # do nothing if the upgrade failed, we can not be sure if PyHP works
+    ;;
+
+    *)
+        echo "PyHP prerm called with unknown argument '$1'" >&2
+        exit 1
+esac
+
+# dont report errors, failing to remove the cache is not critical
+exit 0

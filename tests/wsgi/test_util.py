@@ -27,8 +27,6 @@ compiler = Compiler(
     )
 )
 
-dummy = unittest.mock.Mock(spec=CodeSourceContainer)
-dummy.from_config.configure_mock(side_effect=lambda c, b: dummy)
 cache_dummy = unittest.mock.Mock(spec=CacheSourceContainer)
 cache_dummy.from_config.configure_mock(side_effect=lambda c, b: cache_dummy)
 
@@ -39,49 +37,6 @@ class BrokenFactory(util.SimpleWSGIAppFactory):
     @staticmethod
     def get_interface_factory(cache, interface_config):
         raise RuntimeError
-
-    @staticmethod
-    def get_backend(compiler, backend_config):
-        return cache_dummy
-
-
-class TestFunctions(unittest.TestCase):
-    """tests for module level functions"""
-
-    def test_create_backend(self) -> None:
-        """test create_backend"""
-        config = toml.load("pyhp.toml")["backend"]
-        with util.create_backend(compiler, config) as container:
-            self.assertIsInstance(container, CodeSourceContainer)
-        del config["resolve"]
-        with util.create_backend(compiler, config) as container:
-            self.assertIsInstance(container, CodeSourceContainer)
-        config["containers"] = [
-            {"name": "tests.wsgi.test_util.dummy", "config": {}},
-            {"name": "broken.name", "config": {}}
-        ]
-        with self.assertRaises(ImportError):
-            util.create_backend(compiler, config)
-        dummy.close.assert_called_once()
-        dummy.close.reset_mock()
-        del config["containers"][0]     # test handling of IndexError
-        with self.assertRaises(ImportError):
-            util.create_backend(compiler, config)
-        with self.assertRaises(ValueError):
-            util.create_backend(compiler, {"resolve": 42})
-
-    def test_create_compiler(self) -> None:
-        """test create_compiler"""
-        self.assertEqual(
-            util.create_compiler(compiler.parser, {}),
-            compiler
-        )
-        self.assertIsInstance(
-            util.create_compiler(compiler.parser, {"dedent": False}).base_builder,
-            generic.GenericCodeBuilder
-        )
-        with self.assertRaises(ValueError):
-            util.create_compiler(compiler.parser, {"optimization_level": "test"})
 
 
 class TestSimpleWSGIAppFactory(unittest.TestCase):
@@ -118,7 +73,18 @@ class TestSimpleWSGIAppFactory(unittest.TestCase):
 
     def test_from_config(self) -> None:
         """test SimpleWSGIAppFactory.from_config"""
-        config = {"backend": {"containers": [{"name": "pyhp.backends.files.Directory", "config": {"path": "."}}]}}
+        config = {
+            "backend": {
+                "containers": [
+                    {
+                        "name": "pyhp.backends.files.Directory",
+                        "config": {
+                            "path": "."
+                        }
+                    }
+                ]
+            }
+        }
         with files.Directory(".", compiler) as backend:
             with util.SimpleWSGIAppFactory.from_config(config) as factory:
                 self.assertEqual(
@@ -144,8 +110,14 @@ class TestSimpleWSGIAppFactory(unittest.TestCase):
                     ),
                     factory
                 )
+        config["backend"]["containers"] = [
+            {
+                "name": "tests.wsgi.test_util.cache_dummy",
+                "config": {}
+            }
+        ]
         with self.assertRaises(RuntimeError):
-            BrokenFactory.from_config({})
+            BrokenFactory.from_config(config)
         cache_dummy.close.assert_called_once()
         cache_dummy.close.reset_mock()
 
