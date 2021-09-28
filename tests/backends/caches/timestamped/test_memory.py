@@ -47,42 +47,27 @@ class TestMemoryCacheSource(unittest.TestCase):
         strategy = UnboundedCacheStrategy()
         sources = [
             MemoryCacheSource(
-                FileSource(
-                    io.FileIO("tests/embedding/syntax.pyhp", "r"),
-                    compiler
-                ),
+                FileSource.from_path("tests/embedding/syntax.pyhp", compiler),
                 "test",
                 strategy
             ),
             MemoryCacheSource(
-                FileSource(
-                    io.FileIO("tests/embedding/syntax.pyhp", "r"),
-                    compiler2
-                ),
+                FileSource.from_path("tests/embedding/syntax.pyhp", compiler2),
                 "test",
                 strategy
             ),
             MemoryCacheSource(
-                FileSource(
-                    io.FileIO("tests/embedding/syntax.pyhp", "r"),
-                    compiler
-                ),
+                FileSource.from_path("tests/embedding/syntax.pyhp", compiler),
                 "test2",
                 strategy
             ),
             MemoryCacheSource(
-                FileSource(
-                    io.FileIO("tests/embedding/syntax.pyhp", "r"),
-                    compiler
-                ),
+                FileSource.from_path("tests/embedding/syntax.pyhp", compiler),
                 "test",
                 LRUCacheStrategy(9)
             ),
             MemoryCacheSource(
-                FileSource(
-                    io.FileIO("tests/embedding/syntax.pyhp", "r"),
-                    compiler
-                ),
+                FileSource.from_path("tests/embedding/syntax.pyhp", compiler),
                 "test",
                 strategy,
                 9
@@ -102,7 +87,7 @@ class TestMemoryCacheSource(unittest.TestCase):
         """test MemoryCacheSource.code"""
         strategy = UnboundedCacheStrategy()
         with MemoryCacheSource(
-            FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler),
+            FileSource.from_path("tests/embedding/syntax.pyhp", compiler),
             "test",
             strategy,
             int(1e9)
@@ -118,7 +103,7 @@ class TestMemoryCacheSource(unittest.TestCase):
         """test MemoryCacheSource.cached"""
         strategy = UnboundedCacheStrategy()
         with MemoryCacheSource(
-            FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler),
+            FileSource.from_path("tests/embedding/syntax.pyhp", compiler),
             "test",
             strategy,
             int(1e9)
@@ -136,7 +121,7 @@ class TestMemoryCacheSource(unittest.TestCase):
         """test MemoryCacheSource.clear"""
         strategy = UnboundedCacheStrategy()
         with MemoryCacheSource(
-            FileSource(io.FileIO("tests/embedding/syntax.pyhp", "r"), compiler),
+            FileSource.from_path("tests/embedding/syntax.pyhp", compiler),
             "test",
             strategy
         ) as source:
