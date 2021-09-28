@@ -37,6 +37,14 @@ cat debian/control | python3 debian/format.py \
 # place conffiles
 cp debian/conffiles "$package/DEBIAN"
 
+# place postinst
+cp debian/postinst "$package/DEBIAN"
+chmod 755 "$package/DEBIAN/postinst"
+
+# place prerm
+cp debian/prerm "$package/DEBIAN"
+chmod 755 "$package/DEBIAN/prerm"
+
 # place copyright and changelog
 mkdir -p "${package}/usr/share/doc/python3-pyhp-core"
 cat debian/copyright | python3 debian/format.py \

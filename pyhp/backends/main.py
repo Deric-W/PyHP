@@ -37,7 +37,7 @@ def cache_subcommand(function: Callable[[CacheSourceContainer[CodeSourceContaine
         if isinstance(backend, CacheSourceContainer):
             return function(backend, args, stdout)
         print("Error: backend is not a cache", file=sys.stderr)
-        return 1
+        return 3    # to distinguish between exceptions and wrong backends
     return wrapper
 
 

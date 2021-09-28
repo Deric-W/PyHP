@@ -73,6 +73,7 @@ A script is called either by the configuration of the web server or a shebang an
   - act as containers for CodeSources
   - form a hierarchy configured in pyhp.toml
   - are contained inside `pyhp.backends`
+  - can be interacted with via the `pyhp-backend` or `python3 -m pyhp.backends` cli commands
    
   ## Installation
   
@@ -89,7 +90,8 @@ A script is called either by the configuration of the web server or a shebang an
   1. execute `debian/build_deb.sh` in the root directory of the project.
   2. Done! You can now install the debian package with `sudo dpkg -i python3-pyhp-core_{version}-1_all.deb`
 
-  - Optional: check if the recommended packages `python3-toml` and `python3-werkzeug` are installed to use the CLI commands 
+  - Optional: check if the recommended packages `python3-toml` and `python3-werkzeug` are installed to use the CLI commands
+  - Important: `pyhp-backend clear` will be executed on uninstall or upgrade if the backend is a cache, remember this when using paths containing `~` for the file cache
 
   ### Manually
   1. install the *pyhp-core* python package

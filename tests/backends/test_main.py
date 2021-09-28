@@ -87,7 +87,7 @@ class TestMain(unittest.TestCase):
                 with backend[name] as source:
                     self.assertTrue(source.cached())
         self.assertEqual(buffer.getvalue(), "")
-        self.assertEqual(main.main_fetch(directory, Namespace(names=names), buffer), 1)
+        self.assertEqual(main.main_fetch(directory, Namespace(names=names), buffer), 3)
 
     def test_gc(self) -> None:
         """test main_gc"""
@@ -116,7 +116,7 @@ class TestMain(unittest.TestCase):
             buffer.getvalue(),
             f"Collected '{names[0]}'\nCollected 1 names\n"
         )
-        self.assertEqual(main.main_gc(directory, Namespace(names=names), buffer), 1)
+        self.assertEqual(main.main_gc(directory, Namespace(names=names), buffer), 3)
 
     def test_clear(self) -> None:
         """test main_clear"""
@@ -144,7 +144,7 @@ class TestMain(unittest.TestCase):
                 sources[0].close()
                 sources[1].close()
         self.assertEqual(buffer.getvalue(), "")
-        self.assertEqual(main.main_clear(directory, Namespace(names=names), buffer), 1)
+        self.assertEqual(main.main_clear(directory, Namespace(names=names), buffer), 3)
 
     def test_list(self) -> None:
         """test main_list"""
