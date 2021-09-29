@@ -5,17 +5,21 @@
 
 case "$1" in
     remove|upgrade|deconfigure)
-        # clear cache
-        set +e
-        pyhp-backend clear >/dev/null 2>&1
-        ret="$?"
-        set -e
-        case "$ret" in
-            0) echo "Info: PyHP backend is a cache and has been cleared";;
-            1) echo "Warning: Exception while clearing PyHP backend";;
-            3) echo "Info: PyHP backend is not a cache and has not been cleared";;
-            *) echo "Warning: Error while clearing PyHP backend";;
-        esac
+        # clear cache if toml module is installed
+        if which python3 >/dev/null 2>&1 && python3 -c "import toml" >/dev/null 2>&1; then
+            set +e
+            pyhp-backend clear >/dev/null 2>&1
+            ret="$?"
+            set -e
+            case "$ret" in
+                0) echo "Info: PyHP backend is a cache and has been cleared";;
+                1) echo "Warning: Exception while clearing PyHP backend";;
+                3) echo "Info: PyHP backend is not a cache and has not been cleared";;
+                *) echo "Warning: Error while clearing PyHP backend";;
+            esac
+        else
+            echo "Info: not clearing PyHP backend because python3-toml is not installed"
+        fi
 
         # remove __pycache__
         if which py3clean >/dev/null 2>&1; then
