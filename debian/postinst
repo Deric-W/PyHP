@@ -4,7 +4,7 @@
 # postinst script which compiles python scripts
 
 if which py3compile >/dev/null 2>&1; then
-	py3compile -p python3-pyhp-core
+    py3compile -p python3-pyhp-core
 elif which python3 >/dev/null 2>&1; then
     python3 -m compileall -q /usr/lib/python3/dist-packages/pyhp
 fi

@@ -8,7 +8,6 @@ import os
 import unittest
 import unittest.mock
 import subprocess
-import toml
 from pyhp import main
 from pyhp.compiler import util, generic, parsers
 from pyhp.backends import CodeSourceContainer
@@ -49,20 +48,6 @@ class TestCli(unittest.TestCase):
                 stdout=subprocess.DEVNULL,
                 stderr=subprocess.DEVNULL
             )
-
-    def test_config_location(self) -> None:
-        """test config file location"""
-        with self.assertRaises(RuntimeError):   # no config
-            main.load_config()
-        os.environ["PYHPCONFIG"] = "pyhp.toml"  # env var
-        try:
-            self.assertEqual(main.load_config(), toml.load("pyhp.toml"))
-        finally:
-            del os.environ["PYHPCONFIG"]
-        self.assertEqual(                       # search path
-            main.load_config(("test1", "test2", "pyhp.toml")),
-            toml.load("pyhp.toml")
-        )
 
     def test_cli_handler(self) -> None:
         """test CLIHandler"""
