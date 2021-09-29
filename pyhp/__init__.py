@@ -24,5 +24,6 @@ __all__ = (
     "compiler",
     "backends",
     "wsgi",
-    "main"
+    "main",
+    "config"
 )

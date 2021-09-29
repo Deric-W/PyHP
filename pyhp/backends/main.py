@@ -19,7 +19,7 @@ from argparse import ArgumentParser, FileType, Namespace
 from typing import Callable, Union, Optional, Tuple, List, Iterable, TextIO
 import toml
 from .. import __version__
-from ..main import load_config
+from ..config import load_config
 from ..compiler import parsers, util
 from . import CodeSourceContainer, CodeSource, TimestampedCodeSource
 from .caches import CacheSource, CacheSourceContainer

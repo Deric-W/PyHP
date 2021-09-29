@@ -13,28 +13,20 @@
 # SPDX-License-Identifier: GPL-3.0-only
 
 import sys
-import os
 import argparse
 from wsgiref.handlers import CGIHandler
-from typing import Any, Iterable, MutableMapping
 import toml
 from . import __version__
+from .config import load_config
 from .wsgi.apps import SimpleWSGIApp
 from .wsgi.util import SimpleWSGIAppFactory
 from .backends.memory import MemorySource
 
 
 __all__ = (
-    "CONFIG_LOCATIONS",
     "argparser",
     "cli_main",
-    "cgi_main",
-    "load_config"
-)
-
-CONFIG_LOCATIONS = (
-    os.path.expanduser("~/.config/pyhp.toml"),
-    "/etc/pyhp.toml"
+    "cgi_main"
 )
 
 argparser = argparse.ArgumentParser(
@@ -86,22 +78,6 @@ class CLIHandler(CGIHandler):
     def handle_error(self) -> None:
         """log current error but do not send special error output in cli mode"""
         self.log_exception(sys.exc_info())
-
-
-def load_config(search_paths: Iterable[str] = CONFIG_LOCATIONS) -> MutableMapping[str, Any]:
-    """locate and parse the config file"""
-    try:
-        path = os.environ["PYHPCONFIG"]
-    except KeyError:
-        pass
-    else:
-        return toml.load(path)
-    for path in search_paths:
-        try:
-            return toml.load(path)
-        except FileNotFoundError:
-            pass
-    raise RuntimeError("failed to locate the config file")
 
 
 def cli_main() -> int:
