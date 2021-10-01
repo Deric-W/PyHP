@@ -1,3 +1,20 @@
+python3-pyhp-core (3.1-1) stable; urgency=low
+
+  * eighth release
+  * add pyhp-backend command
+  * add backends.main submodule
+  * add script to clear the cache on debian uninstall
+  * add PHP opcache functions to PHPWSGIInterface
+  * add TimestampedCodeSource methods to FileCacheSource and MemoryCacheSource
+  * move code from wsgi.utils to [Compiler|RegexParser].from_config
+  * move load_config from main to seperate config submodule
+  * move FileSource constructor logic to .from_path and .with_inferred_spec
+  * fix CacheSourceContainer.gc and .clear not closing sources
+  * fix warnings on debian uninstall
+  * fix errors in ConcurrentWSGIApp.commit_removals if requesting a code source fails
+
+ -- Eric Wolf <robo-eric@gmx.de>  Thu, 30 Sep 2021 18:59:00 +0100
+
 python3-pyhp-core (3.0-1) stable; urgency=low
 
   * seventh release

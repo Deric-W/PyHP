@@ -355,6 +355,7 @@ class PHPWSGIInterface(WSGIInterface):
 
     def register_shutdown_function(self, callback: Callable[..., None], *args: Any, **kwargs: Any) -> None:
         """register a callback to be called on shutdown"""
+        # execute in lifo order to prevent calling low level callbacks before high level ones
         self.shutdown_callbacks.appendleft((callback, args, kwargs))
 
     def opcache_compile_file(self, filename: str) -> bool:
