@@ -13,7 +13,7 @@
 
 # package metadata
 # needs to be defined before .main is imported
-__version__ = "3.0"
+__version__ = "3.1"
 __author__ = "Eric Wolf"
 __maintainer__ = "Eric Wolf"
 __license__ = "GPLv3"
