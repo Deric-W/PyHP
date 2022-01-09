@@ -14,7 +14,7 @@ class TestFunctions(unittest.TestCase):
     def test_load_config(self) -> None:
         """test load_config"""
         with self.assertRaises(RuntimeError):   # no config
-            config.load_config()
+            config.load_config(search_paths=())
         os.environ["PYHPCONFIG"] = "pyhp.toml"  # env var
         try:
             self.assertEqual(config.load_config(), toml.load("pyhp.toml"))

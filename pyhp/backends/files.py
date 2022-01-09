@@ -96,7 +96,7 @@ class FileSource(TimestampedCodeSource, DirectCodeSource):
             spec = ModuleSpec(
                 "__main__",
                 None,
-                origin=f"<fd {fd.name}>",
+                origin=f"<fd {fd.name!r}>",
                 is_package=False
             )
         return cls(fd, spec, compiler)

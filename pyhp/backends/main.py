@@ -75,7 +75,7 @@ def main_clear(backend: CacheSourceContainer[CodeSourceContainer, CacheSource], 
     return 0
 
 
-def main_list(backend: CacheSourceContainer[CodeSourceContainer, CacheSource], args: Namespace, stdout: TextIO = sys.stdout) -> int:
+def main_list(backend: CodeSourceContainer[CodeSource], args: Namespace, stdout: TextIO = sys.stdout) -> int:
     """implementation of the list subcommand"""
     if isinstance(backend, CacheSourceContainer):
         cached_mapping = backend.cached()

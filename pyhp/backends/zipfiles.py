@@ -163,19 +163,19 @@ class ZIPFile(TimestampedCodeSourceContainer[ZIPSource]):
             path = config["path"]
             if isinstance(path, str):
                 mode = config.get("mode", "r")  # default
-                if isinstance(mode, str):
+                if mode in {"r", "w", "x", "a"}:
                     file = zipfile.ZipFile(path, mode)
                     try:
                         pwd = config["pwd"].encode("utf8")
                     except KeyError:
                         pass
-                    except Exception as e:
+                    except BaseException as e:
                         file.close()
                         raise ValueError("error while handling value of key 'pwd'") from e
                     else:
                         file.setpassword(pwd)
                     return cls(file, before)
-                raise ValueError("expected value of key 'mode' to be a str")
+                raise ValueError("expected value of key 'mode' to be one of {'r', 'w', 'x', 'a'}")
             raise ValueError("expected value of key 'path' to be a str")
         raise ValueError(f"{cls.__name__} can not be used to decorate another CodeSourceContainer")
 
